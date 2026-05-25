@@ -543,7 +543,7 @@ function ExamGeneratorPage() {
             Question {String(safeIndex + 1).padStart(2, "0")} of{" "}
             {String(total).padStart(2, "0")}
           </span>
-          <h2 className="text-base font-medium leading-snug text-foreground sm:text-lg sm:font-semibold md:text-xl md:font-bold">
+          <h2 className="font-display text-xl font-bold leading-snug text-foreground sm:text-2xl">
             {q.question}
           </h2>
         </div>
@@ -703,7 +703,7 @@ function ExamGeneratorPage() {
               Review · Question {String(reviewIndex + 1).padStart(2, "0")} of{" "}
               {String(total).padStart(2, "0")}
             </span>
-            <h2 className="text-base font-medium leading-snug text-foreground sm:text-lg sm:font-semibold md:text-xl md:font-bold">
+            <h2 className="font-display text-xl font-bold leading-snug text-foreground sm:text-2xl">
               {q.question}
             </h2>
           </div>
