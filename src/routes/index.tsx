@@ -287,12 +287,23 @@ function ExamGeneratorPage() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const firstRunRef = useRef(true);
+  const blueprintKey = useMemo(
+    () =>
+      blueprint
+        .map((b) => `${b.subject}|${b.objectives}|${b.weight}`)
+        .join("¶"),
+    [blueprint]
+  );
   useEffect(() => {
     if (!autoGenerate) return;
-    if (!topic.trim()) return;
+    const hasTopic = topic.trim().length > 0;
+    const hasBlueprint =
+      useBlueprint &&
+      blueprint.some((b) => b.subject.trim().length > 0 && b.weight > 0);
+    if (!hasTopic && !hasBlueprint) return;
     if (!numQuestions || numQuestions < 1) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    const delay = firstRunRef.current ? 900 : 600;
+    const delay = firstRunRef.current ? 900 : 700;
     debounceRef.current = setTimeout(() => {
       firstRunRef.current = false;
       run();
@@ -301,7 +312,7 @@ function ExamGeneratorPage() {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topic, difficulty, numQuestions, autoGenerate]);
+  }, [topic, difficulty, numQuestions, autoGenerate, useBlueprint, blueprintKey]);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
