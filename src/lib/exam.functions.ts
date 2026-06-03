@@ -57,10 +57,23 @@ JSON structure: an object with a "questions" array; each item:
         ? `\n\nSTRICT NO-REPEAT RULE: Do NOT repeat, rephrase, or produce semantically equivalent versions of any of these previously generated questions. Pick entirely different subtopics, angles, scenarios, and wording. Previously generated questions (one per line):\n${avoidList.map((q, i) => `${i + 1}. ${q}`).join("\n")}`
         : "";
 
-    const userPrompt = `Topic: ${data.topic}
+    const blueprint = data.blueprint ?? [];
+    const blueprintBlock =
+      blueprint.length > 0
+        ? `\n\nEXAM BLUEPRINT — you MUST follow this subject distribution exactly. Produce questions grouped per subject in the listed order, totaling ${data.numQuestions} questions:\n${blueprint
+            .map(
+              (b, i) =>
+                `${i + 1}. Subject: "${b.subject}" — ${b.count} question(s) (weight ${b.weight}%)${b.objectives ? `\n   Learning objectives to cover: ${b.objectives}` : ""}`
+            )
+            .join(
+              "\n"
+            )}\n\nFor each subject, ensure the questions explicitly target the listed learning objectives. Do not exceed or fall short of the per-subject counts. Number questions globally 1..${data.numQuestions}.`
+        : "";
+
+    const userPrompt = `Topic / Course: ${data.topic}
 Difficulty: ${data.difficulty}
 Number of Questions: ${data.numQuestions}
-Variation seed: ${data.nonce ?? Date.now()} — generate a fresh, distinct set of questions different from any prior generation. Vary subtopics, phrasing, and which option is correct.${avoidBlock}`;
+Variation seed: ${data.nonce ?? Date.now()} — generate a fresh, distinct set of questions different from any prior generation. Vary subtopics, phrasing, and which option is correct.${blueprintBlock}${avoidBlock}`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
