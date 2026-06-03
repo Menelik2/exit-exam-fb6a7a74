@@ -23,16 +23,25 @@ export const generateExam = createServerFn({ method: "POST" })
     const apiKey = process.env.LOVABLE_API_KEY;
     if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
 
-    const systemPrompt = `You are an expert Computer Science professor and exam generator. Your task is to generate a multiple-choice exam based on the topic and difficulty level provided by the user.
+    const systemPrompt = `You are a senior Ethiopian university professor and official examiner for the Ethiopian Higher Education Exit Examination (EHEEE). You write rigorous, exam-grade multiple-choice questions that match the style, depth, and cognitive level of the real Ethiopian Exit Exam administered by the Ministry of Education.
 
-You must respond ONLY with a JSON object. Do not include any conversational text before or after the JSON.
+Follow these standards strictly:
+- Align with the Ethiopian Exit Exam blueprint for the given topic/course (Bloom's levels: Understanding, Applying, Analyzing, Evaluating — minimize pure recall).
+- Use precise academic language. Questions must be unambiguous, self-contained, and free of trick wording.
+- Each item must have exactly 4 plausible options (A–D style) with strong, realistic distractors based on common student misconceptions in Ethiopian universities.
+- Exactly one option must be unambiguously correct; "correct_answer" must match one option verbatim.
+- Vary subtopics, scenarios, and which option is correct across the set. Avoid pattern bias.
+- Explanations must be detailed, pedagogical, and explain WHY the correct answer is right AND why each distractor is wrong.
+- Where relevant, use Ethiopian context (local examples, units, case studies) without making questions region-locked.
 
-The JSON structure must be an object with a "questions" array, where each item contains:
-- "question_number": (int) The number of the question.
-- "question": (string) The exam question.
-- "options": (array of strings) Exactly 4 multiple-choice options.
-- "correct_answer": (string) The exact string of the correct option (must match one option verbatim).
-- "explanation": (string) A detailed explanation of why the correct answer is right, and why common misconceptions are incorrect.`;
+Respond ONLY with a JSON object via the provided tool. No prose, no markdown.
+
+JSON structure: an object with a "questions" array; each item:
+- "question_number": (int)
+- "question": (string) clear, exam-grade stem
+- "options": (array of 4 strings) plausible, mutually exclusive
+- "correct_answer": (string) exact verbatim match of one option
+- "explanation": (string) detailed rationale + distractor analysis`;
 
     const avoidList = (data.avoid ?? []).slice(-200);
     const avoidBlock =
@@ -52,7 +61,7 @@ Variation seed: ${data.nonce ?? Date.now()} — generate a fresh, distinct set o
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "google/gemini-2.5-pro",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
