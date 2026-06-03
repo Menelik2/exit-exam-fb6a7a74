@@ -215,6 +215,7 @@ function ExamGeneratorPage() {
       numQuestions: number;
       nonce: string;
       avoid: string[];
+      blueprint?: { subject: string; objectives: string; weight: number; count: number }[];
     }) => generateFn({ data: vars }),
     onSuccess: (res, vars) => {
       setAnswers({});
@@ -233,15 +234,47 @@ function ExamGeneratorPage() {
 
   const run = useCallback(
     (overrideNum?: number) => {
-      const t = topic.trim();
-      if (!t) return;
       const n = overrideNum ?? numQuestions;
       if (!n || n < 1) return;
+
+      // Build blueprint payload (only valid items with positive count)
+      let blueprintPayload:
+        | { subject: string; objectives: string; weight: number; count: number }[]
+        | undefined;
+      let effectiveTopic = topic.trim();
+
+      if (useBlueprint) {
+        const validItems = blueprint
+          .map((b, i) => ({ ...b, count: counts[i] ?? 0 }))
+          .filter((b) => b.subject.trim().length > 0 && b.count > 0);
+        if (validItems.length === 0) return;
+        blueprintPayload = validItems.map((b) => ({
+          subject: b.subject.trim(),
+          objectives: b.objectives.trim(),
+          weight: b.weight,
+          count: b.count,
+        }));
+        if (!effectiveTopic) {
+          effectiveTopic = `Ethiopian Exit Exam — ${validItems
+            .map((b) => b.subject.trim())
+            .join(", ")}`;
+        }
+      }
+
+      if (!effectiveTopic) return;
+
       const nonce = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-      const avoid = seenRef.current.get(seenKey(t, difficulty)) ?? [];
-      mutation.mutate({ topic: t, difficulty, numQuestions: n, nonce, avoid });
+      const avoid = seenRef.current.get(seenKey(effectiveTopic, difficulty)) ?? [];
+      mutation.mutate({
+        topic: effectiveTopic,
+        difficulty,
+        numQuestions: n,
+        nonce,
+        avoid,
+        blueprint: blueprintPayload,
+      });
     },
-    [topic, difficulty, numQuestions, mutation]
+    [topic, difficulty, numQuestions, mutation, useBlueprint, blueprint, counts]
   );
 
   useEffect(() => {
