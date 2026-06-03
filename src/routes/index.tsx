@@ -65,6 +65,40 @@ function shuffle<T>(arr: T[], seed: number): T[] {
 
 const LS_KEY = "exam-gen-settings";
 
+type BlueprintItem = {
+  id: string;
+  subject: string;
+  objectives: string;
+  weight: number;
+};
+
+const DEFAULT_BLUEPRINT: BlueprintItem[] = [
+  { id: "b1", subject: "Software Engineering", objectives: "SDLC models, requirements engineering, design patterns", weight: 40 },
+  { id: "b2", subject: "Data Structures & Algorithms", objectives: "Trees, graphs, sorting, complexity analysis", weight: 35 },
+  { id: "b3", subject: "Database Systems", objectives: "Normalization, SQL, transactions, indexing", weight: 25 },
+];
+
+function newBlueprintId() {
+  return `b-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+// Distribute total questions across items by weight using largest-remainder.
+function allocateCounts(items: BlueprintItem[], total: number): number[] {
+  const totalWeight = items.reduce((s, i) => s + Math.max(0, i.weight), 0);
+  if (totalWeight <= 0 || items.length === 0) return items.map(() => 0);
+  const raw = items.map((i) => (Math.max(0, i.weight) / totalWeight) * total);
+  const floors = raw.map((r) => Math.floor(r));
+  let remaining = total - floors.reduce((s, n) => s + n, 0);
+  const order = raw
+    .map((r, idx) => ({ idx, frac: r - Math.floor(r) }))
+    .sort((a, b) => b.frac - a.frac);
+  for (let k = 0; k < order.length && remaining > 0; k++) {
+    floors[order[k].idx] += 1;
+    remaining--;
+  }
+  return floors;
+}
+
 function loadSettings() {
   try {
     if (typeof window === "undefined") return null;
@@ -83,6 +117,15 @@ function loadSettings() {
           : 5,
       autoGenerate: typeof parsed.autoGenerate === "boolean" ? parsed.autoGenerate : true,
       shuffleOptions: typeof parsed.shuffleOptions === "boolean" ? parsed.shuffleOptions : false,
+      useBlueprint: typeof parsed.useBlueprint === "boolean" ? parsed.useBlueprint : false,
+      blueprint: Array.isArray(parsed.blueprint)
+        ? (parsed.blueprint as BlueprintItem[]).slice(0, 12).map((b) => ({
+            id: typeof b.id === "string" ? b.id : newBlueprintId(),
+            subject: typeof b.subject === "string" ? b.subject : "",
+            objectives: typeof b.objectives === "string" ? b.objectives : "",
+            weight: typeof b.weight === "number" ? Math.max(0, Math.min(100, b.weight)) : 0,
+          }))
+        : null,
     };
   } catch {
     return null;
