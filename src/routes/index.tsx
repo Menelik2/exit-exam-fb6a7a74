@@ -139,6 +139,10 @@ function ExamGeneratorPage() {
   const [numQuestions, setNumQuestions] = useState(saved?.numQuestions ?? 5);
   const [autoGenerate, setAutoGenerate] = useState(saved?.autoGenerate ?? true);
   const [shuffleOptions, setShuffleOptions] = useState(saved?.shuffleOptions ?? false);
+  const [useBlueprint, setUseBlueprint] = useState(saved?.useBlueprint ?? false);
+  const [blueprint, setBlueprint] = useState<BlueprintItem[]>(
+    saved?.blueprint && saved.blueprint.length > 0 ? saved.blueprint : DEFAULT_BLUEPRINT
+  );
   const [shuffleSeed, setShuffleSeed] = useState(1);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [revealed, setRevealed] = useState<Record<number, boolean>>({});
@@ -150,12 +154,29 @@ function ExamGeneratorPage() {
     try {
       localStorage.setItem(
         LS_KEY,
-        JSON.stringify({ topic, difficulty, numQuestions, autoGenerate, shuffleOptions })
+        JSON.stringify({
+          topic,
+          difficulty,
+          numQuestions,
+          autoGenerate,
+          shuffleOptions,
+          useBlueprint,
+          blueprint,
+        })
       );
     } catch {
       // ignore
     }
-  }, [topic, difficulty, numQuestions, autoGenerate, shuffleOptions]);
+  }, [topic, difficulty, numQuestions, autoGenerate, shuffleOptions, useBlueprint, blueprint]);
+
+  const counts = useMemo(
+    () => allocateCounts(blueprint, numQuestions || 0),
+    [blueprint, numQuestions]
+  );
+  const totalWeight = useMemo(
+    () => blueprint.reduce((s, b) => s + Math.max(0, b.weight), 0),
+    [blueprint]
+  );
 
   const generateFn = useServerFn(generateExam);
   const SEEN_LS_KEY = "exam-gen-seen-v1";
