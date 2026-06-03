@@ -26,6 +26,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Info,
+  ListChecks,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
