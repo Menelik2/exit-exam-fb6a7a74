@@ -490,12 +490,187 @@ function ExamGeneratorPage() {
                   onCheckedChange={setShuffleOptions}
                 />
               </label>
+              <label htmlFor="blueprint" className="flex cursor-pointer items-center justify-between">
+                <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <ListChecks className="h-3.5 w-3.5 text-primary" />
+                  Use exam blueprint
+                </span>
+                <Switch
+                  id="blueprint"
+                  checked={useBlueprint}
+                  onCheckedChange={setUseBlueprint}
+                />
+              </label>
             </div>
+
+            {useBlueprint && (
+              <div className="space-y-3 rounded-2xl border border-border bg-card/70 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Blueprint
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Subjects · objectives · weights
+                    </p>
+                  </div>
+                  <span
+                    className={cn(
+                      "rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider",
+                      totalWeight === 100
+                        ? "bg-emerald-500/15 text-emerald-700"
+                        : "bg-amber-500/15 text-amber-700"
+                    )}
+                    title="Weights are normalized automatically"
+                  >
+                    Σ {totalWeight}%
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  {blueprint.map((b, i) => {
+                    const pct =
+                      totalWeight > 0
+                        ? Math.round((Math.max(0, b.weight) / totalWeight) * 100)
+                        : 0;
+                    return (
+                      <div
+                        key={b.id}
+                        className="space-y-2 rounded-xl border border-border bg-background p-3"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={b.subject}
+                            onChange={(e) =>
+                              setBlueprint((prev) =>
+                                prev.map((x, k) =>
+                                  k === i ? { ...x, subject: e.target.value } : x
+                                )
+                              )
+                            }
+                            placeholder="Subject (e.g. Operating Systems)"
+                            className="h-9 flex-1 rounded-lg border-border bg-card text-sm"
+                          />
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            disabled={blueprint.length <= 1}
+                            onClick={() =>
+                              setBlueprint((prev) => prev.filter((_, k) => k !== i))
+                            }
+                            className="h-9 w-9 shrink-0 rounded-lg text-muted-foreground hover:text-destructive"
+                            aria-label="Remove subject"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+
+                        <Textarea
+                          value={b.objectives}
+                          onChange={(e) =>
+                            setBlueprint((prev) =>
+                              prev.map((x, k) =>
+                                k === i ? { ...x, objectives: e.target.value } : x
+                              )
+                            )
+                          }
+                          placeholder="Learning objectives (comma separated)"
+                          rows={2}
+                          className="rounded-lg border-border bg-card text-xs"
+                        />
+
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1">
+                            <input
+                              type="range"
+                              min={0}
+                              max={100}
+                              step={5}
+                              value={b.weight}
+                              onChange={(e) =>
+                                setBlueprint((prev) =>
+                                  prev.map((x, k) =>
+                                    k === i
+                                      ? { ...x, weight: parseInt(e.target.value, 10) }
+                                      : x
+                                  )
+                                )
+                              }
+                              className="h-2 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary"
+                              aria-label={`${b.subject || "Subject"} weight`}
+                            />
+                          </div>
+                          <div className="flex w-28 shrink-0 items-center justify-end gap-2 text-[11px] font-semibold text-muted-foreground">
+                            <span className="tabular-nums">{b.weight}%</span>
+                            <span className="text-muted-foreground/60">→</span>
+                            <span className="tabular-nums text-foreground">
+                              {pct}% · {counts[i] ?? 0}q
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center justify-between gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={blueprint.length >= 8}
+                    onClick={() =>
+                      setBlueprint((prev) => [
+                        ...prev,
+                        {
+                          id: newBlueprintId(),
+                          subject: "",
+                          objectives: "",
+                          weight: 10,
+                        },
+                      ])
+                    }
+                    className="h-8 rounded-lg text-xs"
+                  >
+                    <Plus className="mr-1 h-3 w-3" />
+                    Add subject
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const n = blueprint.length;
+                      if (n === 0) return;
+                      const even = Math.floor(100 / n);
+                      const rem = 100 - even * n;
+                      setBlueprint((prev) =>
+                        prev.map((x, k) => ({
+                          ...x,
+                          weight: even + (k === 0 ? rem : 0),
+                        }))
+                      );
+                    }}
+                    className="h-8 rounded-lg text-xs text-muted-foreground"
+                  >
+                    Even weights
+                  </Button>
+                </div>
+              </div>
+            )}
 
             <Button
               type={autoGenerate ? "button" : "submit"}
               onClick={autoGenerate ? () => run() : undefined}
-              disabled={mutation.isPending || !topic.trim()}
+              disabled={
+                mutation.isPending ||
+                (!useBlueprint && !topic.trim()) ||
+                (useBlueprint &&
+                  !blueprint.some(
+                    (b) => b.subject.trim().length > 0 && b.weight > 0
+                  ))
+              }
               className="h-12 w-full rounded-2xl bg-primary font-display font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 active:scale-[0.98]"
             >
               {mutation.isPending ? (
