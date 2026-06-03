@@ -400,15 +400,19 @@ function ExamGeneratorPage() {
                 htmlFor="topic"
                 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground"
               >
-                Topic
+                {useBlueprint ? "Course / Exam name (optional)" : "Topic"}
               </Label>
               <Input
                 id="topic"
-                placeholder="e.g. Data Structures"
+                placeholder={
+                  useBlueprint
+                    ? "e.g. Ethiopian Exit Exam — Computer Science"
+                    : "e.g. Data Structures"
+                }
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 className="h-11 rounded-xl border-border bg-card px-4 text-sm focus-visible:ring-primary/30"
-                required
+                required={!useBlueprint}
               />
             </div>
 
