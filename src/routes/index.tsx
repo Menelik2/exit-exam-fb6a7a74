@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Loader2,
   GraduationCap,
@@ -26,6 +27,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Info,
+  ListChecks,
+  Plus,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -61,6 +65,40 @@ function shuffle<T>(arr: T[], seed: number): T[] {
 
 const LS_KEY = "exam-gen-settings";
 
+type BlueprintItem = {
+  id: string;
+  subject: string;
+  objectives: string;
+  weight: number;
+};
+
+const DEFAULT_BLUEPRINT: BlueprintItem[] = [
+  { id: "b1", subject: "Software Engineering", objectives: "SDLC models, requirements engineering, design patterns", weight: 40 },
+  { id: "b2", subject: "Data Structures & Algorithms", objectives: "Trees, graphs, sorting, complexity analysis", weight: 35 },
+  { id: "b3", subject: "Database Systems", objectives: "Normalization, SQL, transactions, indexing", weight: 25 },
+];
+
+function newBlueprintId() {
+  return `b-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+}
+
+// Distribute total questions across items by weight using largest-remainder.
+function allocateCounts(items: BlueprintItem[], total: number): number[] {
+  const totalWeight = items.reduce((s, i) => s + Math.max(0, i.weight), 0);
+  if (totalWeight <= 0 || items.length === 0) return items.map(() => 0);
+  const raw = items.map((i) => (Math.max(0, i.weight) / totalWeight) * total);
+  const floors = raw.map((r) => Math.floor(r));
+  let remaining = total - floors.reduce((s, n) => s + n, 0);
+  const order = raw
+    .map((r, idx) => ({ idx, frac: r - Math.floor(r) }))
+    .sort((a, b) => b.frac - a.frac);
+  for (let k = 0; k < order.length && remaining > 0; k++) {
+    floors[order[k].idx] += 1;
+    remaining--;
+  }
+  return floors;
+}
+
 function loadSettings() {
   try {
     if (typeof window === "undefined") return null;
@@ -79,6 +117,15 @@ function loadSettings() {
           : 5,
       autoGenerate: typeof parsed.autoGenerate === "boolean" ? parsed.autoGenerate : true,
       shuffleOptions: typeof parsed.shuffleOptions === "boolean" ? parsed.shuffleOptions : false,
+      useBlueprint: typeof parsed.useBlueprint === "boolean" ? parsed.useBlueprint : false,
+      blueprint: Array.isArray(parsed.blueprint)
+        ? (parsed.blueprint as BlueprintItem[]).slice(0, 12).map((b) => ({
+            id: typeof b.id === "string" ? b.id : newBlueprintId(),
+            subject: typeof b.subject === "string" ? b.subject : "",
+            objectives: typeof b.objectives === "string" ? b.objectives : "",
+            weight: typeof b.weight === "number" ? Math.max(0, Math.min(100, b.weight)) : 0,
+          }))
+        : null,
     };
   } catch {
     return null;
@@ -92,6 +139,10 @@ function ExamGeneratorPage() {
   const [numQuestions, setNumQuestions] = useState(saved?.numQuestions ?? 5);
   const [autoGenerate, setAutoGenerate] = useState(saved?.autoGenerate ?? true);
   const [shuffleOptions, setShuffleOptions] = useState(saved?.shuffleOptions ?? false);
+  const [useBlueprint, setUseBlueprint] = useState(saved?.useBlueprint ?? false);
+  const [blueprint, setBlueprint] = useState<BlueprintItem[]>(
+    saved?.blueprint && saved.blueprint.length > 0 ? saved.blueprint : DEFAULT_BLUEPRINT
+  );
   const [shuffleSeed, setShuffleSeed] = useState(1);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [revealed, setRevealed] = useState<Record<number, boolean>>({});
@@ -103,12 +154,29 @@ function ExamGeneratorPage() {
     try {
       localStorage.setItem(
         LS_KEY,
-        JSON.stringify({ topic, difficulty, numQuestions, autoGenerate, shuffleOptions })
+        JSON.stringify({
+          topic,
+          difficulty,
+          numQuestions,
+          autoGenerate,
+          shuffleOptions,
+          useBlueprint,
+          blueprint,
+        })
       );
     } catch {
       // ignore
     }
-  }, [topic, difficulty, numQuestions, autoGenerate, shuffleOptions]);
+  }, [topic, difficulty, numQuestions, autoGenerate, shuffleOptions, useBlueprint, blueprint]);
+
+  const counts = useMemo(
+    () => allocateCounts(blueprint, numQuestions || 0),
+    [blueprint, numQuestions]
+  );
+  const totalWeight = useMemo(
+    () => blueprint.reduce((s, b) => s + Math.max(0, b.weight), 0),
+    [blueprint]
+  );
 
   const generateFn = useServerFn(generateExam);
   const SEEN_LS_KEY = "exam-gen-seen-v1";
@@ -147,6 +215,7 @@ function ExamGeneratorPage() {
       numQuestions: number;
       nonce: string;
       avoid: string[];
+      blueprint?: { subject: string; objectives: string; weight: number; count: number }[];
     }) => generateFn({ data: vars }),
     onSuccess: (res, vars) => {
       setAnswers({});
@@ -165,15 +234,47 @@ function ExamGeneratorPage() {
 
   const run = useCallback(
     (overrideNum?: number) => {
-      const t = topic.trim();
-      if (!t) return;
       const n = overrideNum ?? numQuestions;
       if (!n || n < 1) return;
+
+      // Build blueprint payload (only valid items with positive count)
+      let blueprintPayload:
+        | { subject: string; objectives: string; weight: number; count: number }[]
+        | undefined;
+      let effectiveTopic = topic.trim();
+
+      if (useBlueprint) {
+        const validItems = blueprint
+          .map((b, i) => ({ ...b, count: counts[i] ?? 0 }))
+          .filter((b) => b.subject.trim().length > 0 && b.count > 0);
+        if (validItems.length === 0) return;
+        blueprintPayload = validItems.map((b) => ({
+          subject: b.subject.trim(),
+          objectives: b.objectives.trim(),
+          weight: b.weight,
+          count: b.count,
+        }));
+        if (!effectiveTopic) {
+          effectiveTopic = `Ethiopian Exit Exam — ${validItems
+            .map((b) => b.subject.trim())
+            .join(", ")}`;
+        }
+      }
+
+      if (!effectiveTopic) return;
+
       const nonce = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-      const avoid = seenRef.current.get(seenKey(t, difficulty)) ?? [];
-      mutation.mutate({ topic: t, difficulty, numQuestions: n, nonce, avoid });
+      const avoid = seenRef.current.get(seenKey(effectiveTopic, difficulty)) ?? [];
+      mutation.mutate({
+        topic: effectiveTopic,
+        difficulty,
+        numQuestions: n,
+        nonce,
+        avoid,
+        blueprint: blueprintPayload,
+      });
     },
-    [topic, difficulty, numQuestions, mutation]
+    [topic, difficulty, numQuestions, mutation, useBlueprint, blueprint, counts]
   );
 
   useEffect(() => {
@@ -186,12 +287,23 @@ function ExamGeneratorPage() {
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const firstRunRef = useRef(true);
+  const blueprintKey = useMemo(
+    () =>
+      blueprint
+        .map((b) => `${b.subject}|${b.objectives}|${b.weight}`)
+        .join("¶"),
+    [blueprint]
+  );
   useEffect(() => {
     if (!autoGenerate) return;
-    if (!topic.trim()) return;
+    const hasTopic = topic.trim().length > 0;
+    const hasBlueprint =
+      useBlueprint &&
+      blueprint.some((b) => b.subject.trim().length > 0 && b.weight > 0);
+    if (!hasTopic && !hasBlueprint) return;
     if (!numQuestions || numQuestions < 1) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    const delay = firstRunRef.current ? 900 : 600;
+    const delay = firstRunRef.current ? 900 : 700;
     debounceRef.current = setTimeout(() => {
       firstRunRef.current = false;
       run();
@@ -200,7 +312,7 @@ function ExamGeneratorPage() {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topic, difficulty, numQuestions, autoGenerate]);
+  }, [topic, difficulty, numQuestions, autoGenerate, useBlueprint, blueprintKey]);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -288,15 +400,19 @@ function ExamGeneratorPage() {
                 htmlFor="topic"
                 className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground"
               >
-                Topic
+                {useBlueprint ? "Course / Exam name (optional)" : "Topic"}
               </Label>
               <Input
                 id="topic"
-                placeholder="e.g. Data Structures"
+                placeholder={
+                  useBlueprint
+                    ? "e.g. Ethiopian Exit Exam — Computer Science"
+                    : "e.g. Data Structures"
+                }
                 value={topic}
                 onChange={(e) => setTopic(e.target.value)}
                 className="h-11 rounded-xl border-border bg-card px-4 text-sm focus-visible:ring-primary/30"
-                required
+                required={!useBlueprint}
               />
             </div>
 
@@ -374,12 +490,187 @@ function ExamGeneratorPage() {
                   onCheckedChange={setShuffleOptions}
                 />
               </label>
+              <label htmlFor="blueprint" className="flex cursor-pointer items-center justify-between">
+                <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+                  <ListChecks className="h-3.5 w-3.5 text-primary" />
+                  Use exam blueprint
+                </span>
+                <Switch
+                  id="blueprint"
+                  checked={useBlueprint}
+                  onCheckedChange={setUseBlueprint}
+                />
+              </label>
             </div>
+
+            {useBlueprint && (
+              <div className="space-y-3 rounded-2xl border border-border bg-card/70 p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                      Blueprint
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Subjects · objectives · weights
+                    </p>
+                  </div>
+                  <span
+                    className={cn(
+                      "rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider",
+                      totalWeight === 100
+                        ? "bg-emerald-500/15 text-emerald-700"
+                        : "bg-amber-500/15 text-amber-700"
+                    )}
+                    title="Weights are normalized automatically"
+                  >
+                    Σ {totalWeight}%
+                  </span>
+                </div>
+
+                <div className="space-y-3">
+                  {blueprint.map((b, i) => {
+                    const pct =
+                      totalWeight > 0
+                        ? Math.round((Math.max(0, b.weight) / totalWeight) * 100)
+                        : 0;
+                    return (
+                      <div
+                        key={b.id}
+                        className="space-y-2 rounded-xl border border-border bg-background p-3"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Input
+                            value={b.subject}
+                            onChange={(e) =>
+                              setBlueprint((prev) =>
+                                prev.map((x, k) =>
+                                  k === i ? { ...x, subject: e.target.value } : x
+                                )
+                              )
+                            }
+                            placeholder="Subject (e.g. Operating Systems)"
+                            className="h-9 flex-1 rounded-lg border-border bg-card text-sm"
+                          />
+                          <Button
+                            type="button"
+                            size="icon"
+                            variant="ghost"
+                            disabled={blueprint.length <= 1}
+                            onClick={() =>
+                              setBlueprint((prev) => prev.filter((_, k) => k !== i))
+                            }
+                            className="h-9 w-9 shrink-0 rounded-lg text-muted-foreground hover:text-destructive"
+                            aria-label="Remove subject"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+
+                        <Textarea
+                          value={b.objectives}
+                          onChange={(e) =>
+                            setBlueprint((prev) =>
+                              prev.map((x, k) =>
+                                k === i ? { ...x, objectives: e.target.value } : x
+                              )
+                            )
+                          }
+                          placeholder="Learning objectives (comma separated)"
+                          rows={2}
+                          className="rounded-lg border-border bg-card text-xs"
+                        />
+
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1">
+                            <input
+                              type="range"
+                              min={0}
+                              max={100}
+                              step={5}
+                              value={b.weight}
+                              onChange={(e) =>
+                                setBlueprint((prev) =>
+                                  prev.map((x, k) =>
+                                    k === i
+                                      ? { ...x, weight: parseInt(e.target.value, 10) }
+                                      : x
+                                  )
+                                )
+                              }
+                              className="h-2 w-full cursor-pointer appearance-none rounded-full bg-muted accent-primary"
+                              aria-label={`${b.subject || "Subject"} weight`}
+                            />
+                          </div>
+                          <div className="flex w-28 shrink-0 items-center justify-end gap-2 text-[11px] font-semibold text-muted-foreground">
+                            <span className="tabular-nums">{b.weight}%</span>
+                            <span className="text-muted-foreground/60">→</span>
+                            <span className="tabular-nums text-foreground">
+                              {pct}% · {counts[i] ?? 0}q
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="flex items-center justify-between gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={blueprint.length >= 8}
+                    onClick={() =>
+                      setBlueprint((prev) => [
+                        ...prev,
+                        {
+                          id: newBlueprintId(),
+                          subject: "",
+                          objectives: "",
+                          weight: 10,
+                        },
+                      ])
+                    }
+                    className="h-8 rounded-lg text-xs"
+                  >
+                    <Plus className="mr-1 h-3 w-3" />
+                    Add subject
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      const n = blueprint.length;
+                      if (n === 0) return;
+                      const even = Math.floor(100 / n);
+                      const rem = 100 - even * n;
+                      setBlueprint((prev) =>
+                        prev.map((x, k) => ({
+                          ...x,
+                          weight: even + (k === 0 ? rem : 0),
+                        }))
+                      );
+                    }}
+                    className="h-8 rounded-lg text-xs text-muted-foreground"
+                  >
+                    Even weights
+                  </Button>
+                </div>
+              </div>
+            )}
 
             <Button
               type={autoGenerate ? "button" : "submit"}
               onClick={autoGenerate ? () => run() : undefined}
-              disabled={mutation.isPending || !topic.trim()}
+              disabled={
+                mutation.isPending ||
+                (!useBlueprint && !topic.trim()) ||
+                (useBlueprint &&
+                  !blueprint.some(
+                    (b) => b.subject.trim().length > 0 && b.weight > 0
+                  ))
+              }
               className="h-12 w-full rounded-2xl bg-primary font-display font-semibold text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:bg-primary/90 active:scale-[0.98]"
             >
               {mutation.isPending ? (
