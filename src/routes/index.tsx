@@ -1024,9 +1024,9 @@ function ExamGeneratorPage() {
             Question {String(safeIndex + 1).padStart(2, "0")} of{" "}
             {String(total).padStart(2, "0")}
           </span>
-          <h2 className="font-display text-xl font-bold leading-snug text-foreground sm:text-2xl">
+          <p className="text-base leading-relaxed text-foreground">
             {q.question}
-          </h2>
+          </p>
         </div>
 
         <div className="space-y-3">
@@ -1184,9 +1184,9 @@ function ExamGeneratorPage() {
               Review · Question {String(reviewIndex + 1).padStart(2, "0")} of{" "}
               {String(total).padStart(2, "0")}
             </span>
-            <h2 className="font-display text-xl font-bold leading-snug text-foreground sm:text-2xl">
+            <p className="text-base leading-relaxed text-foreground">
               {q.question}
-            </h2>
+            </p>
           </div>
           <span
             className={cn(
