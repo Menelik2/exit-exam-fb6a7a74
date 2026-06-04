@@ -693,6 +693,30 @@ function ExamGeneratorPage() {
                   </span>
                 </div>
 
+                <Select
+                  value=""
+                  onValueChange={(id) => {
+                    const preset = BLUEPRINT_PRESETS.find((p) => p.id === id);
+                    if (!preset) return;
+                    setBlueprint(
+                      preset.items.map((it) => ({ ...it, id: newBlueprintId() }))
+                    );
+                  }}
+                >
+                  <SelectTrigger className="h-10 w-full rounded-xl border-border bg-background px-3 text-xs">
+                    <SelectValue placeholder="Load Ethiopian Exit Exam preset…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {BLUEPRINT_PRESETS.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        <span className="font-medium">{p.label}</span>
+                        <span className="ml-2 text-muted-foreground">· {p.description}</span>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+
                 <div className="space-y-3">
                   {blueprint.map((b, i) => {
                     const pct =
