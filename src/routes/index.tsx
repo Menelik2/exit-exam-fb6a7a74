@@ -551,7 +551,34 @@ function ExamGeneratorPage() {
           <div className="flex items-center gap-3">
             <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
               <GraduationCap className="h-5 w-5" />
-            </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Preset
+                  </Label>
+                  <Select
+                    value=""
+                    onValueChange={(id) => {
+                      const preset = BLUEPRINT_PRESETS.find((p) => p.id === id);
+                      if (!preset) return;
+                      setBlueprint(
+                        preset.items.map((it) => ({ ...it, id: newBlueprintId() }))
+                      );
+                    }}
+                  >
+                    <SelectTrigger className="h-10 w-full rounded-xl border-border bg-card px-3 text-sm">
+                      <SelectValue placeholder="Load Ethiopian Exit Exam preset…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {BLUEPRINT_PRESETS.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
             <div>
               <h1 className="font-display text-lg font-bold tracking-tight text-foreground">
                 Exam Generator
