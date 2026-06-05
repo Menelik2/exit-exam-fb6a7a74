@@ -279,7 +279,7 @@ function loadSettings() {
       difficulty: validDiff ? (parsed.difficulty as Difficulty) : ("Intermediate" as Difficulty),
       numQuestions:
         typeof parsed.numQuestions === "number"
-          ? Math.max(1, Math.min(30, parsed.numQuestions))
+          ? Math.max(1, parsed.numQuestions)
           : 5,
       autoGenerate: typeof parsed.autoGenerate === "boolean" ? parsed.autoGenerate : true,
       shuffleOptions: typeof parsed.shuffleOptions === "boolean" ? parsed.shuffleOptions : false,
@@ -616,7 +616,6 @@ function ExamGeneratorPage() {
                   type="number"
                   inputMode="numeric"
                   min={1}
-                  max={30}
                   step={1}
                   className="h-11 rounded-xl border-border bg-card px-4 text-sm"
                   value={numQuestions === 0 ? "" : numQuestions}
@@ -628,7 +627,7 @@ function ExamGeneratorPage() {
                     }
                     const n = parseInt(raw, 10);
                     if (Number.isNaN(n)) return;
-                    setNumQuestions(Math.min(30, Math.max(0, n)));
+                    setNumQuestions(Math.max(1, n));
                   }}
                   onBlur={() => {
                     if (!numQuestions || numQuestions < 1) setNumQuestions(1);
@@ -919,7 +918,7 @@ function ExamGeneratorPage() {
                       disabled={mutation.isPending}
                       onClick={() => {
                         const wrong = total - correctCount;
-                        run(Math.max(1, Math.min(30, wrong)));
+                        run(Math.max(1, wrong));
                       }}
                     >
                       <RefreshCw

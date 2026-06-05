@@ -5,13 +5,13 @@ const BlueprintItemSchema = z.object({
   subject: z.string().min(1).max(120),
   objectives: z.string().max(800).optional().default(""),
   weight: z.number().min(0).max(100),
-  count: z.number().int().min(0).max(30),
+  count: z.number().int().min(0).max(200),
 });
 
 const InputSchema = z.object({
   topic: z.string().min(1).max(400),
   difficulty: z.enum(["Beginner", "Intermediate", "Advanced"]),
-  numQuestions: z.number().int().min(1).max(30),
+  numQuestions: z.number().int().min(1).max(200),
   nonce: z.string().optional(),
   avoid: z.array(z.string().min(1).max(500)).max(500).optional(),
   blueprint: z.array(BlueprintItemSchema).max(12).optional(),
