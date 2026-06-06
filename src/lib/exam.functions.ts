@@ -36,6 +36,7 @@ export const generateExam = createServerFn({ method: "POST" })
 Follow these standards strictly:
 - Align with the Ethiopian Exit Exam blueprint for the given topic/course (Bloom's levels: Understanding, Applying, Analyzing, Evaluating — minimize pure recall).
 - Use precise academic language. Questions must be unambiguous, self-contained, and free of trick wording.
+- Keep each question stem concise — ideally under 35 words and never over 60 words. Avoid long paragraphs or multi-sentence stems.
 - Each item must have exactly 4 plausible options (A–D style) with strong, realistic distractors based on common student misconceptions in Ethiopian universities.
 - Exactly one option must be unambiguously correct; "correct_answer" must match one option verbatim.
 - Vary subtopics, scenarios, and which option is correct across the set. Avoid pattern bias.
