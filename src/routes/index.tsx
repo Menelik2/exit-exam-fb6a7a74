@@ -299,16 +299,30 @@ function loadSettings() {
 }
 
 function ExamGeneratorPage() {
-  const saved = loadSettings();
-  const [topic, setTopic] = useState(saved?.topic ?? "");
-  const [difficulty, setDifficulty] = useState<Difficulty>(saved?.difficulty ?? "Intermediate");
-  const [numQuestions, setNumQuestions] = useState(saved?.numQuestions ?? 5);
-  const [autoGenerate, setAutoGenerate] = useState(saved?.autoGenerate ?? true);
-  const [shuffleOptions, setShuffleOptions] = useState(saved?.shuffleOptions ?? false);
-  const [useBlueprint, setUseBlueprint] = useState(saved?.useBlueprint ?? false);
-  const [blueprint, setBlueprint] = useState<BlueprintItem[]>(
-    saved?.blueprint && saved.blueprint.length > 0 ? saved.blueprint : DEFAULT_BLUEPRINT
-  );
+  const [topic, setTopic] = useState("");
+  const [difficulty, setDifficulty] = useState<Difficulty>("Intermediate");
+  const [numQuestions, setNumQuestions] = useState(5);
+  const [autoGenerate, setAutoGenerate] = useState(true);
+  const [shuffleOptions, setShuffleOptions] = useState(false);
+  const [useBlueprint, setUseBlueprint] = useState(false);
+  const [blueprint, setBlueprint] = useState<BlueprintItem[]>(DEFAULT_BLUEPRINT);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    const saved = loadSettings();
+    if (saved) {
+      setTopic(saved.topic ?? "");
+      setDifficulty(saved.difficulty ?? "Intermediate");
+      setNumQuestions(saved.numQuestions ?? 5);
+      setAutoGenerate(saved.autoGenerate ?? true);
+      setShuffleOptions(saved.shuffleOptions ?? false);
+      setUseBlueprint(saved.useBlueprint ?? false);
+      if (saved.blueprint && saved.blueprint.length > 0) {
+        setBlueprint(saved.blueprint);
+      }
+    }
+    setHydrated(true);
+  }, []);
   const [shuffleSeed, setShuffleSeed] = useState(1);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [revealed, setRevealed] = useState<Record<number, boolean>>({});
