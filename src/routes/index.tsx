@@ -1024,16 +1024,17 @@ function ExamGeneratorPage() {
               ) : mutation.data ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4" />
-                  Regenerate exam
+                  {docMode ? "Regenerate from document" : "Regenerate exam"}
                 </>
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Generate exam
+                  {docMode ? "Generate from document" : "Generate exam"}
                 </>
               )}
             </Button>
           </form>
+
 
           {total > 0 && (
             <div className="mt-1 border-t border-border/70 pt-6">
