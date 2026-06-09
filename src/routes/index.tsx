@@ -656,26 +656,83 @@ function ExamGeneratorPage() {
           </div>
 
           <form onSubmit={onSubmit} className="space-y-5">
+            {/* Document upload */}
             <div className="space-y-2">
-              <Label
-                htmlFor="topic"
-                className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground"
-              >
-                {useBlueprint ? "Course / Exam name (optional)" : "Topic"}
+              <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Source document (optional)
               </Label>
-              <Input
-                id="topic"
-                placeholder={
-                  useBlueprint
-                    ? "e.g. Ethiopian Exit Exam — Computer Science"
-                    : "e.g. Data Structures"
-                }
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                className="h-11 rounded-xl border-border bg-card px-4 text-sm focus-visible:ring-primary/30"
-                required={!useBlueprint}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                className="hidden"
+                onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
               />
+              {!docMode ? (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={docExtracting}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-card px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-60"
+                >
+                  {docExtracting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Reading document…
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4" />
+                      Upload PDF, DOCX, or TXT
+                    </>
+                  )}
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2.5">
+                  <FileText className="h-4 w-4 shrink-0 text-primary" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-semibold text-foreground">{docName}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {docText.length.toLocaleString()} chars · questions will use only this document
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearDocument}
+                    className="rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    aria-label="Remove document"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
+              {docError && (
+                <p className="text-xs text-destructive">{docError}</p>
+              )}
             </div>
+
+            {!docMode && (
+              <div className="space-y-2">
+                <Label
+                  htmlFor="topic"
+                  className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground"
+                >
+                  {useBlueprint ? "Course / Exam name (optional)" : "Topic"}
+                </Label>
+                <Input
+                  id="topic"
+                  placeholder={
+                    useBlueprint
+                      ? "e.g. Ethiopian Exit Exam — Computer Science"
+                      : "e.g. Data Structures"
+                  }
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  className="h-11 rounded-xl border-border bg-card px-4 text-sm focus-visible:ring-primary/30"
+                  required={!useBlueprint && !docMode}
+                />
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
