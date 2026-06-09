@@ -9,10 +9,11 @@ export async function extractDocumentText(file: File): Promise<string> {
   }
 
   if (name.endsWith(".docx") || type.includes("officedocument.wordprocessingml")) {
+    // @ts-expect-error - mammoth browser bundle has no types
     const mammoth = await import("mammoth/mammoth.browser");
     const buf = await file.arrayBuffer();
     const result = await mammoth.extractRawText({ arrayBuffer: buf });
-    return result.value.trim();
+    return (result.value as string).trim();
   }
 
   if (name.endsWith(".pdf") || type === "application/pdf") {
