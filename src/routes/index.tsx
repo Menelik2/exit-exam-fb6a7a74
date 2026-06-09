@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { generateExam, type ExamQuestion } from "@/lib/exam.functions";
+import { generateExam, generateExamFromDocument, type ExamQuestion } from "@/lib/exam.functions";
+import { extractDocumentText } from "@/lib/extract-document";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,6 +31,9 @@ import {
   ListChecks,
   Plus,
   Trash2,
+  Upload,
+  FileText,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -330,6 +334,14 @@ function ExamGeneratorPage() {
   const [reviewIndex, setReviewIndex] = useState(0);
   const [takingIndex, setTakingIndex] = useState(0);
 
+  // Document upload state
+  const [docName, setDocName] = useState("");
+  const [docText, setDocText] = useState("");
+  const [docExtracting, setDocExtracting] = useState(false);
+  const [docError, setDocError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const docMode = docText.length > 0;
+
   useEffect(() => {
     try {
       localStorage.setItem(
@@ -359,6 +371,7 @@ function ExamGeneratorPage() {
   );
 
   const generateFn = useServerFn(generateExam);
+  const generateDocFn = useServerFn(generateExamFromDocument);
   const SEEN_LS_KEY = "exam-gen-seen-v1";
   const seenRef = useRef<Map<string, string[]>>(new Map());
   const seenKey = (t: string, d: Difficulty) => `${d}::${t.trim().toLowerCase()}`;
@@ -388,15 +401,51 @@ function ExamGeneratorPage() {
     }
   }, []);
 
+  type RunVars =
+    | {
+        mode: "topic";
+        topic: string;
+        difficulty: Difficulty;
+        numQuestions: number;
+        nonce: string;
+        avoid: string[];
+        blueprint?: { subject: string; objectives: string; weight: number; count: number }[];
+      }
+    | {
+        mode: "doc";
+        documentName: string;
+        documentText: string;
+        difficulty: Difficulty;
+        numQuestions: number;
+        nonce: string;
+        avoid: string[];
+      };
+
   const mutation = useMutation({
-    mutationFn: (vars: {
-      topic: string;
-      difficulty: Difficulty;
-      numQuestions: number;
-      nonce: string;
-      avoid: string[];
-      blueprint?: { subject: string; objectives: string; weight: number; count: number }[];
-    }) => generateFn({ data: vars }),
+    mutationFn: (vars: RunVars) => {
+      if (vars.mode === "doc") {
+        return generateDocFn({
+          data: {
+            documentName: vars.documentName,
+            documentText: vars.documentText,
+            difficulty: vars.difficulty,
+            numQuestions: vars.numQuestions,
+            nonce: vars.nonce,
+            avoid: vars.avoid,
+          },
+        });
+      }
+      return generateFn({
+        data: {
+          topic: vars.topic,
+          difficulty: vars.difficulty,
+          numQuestions: vars.numQuestions,
+          nonce: vars.nonce,
+          avoid: vars.avoid,
+          blueprint: vars.blueprint,
+        },
+      });
+    },
     onSuccess: (res, vars) => {
       setAnswers({});
       setRevealed({});
@@ -404,7 +453,8 @@ function ExamGeneratorPage() {
       setReviewIndex(0);
       setTakingIndex(0);
       setShuffleSeed((s) => s + 1);
-      const key = seenKey(vars.topic, vars.difficulty);
+      const keyTopic = vars.mode === "doc" ? `doc::${vars.documentName}` : vars.topic;
+      const key = seenKey(keyTopic, vars.difficulty);
       const prev = seenRef.current.get(key) ?? [];
       const next = [...prev, ...res.questions.map((q) => q.question)].slice(-500);
       seenRef.current.set(key, next);
@@ -416,6 +466,22 @@ function ExamGeneratorPage() {
     (overrideNum?: number) => {
       const n = overrideNum ?? numQuestions;
       if (!n || n < 1) return;
+      const nonce = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+      // Document mode takes priority
+      if (docMode) {
+        const avoid = seenRef.current.get(seenKey(`doc::${docName}`, difficulty)) ?? [];
+        mutation.mutate({
+          mode: "doc",
+          documentName: docName || "Uploaded document",
+          documentText: docText,
+          difficulty,
+          numQuestions: n,
+          nonce,
+          avoid,
+        });
+        return;
+      }
 
       // Build blueprint payload (only valid items with positive count)
       let blueprintPayload:
@@ -443,9 +509,9 @@ function ExamGeneratorPage() {
 
       if (!effectiveTopic) return;
 
-      const nonce = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
       const avoid = seenRef.current.get(seenKey(effectiveTopic, difficulty)) ?? [];
       mutation.mutate({
+        mode: "topic",
         topic: effectiveTopic,
         difficulty,
         numQuestions: n,
@@ -454,8 +520,9 @@ function ExamGeneratorPage() {
         blueprint: blueprintPayload,
       });
     },
-    [topic, difficulty, numQuestions, mutation, useBlueprint, blueprint, counts]
+    [topic, difficulty, numQuestions, mutation, useBlueprint, blueprint, counts, docMode, docName, docText]
   );
+
 
   useEffect(() => {
     setAnswers({});
@@ -476,6 +543,7 @@ function ExamGeneratorPage() {
   );
   useEffect(() => {
     if (!autoGenerate) return;
+    if (docMode) return; // doc mode requires explicit click to avoid wasted runs
     const hasTopic = topic.trim().length > 0;
     const hasBlueprint =
       useBlueprint &&
@@ -492,7 +560,7 @@ function ExamGeneratorPage() {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topic, difficulty, numQuestions, autoGenerate, useBlueprint, blueprintKey]);
+  }, [topic, difficulty, numQuestions, autoGenerate, useBlueprint, blueprintKey, docMode]);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -557,6 +625,35 @@ function ExamGeneratorPage() {
   const pct = total > 0 ? Math.round((correctCount / total) * 100) : 0;
   const progressPct = total > 0 ? Math.round((answeredCount / total) * 100) : 0;
 
+  const handleFile = async (file: File | null) => {
+    if (!file) return;
+    setDocError(null);
+    setDocExtracting(true);
+    try {
+      const text = await extractDocumentText(file);
+      if (!text || text.length < 20) {
+        throw new Error("Couldn't extract readable text from this file. Try another document.");
+      }
+      // Cap to fit server-side limit (200k chars).
+      const trimmed = text.length > 190000 ? text.slice(0, 190000) : text;
+      setDocText(trimmed);
+      setDocName(file.name);
+    } catch (e) {
+      setDocError((e as Error).message || "Failed to read document.");
+      setDocText("");
+      setDocName("");
+    } finally {
+      setDocExtracting(false);
+    }
+  };
+
+  const clearDocument = () => {
+    setDocText("");
+    setDocName("");
+    setDocError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   return (
     <div className="min-h-screen w-full bg-background text-foreground p-3 sm:p-6 lg:p-8">
       <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 lg:grid-cols-[380px_1fr] lg:gap-8">
@@ -575,26 +672,83 @@ function ExamGeneratorPage() {
           </div>
 
           <form onSubmit={onSubmit} className="space-y-5">
+            {/* Document upload */}
             <div className="space-y-2">
-              <Label
-                htmlFor="topic"
-                className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground"
-              >
-                {useBlueprint ? "Course / Exam name (optional)" : "Topic"}
+              <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Source document (optional)
               </Label>
-              <Input
-                id="topic"
-                placeholder={
-                  useBlueprint
-                    ? "e.g. Ethiopian Exit Exam — Computer Science"
-                    : "e.g. Data Structures"
-                }
-                value={topic}
-                onChange={(e) => setTopic(e.target.value)}
-                className="h-11 rounded-xl border-border bg-card px-4 text-sm focus-visible:ring-primary/30"
-                required={!useBlueprint}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.docx,.txt,.md,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                className="hidden"
+                onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
               />
+              {!docMode ? (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={docExtracting}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-border bg-card px-4 py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-60"
+                >
+                  {docExtracting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Reading document…
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4" />
+                      Upload PDF, DOCX, or TXT
+                    </>
+                  )}
+                </button>
+              ) : (
+                <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-3 py-2.5">
+                  <FileText className="h-4 w-4 shrink-0 text-primary" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-xs font-semibold text-foreground">{docName}</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {docText.length.toLocaleString()} chars · questions will use only this document
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearDocument}
+                    className="rounded-md p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                    aria-label="Remove document"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
+              {docError && (
+                <p className="text-xs text-destructive">{docError}</p>
+              )}
             </div>
+
+            {!docMode && (
+              <div className="space-y-2">
+                <Label
+                  htmlFor="topic"
+                  className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground"
+                >
+                  {useBlueprint ? "Course / Exam name (optional)" : "Topic"}
+                </Label>
+                <Input
+                  id="topic"
+                  placeholder={
+                    useBlueprint
+                      ? "e.g. Ethiopian Exit Exam — Computer Science"
+                      : "e.g. Data Structures"
+                  }
+                  value={topic}
+                  onChange={(e) => setTopic(e.target.value)}
+                  className="h-11 rounded-xl border-border bg-card px-4 text-sm focus-visible:ring-primary/30"
+                  required={!useBlueprint && !docMode}
+                />
+              </div>
+            )}
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
@@ -864,12 +1018,14 @@ function ExamGeneratorPage() {
             )}
 
             <Button
-              type={autoGenerate ? "button" : "submit"}
-              onClick={autoGenerate ? () => run() : undefined}
+              type={autoGenerate && !docMode ? "button" : "submit"}
+              onClick={autoGenerate && !docMode ? () => run() : undefined}
               disabled={
                 mutation.isPending ||
-                (!useBlueprint && !topic.trim()) ||
-                (useBlueprint &&
+                docExtracting ||
+                (!docMode && !useBlueprint && !topic.trim()) ||
+                (!docMode &&
+                  useBlueprint &&
                   !blueprint.some(
                     (b) => b.subject.trim().length > 0 && b.weight > 0
                   ))
@@ -884,16 +1040,17 @@ function ExamGeneratorPage() {
               ) : mutation.data ? (
                 <>
                   <RefreshCw className="mr-2 h-4 w-4" />
-                  Regenerate exam
+                  {docMode ? "Regenerate from document" : "Regenerate exam"}
                 </>
               ) : (
                 <>
                   <Sparkles className="mr-2 h-4 w-4" />
-                  Generate exam
+                  {docMode ? "Generate from document" : "Generate exam"}
                 </>
               )}
             </Button>
           </form>
+
 
           {total > 0 && (
             <div className="mt-1 border-t border-border/70 pt-6">
