@@ -371,6 +371,7 @@ function ExamGeneratorPage() {
   );
 
   const generateFn = useServerFn(generateExam);
+  const generateDocFn = useServerFn(generateExamFromDocument);
   const SEEN_LS_KEY = "exam-gen-seen-v1";
   const seenRef = useRef<Map<string, string[]>>(new Map());
   const seenKey = (t: string, d: Difficulty) => `${d}::${t.trim().toLowerCase()}`;
@@ -400,15 +401,35 @@ function ExamGeneratorPage() {
     }
   }, []);
 
+  type RunVars =
+    | {
+        mode: "topic";
+        topic: string;
+        difficulty: Difficulty;
+        numQuestions: number;
+        nonce: string;
+        avoid: string[];
+        blueprint?: { subject: string; objectives: string; weight: number; count: number }[];
+      }
+    | {
+        mode: "doc";
+        documentName: string;
+        documentText: string;
+        difficulty: Difficulty;
+        numQuestions: number;
+        nonce: string;
+        avoid: string[];
+      };
+
   const mutation = useMutation({
-    mutationFn: (vars: {
-      topic: string;
-      difficulty: Difficulty;
-      numQuestions: number;
-      nonce: string;
-      avoid: string[];
-      blueprint?: { subject: string; objectives: string; weight: number; count: number }[];
-    }) => generateFn({ data: vars }),
+    mutationFn: (vars: RunVars) => {
+      if (vars.mode === "doc") {
+        const { mode: _m, ...payload } = vars;
+        return generateDocFn({ data: payload });
+      }
+      const { mode: _m, ...payload } = vars;
+      return generateFn({ data: payload });
+    },
     onSuccess: (res, vars) => {
       setAnswers({});
       setRevealed({});
@@ -416,7 +437,8 @@ function ExamGeneratorPage() {
       setReviewIndex(0);
       setTakingIndex(0);
       setShuffleSeed((s) => s + 1);
-      const key = seenKey(vars.topic, vars.difficulty);
+      const keyTopic = vars.mode === "doc" ? `doc::${vars.documentName}` : vars.topic;
+      const key = seenKey(keyTopic, vars.difficulty);
       const prev = seenRef.current.get(key) ?? [];
       const next = [...prev, ...res.questions.map((q) => q.question)].slice(-500);
       seenRef.current.set(key, next);
@@ -428,6 +450,22 @@ function ExamGeneratorPage() {
     (overrideNum?: number) => {
       const n = overrideNum ?? numQuestions;
       if (!n || n < 1) return;
+      const nonce = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
+      // Document mode takes priority
+      if (docMode) {
+        const avoid = seenRef.current.get(seenKey(`doc::${docName}`, difficulty)) ?? [];
+        mutation.mutate({
+          mode: "doc",
+          documentName: docName || "Uploaded document",
+          documentText: docText,
+          difficulty,
+          numQuestions: n,
+          nonce,
+          avoid,
+        });
+        return;
+      }
 
       // Build blueprint payload (only valid items with positive count)
       let blueprintPayload:
@@ -455,9 +493,9 @@ function ExamGeneratorPage() {
 
       if (!effectiveTopic) return;
 
-      const nonce = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
       const avoid = seenRef.current.get(seenKey(effectiveTopic, difficulty)) ?? [];
       mutation.mutate({
+        mode: "topic",
         topic: effectiveTopic,
         difficulty,
         numQuestions: n,
@@ -466,8 +504,9 @@ function ExamGeneratorPage() {
         blueprint: blueprintPayload,
       });
     },
-    [topic, difficulty, numQuestions, mutation, useBlueprint, blueprint, counts]
+    [topic, difficulty, numQuestions, mutation, useBlueprint, blueprint, counts, docMode, docName, docText]
   );
+
 
   useEffect(() => {
     setAnswers({});
