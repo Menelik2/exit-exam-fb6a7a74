@@ -334,6 +334,14 @@ function ExamGeneratorPage() {
   const [reviewIndex, setReviewIndex] = useState(0);
   const [takingIndex, setTakingIndex] = useState(0);
 
+  // Document upload state
+  const [docName, setDocName] = useState("");
+  const [docText, setDocText] = useState("");
+  const [docExtracting, setDocExtracting] = useState(false);
+  const [docError, setDocError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const docMode = docText.length > 0;
+
   useEffect(() => {
     try {
       localStorage.setItem(
