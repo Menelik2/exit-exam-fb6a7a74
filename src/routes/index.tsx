@@ -1002,12 +1002,14 @@ function ExamGeneratorPage() {
             )}
 
             <Button
-              type={autoGenerate ? "button" : "submit"}
-              onClick={autoGenerate ? () => run() : undefined}
+              type={autoGenerate && !docMode ? "button" : "submit"}
+              onClick={autoGenerate && !docMode ? () => run() : undefined}
               disabled={
                 mutation.isPending ||
-                (!useBlueprint && !topic.trim()) ||
-                (useBlueprint &&
+                docExtracting ||
+                (!docMode && !useBlueprint && !topic.trim()) ||
+                (!docMode &&
+                  useBlueprint &&
                   !blueprint.some(
                     (b) => b.subject.trim().length > 0 && b.weight > 0
                   ))
