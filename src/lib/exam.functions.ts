@@ -149,3 +149,113 @@ Variation seed: ${data.nonce ?? Date.now()} — generate a fresh, distinct set o
     const parsed = JSON.parse(toolCall.function.arguments) as { questions: ExamQuestion[] };
     return { questions: parsed.questions };
   });
+
+const DocInputSchema = z.object({
+  documentName: z.string().min(1).max(200),
+  documentText: z.string().min(20).max(200000),
+  difficulty: z.enum(["Beginner", "Intermediate", "Advanced"]),
+  numQuestions: z.number().int().min(1).max(200),
+  nonce: z.string().optional(),
+  avoid: z.array(z.string().min(1).max(500)).max(500).optional(),
+});
+
+export const generateExamFromDocument = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => DocInputSchema.parse(input))
+  .handler(async ({ data }): Promise<{ questions: ExamQuestion[] }> => {
+    const apiKey = process.env.LOVABLE_API_KEY;
+    if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
+
+    const systemPrompt = `You are a senior university professor writing rigorous multiple-choice exam questions STRICTLY from a provided source document.
+
+ABSOLUTE RULES:
+- Generate questions ONLY from facts, concepts, definitions, and examples explicitly present in the provided document. Do NOT introduce outside knowledge, opinions, or facts not in the document.
+- If the document does not contain enough material for the requested number, generate as many as the document supports — never fabricate.
+- Each question stem must be answerable from the document alone.
+- Keep each question stem concise (under 35 words, never over 60). No long paragraphs.
+- 4 plausible options, exactly one unambiguously correct; "correct_answer" must match an option verbatim.
+- Distractors must be plausible misreadings of the document, not random.
+- Vary subtopics across the whole document; avoid clustering only on the first pages.
+- Explanations MUST cite the relevant idea from the document and explain why each distractor is wrong.
+
+Respond ONLY via the provided tool. No prose, no markdown.`;
+
+    const avoidList = (data.avoid ?? []).slice(-200);
+    const avoidBlock =
+      avoidList.length > 0
+        ? `\n\nDo NOT repeat or rephrase these previously generated questions:\n${avoidList.map((q, i) => `${i + 1}. ${q}`).join("\n")}`
+        : "";
+
+    const userPrompt = `Source Document: "${data.documentName}"
+Difficulty: ${data.difficulty}
+Number of Questions: ${data.numQuestions}
+Variation seed: ${data.nonce ?? Date.now()}
+
+=== DOCUMENT CONTENT START ===
+${data.documentText}
+=== DOCUMENT CONTENT END ===
+
+Generate exactly ${data.numQuestions} multiple-choice questions based STRICTLY on the document above.${avoidBlock}`;
+
+    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-pro",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "return_exam",
+              description: "Return the generated multiple-choice exam",
+              parameters: {
+                type: "object",
+                properties: {
+                  questions: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        question_number: { type: "integer" },
+                        question: { type: "string" },
+                        options: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 4 },
+                        correct_answer: { type: "string" },
+                        explanation: { type: "string" },
+                      },
+                      required: ["question_number", "question", "options", "correct_answer", "explanation"],
+                      additionalProperties: false,
+                    },
+                  },
+                },
+                required: ["questions"],
+                additionalProperties: false,
+              },
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "return_exam" } },
+      }),
+    });
+
+    if (!response.ok) {
+      if (response.status === 429) throw new Error("Rate limit exceeded. Please try again in a moment.");
+      if (response.status === 402) throw new Error("AI credits exhausted. Please add credits to continue.");
+      const text = await response.text();
+      throw new Error(`AI request failed: ${response.status} ${text}`);
+    }
+
+    const json = await response.json();
+    const toolCall = json.choices?.[0]?.message?.tool_calls?.[0];
+    if (!toolCall?.function?.arguments) {
+      throw new Error("AI did not return structured exam data");
+    }
+    const parsed = JSON.parse(toolCall.function.arguments) as { questions: ExamQuestion[] };
+    return { questions: parsed.questions };
+  });
+
