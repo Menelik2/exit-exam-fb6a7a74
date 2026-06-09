@@ -609,6 +609,35 @@ function ExamGeneratorPage() {
   const pct = total > 0 ? Math.round((correctCount / total) * 100) : 0;
   const progressPct = total > 0 ? Math.round((answeredCount / total) * 100) : 0;
 
+  const handleFile = async (file: File | null) => {
+    if (!file) return;
+    setDocError(null);
+    setDocExtracting(true);
+    try {
+      const text = await extractDocumentText(file);
+      if (!text || text.length < 20) {
+        throw new Error("Couldn't extract readable text from this file. Try another document.");
+      }
+      // Cap to fit server-side limit (200k chars).
+      const trimmed = text.length > 190000 ? text.slice(0, 190000) : text;
+      setDocText(trimmed);
+      setDocName(file.name);
+    } catch (e) {
+      setDocError((e as Error).message || "Failed to read document.");
+      setDocText("");
+      setDocName("");
+    } finally {
+      setDocExtracting(false);
+    }
+  };
+
+  const clearDocument = () => {
+    setDocText("");
+    setDocName("");
+    setDocError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
   return (
     <div className="min-h-screen w-full bg-background text-foreground p-3 sm:p-6 lg:p-8">
       <div className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-6 lg:grid-cols-[380px_1fr] lg:gap-8">
