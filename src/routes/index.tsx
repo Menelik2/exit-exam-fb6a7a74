@@ -527,6 +527,7 @@ function ExamGeneratorPage() {
   );
   useEffect(() => {
     if (!autoGenerate) return;
+    if (docMode) return; // doc mode requires explicit click to avoid wasted runs
     const hasTopic = topic.trim().length > 0;
     const hasBlueprint =
       useBlueprint &&
@@ -543,7 +544,7 @@ function ExamGeneratorPage() {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topic, difficulty, numQuestions, autoGenerate, useBlueprint, blueprintKey]);
+  }, [topic, difficulty, numQuestions, autoGenerate, useBlueprint, blueprintKey, docMode]);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
