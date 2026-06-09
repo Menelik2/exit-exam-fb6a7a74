@@ -31,6 +31,9 @@ import {
   ListChecks,
   Plus,
   Trash2,
+  Upload,
+  FileText,
+  X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
