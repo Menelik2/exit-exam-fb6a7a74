@@ -424,11 +424,27 @@ function ExamGeneratorPage() {
   const mutation = useMutation({
     mutationFn: (vars: RunVars) => {
       if (vars.mode === "doc") {
-        const { mode: _m, ...payload } = vars;
-        return generateDocFn({ data: payload });
+        return generateDocFn({
+          data: {
+            documentName: vars.documentName,
+            documentText: vars.documentText,
+            difficulty: vars.difficulty,
+            numQuestions: vars.numQuestions,
+            nonce: vars.nonce,
+            avoid: vars.avoid,
+          },
+        });
       }
-      const { mode: _m, ...payload } = vars;
-      return generateFn({ data: payload });
+      return generateFn({
+        data: {
+          topic: vars.topic,
+          difficulty: vars.difficulty,
+          numQuestions: vars.numQuestions,
+          nonce: vars.nonce,
+          avoid: vars.avoid,
+          blueprint: vars.blueprint,
+        },
+      });
     },
     onSuccess: (res, vars) => {
       setAnswers({});
