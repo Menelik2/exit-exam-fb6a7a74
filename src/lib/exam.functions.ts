@@ -83,7 +83,7 @@ Variation seed: ${data.nonce ?? Date.now()} — generate a fresh, distinct set o
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -203,7 +203,7 @@ Generate exactly ${data.numQuestions} multiple-choice questions based STRICTLY o
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-pro",
+        model: "google/gemini-2.5-flash",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
