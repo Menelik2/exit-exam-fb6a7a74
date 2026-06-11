@@ -25,12 +25,64 @@ export type ExamQuestion = {
   explanation: string;
 };
 
+const GEMINI_MODEL = "gemini-2.5-flash-lite";
+
+const RESPONSE_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    questions: {
+      type: "ARRAY",
+      items: {
+        type: "OBJECT",
+        properties: {
+          question_number: { type: "INTEGER" },
+          question: { type: "STRING" },
+          options: { type: "ARRAY", items: { type: "STRING" } },
+          correct_answer: { type: "STRING" },
+          explanation: { type: "STRING" },
+        },
+        required: ["question_number", "question", "options", "correct_answer", "explanation"],
+      },
+    },
+  },
+  required: ["questions"],
+} as const;
+
+async function callGemini(systemPrompt: string, userPrompt: string): Promise<ExamQuestion[]> {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      system_instruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: RESPONSE_SCHEMA,
+        temperature: 0.9,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    if (response.status === 429) throw new Error("Gemini rate limit exceeded. Please try again in a moment.");
+    throw new Error(`Gemini request failed: ${response.status} ${text}`);
+  }
+
+  const json = await response.json();
+  const text: string | undefined = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!text) throw new Error("Gemini did not return content");
+  const parsed = JSON.parse(text) as { questions: ExamQuestion[] };
+  return parsed.questions;
+}
+
 export const generateExam = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }): Promise<{ questions: ExamQuestion[] }> => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
-
     const systemPrompt = `You are a senior Ethiopian university professor and official examiner for the Ethiopian Higher Education Exit Examination (EHEEE). You write rigorous, exam-grade multiple-choice questions that match the style, depth, and cognitive level of the real Ethiopian Exit Exam administered by the Ministry of Education.
 
 Follow these standards strictly:
@@ -43,14 +95,7 @@ Follow these standards strictly:
 - Explanations must be detailed, pedagogical, and explain WHY the correct answer is right AND why each distractor is wrong.
 - Where relevant, use Ethiopian context (local examples, units, case studies) without making questions region-locked.
 
-Respond ONLY with a JSON object via the provided tool. No prose, no markdown.
-
-JSON structure: an object with a "questions" array; each item:
-- "question_number": (int)
-- "question": (string) clear, exam-grade stem
-- "options": (array of 4 strings) plausible, mutually exclusive
-- "correct_answer": (string) exact verbatim match of one option
-- "explanation": (string) detailed rationale + distractor analysis`;
+Respond ONLY with valid JSON matching the schema. No prose, no markdown.`;
 
     const avoidList = (data.avoid ?? []).slice(-200);
     const avoidBlock =
@@ -66,9 +111,7 @@ JSON structure: an object with a "questions" array; each item:
               (b, i) =>
                 `${i + 1}. Subject: "${b.subject}" — ${b.count} question(s) (weight ${b.weight}%)${b.objectives ? `\n   Learning objectives to cover: ${b.objectives}` : ""}`
             )
-            .join(
-              "\n"
-            )}\n\nFor each subject, ensure the questions explicitly target the listed learning objectives. Do not exceed or fall short of the per-subject counts. Number questions globally 1..${data.numQuestions}.`
+            .join("\n")}\n\nFor each subject, ensure the questions explicitly target the listed learning objectives. Do not exceed or fall short of the per-subject counts. Number questions globally 1..${data.numQuestions}.`
         : "";
 
     const userPrompt = `Topic / Course: ${data.topic}
@@ -76,78 +119,8 @@ Difficulty: ${data.difficulty}
 Number of Questions: ${data.numQuestions}
 Variation seed: ${data.nonce ?? Date.now()} — generate a fresh, distinct set of questions different from any prior generation. Vary subtopics, phrasing, and which option is correct.${blueprintBlock}${avoidBlock}`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "return_exam",
-              description: "Return the generated multiple-choice exam",
-              parameters: {
-                type: "object",
-                properties: {
-                  questions: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        question_number: { type: "integer" },
-                        question: { type: "string" },
-                        options: {
-                          type: "array",
-                          items: { type: "string" },
-                          minItems: 4,
-                          maxItems: 4,
-                        },
-                        correct_answer: { type: "string" },
-                        explanation: { type: "string" },
-                      },
-                      required: [
-                        "question_number",
-                        "question",
-                        "options",
-                        "correct_answer",
-                        "explanation",
-                      ],
-                      additionalProperties: false,
-                    },
-                  },
-                },
-                required: ["questions"],
-                additionalProperties: false,
-              },
-            },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "return_exam" } },
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) throw new Error("Rate limit exceeded. Please try again in a moment.");
-      if (response.status === 402) throw new Error("AI credits exhausted. Please add credits to continue.");
-      const text = await response.text();
-      throw new Error(`AI request failed: ${response.status} ${text}`);
-    }
-
-    const json = await response.json();
-    const toolCall = json.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall?.function?.arguments) {
-      throw new Error("AI did not return structured exam data");
-    }
-    const parsed = JSON.parse(toolCall.function.arguments) as { questions: ExamQuestion[] };
-    return { questions: parsed.questions };
+    const questions = await callGemini(systemPrompt, userPrompt);
+    return { questions };
   });
 
 const DocInputSchema = z.object({
@@ -162,9 +135,6 @@ const DocInputSchema = z.object({
 export const generateExamFromDocument = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => DocInputSchema.parse(input))
   .handler(async ({ data }): Promise<{ questions: ExamQuestion[] }> => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("LOVABLE_API_KEY is not configured");
-
     const systemPrompt = `You are a senior university professor writing rigorous multiple-choice exam questions STRICTLY from a provided source document.
 
 ABSOLUTE RULES:
@@ -177,7 +147,7 @@ ABSOLUTE RULES:
 - Vary subtopics across the whole document; avoid clustering only on the first pages.
 - Explanations MUST cite the relevant idea from the document and explain why each distractor is wrong.
 
-Respond ONLY via the provided tool. No prose, no markdown.`;
+Respond ONLY with valid JSON matching the schema. No prose, no markdown.`;
 
     const avoidList = (data.avoid ?? []).slice(-200);
     const avoidBlock =
@@ -196,66 +166,6 @@ ${data.documentText}
 
 Generate exactly ${data.numQuestions} multiple-choice questions based STRICTLY on the document above.${avoidBlock}`;
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "return_exam",
-              description: "Return the generated multiple-choice exam",
-              parameters: {
-                type: "object",
-                properties: {
-                  questions: {
-                    type: "array",
-                    items: {
-                      type: "object",
-                      properties: {
-                        question_number: { type: "integer" },
-                        question: { type: "string" },
-                        options: { type: "array", items: { type: "string" }, minItems: 4, maxItems: 4 },
-                        correct_answer: { type: "string" },
-                        explanation: { type: "string" },
-                      },
-                      required: ["question_number", "question", "options", "correct_answer", "explanation"],
-                      additionalProperties: false,
-                    },
-                  },
-                },
-                required: ["questions"],
-                additionalProperties: false,
-              },
-            },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "return_exam" } },
-      }),
-    });
-
-    if (!response.ok) {
-      if (response.status === 429) throw new Error("Rate limit exceeded. Please try again in a moment.");
-      if (response.status === 402) throw new Error("AI credits exhausted. Please add credits to continue.");
-      const text = await response.text();
-      throw new Error(`AI request failed: ${response.status} ${text}`);
-    }
-
-    const json = await response.json();
-    const toolCall = json.choices?.[0]?.message?.tool_calls?.[0];
-    if (!toolCall?.function?.arguments) {
-      throw new Error("AI did not return structured exam data");
-    }
-    const parsed = JSON.parse(toolCall.function.arguments) as { questions: ExamQuestion[] };
-    return { questions: parsed.questions };
+    const questions = await callGemini(systemPrompt, userPrompt);
+    return { questions };
   });
-
