@@ -333,6 +333,7 @@ function ExamGeneratorPage() {
   const [reviewMode, setReviewMode] = useState(false);
   const [reviewIndex, setReviewIndex] = useState(0);
   const [takingIndex, setTakingIndex] = useState(0);
+  const [retakeSubset, setRetakeSubset] = useState<ExamQuestion[] | null>(null);
 
   // Document upload state
   const [docName, setDocName] = useState("");
