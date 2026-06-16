@@ -453,6 +453,7 @@ function ExamGeneratorPage() {
       setReviewMode(false);
       setReviewIndex(0);
       setTakingIndex(0);
+      setRetakeSubset(null);
       setShuffleSeed((s) => s + 1);
       const keyTopic = vars.mode === "doc" ? `doc::${vars.documentName}` : vars.topic;
       const key = seenKey(keyTopic, vars.difficulty);
