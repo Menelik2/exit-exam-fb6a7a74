@@ -333,6 +333,7 @@ function ExamGeneratorPage() {
   const [reviewMode, setReviewMode] = useState(false);
   const [reviewIndex, setReviewIndex] = useState(0);
   const [takingIndex, setTakingIndex] = useState(0);
+  const [retakeSubset, setRetakeSubset] = useState<ExamQuestion[] | null>(null);
 
   // Document upload state
   const [docName, setDocName] = useState("");
@@ -452,6 +453,7 @@ function ExamGeneratorPage() {
       setReviewMode(false);
       setReviewIndex(0);
       setTakingIndex(0);
+      setRetakeSubset(null);
       setShuffleSeed((s) => s + 1);
       const keyTopic = vars.mode === "doc" ? `doc::${vars.documentName}` : vars.topic;
       const key = seenKey(keyTopic, vars.difficulty);
@@ -567,7 +569,7 @@ function ExamGeneratorPage() {
     run();
   };
 
-  const rawQuestions: ExamQuestion[] = mutation.data?.questions ?? [];
+  const rawQuestions: ExamQuestion[] = retakeSubset ?? mutation.data?.questions ?? [];
 
   const displayedQuestions = useMemo(() => {
     if (!shuffleOptions) return rawQuestions;
@@ -1084,21 +1086,27 @@ function ExamGeneratorPage() {
                   {correctCount < total && (
                     <Button
                       size="sm"
-                      variant="outline"
                       className="flex-1 rounded-lg text-[11px] font-bold uppercase tracking-widest"
-                      disabled={mutation.isPending}
                       onClick={() => {
-                        const wrong = total - correctCount;
-                        run(Math.max(1, wrong));
+                        const wrongQs = displayedQuestions.filter(
+                          (q) => answers[q.question_number] !== q.correct_answer
+                        );
+                        if (wrongQs.length === 0) return;
+                        const renumbered = wrongQs.map((q, i) => ({
+                          ...q,
+                          question_number: i + 1,
+                        }));
+                        setRetakeSubset(renumbered);
+                        setAnswers({});
+                        setRevealed({});
+                        setReviewMode(false);
+                        setReviewIndex(0);
+                        setTakingIndex(0);
+                        setShuffleSeed((s) => s + 1);
                       }}
                     >
-                      <RefreshCw
-                        className={cn(
-                          "mr-1.5 h-3 w-3",
-                          mutation.isPending && "animate-spin"
-                        )}
-                      />
-                      Retake wrong
+                      <RefreshCw className="mr-1.5 h-3 w-3" />
+                      Retake wrong ({total - correctCount})
                     </Button>
                   )}
                 </div>
