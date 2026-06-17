@@ -334,6 +334,8 @@ function ExamGeneratorPage() {
   const [reviewIndex, setReviewIndex] = useState(0);
   const [takingIndex, setTakingIndex] = useState(0);
   const [retakeSubset, setRetakeSubset] = useState<ExamQuestion[] | null>(null);
+  const [retakeReviewMode, setRetakeReviewMode] = useState(false);
+  const [retakeReviewIndex, setRetakeReviewIndex] = useState(0);
 
   // Document upload state
   const [docName, setDocName] = useState("");
@@ -454,6 +456,8 @@ function ExamGeneratorPage() {
       setReviewIndex(0);
       setTakingIndex(0);
       setRetakeSubset(null);
+      setRetakeReviewMode(false);
+      setRetakeReviewIndex(0);
       setShuffleSeed((s) => s + 1);
       const keyTopic = vars.mode === "doc" ? `doc::${vars.documentName}` : vars.topic;
       const key = seenKey(keyTopic, vars.difficulty);
@@ -532,6 +536,8 @@ function ExamGeneratorPage() {
     setReviewMode(false);
     setReviewIndex(0);
     setTakingIndex(0);
+    setRetakeReviewMode(false);
+    setRetakeReviewIndex(0);
   }, [topic, difficulty, numQuestions]);
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -585,10 +591,12 @@ function ExamGeneratorPage() {
     setReviewMode(false);
     setReviewIndex(0);
     setTakingIndex(0);
+    setRetakeReviewMode(false);
+    setRetakeReviewIndex(0);
   }, [shuffleOptions, shuffleSeed]);
 
   useEffect(() => {
-    if (reviewMode || displayedQuestions.length === 0) return;
+    if (reviewMode || retakeReviewMode || displayedQuestions.length === 0) return;
     const handler = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement | null)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
@@ -611,7 +619,7 @@ function ExamGeneratorPage() {
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [reviewMode, displayedQuestions, takingIndex, revealed]);
+  }, [reviewMode, retakeReviewMode, displayedQuestions, takingIndex, revealed]);
 
   // Derived stats for sidebar
   const total = displayedQuestions.length;
@@ -1071,45 +1079,62 @@ function ExamGeneratorPage() {
                 />
               </div>
               {allRevealed && (
-                <div className="mt-4 flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="flex-1 rounded-lg text-[11px] font-bold uppercase tracking-widest"
-                    onClick={() => {
-                      setReviewMode((r) => !r);
-                      setReviewIndex(0);
-                    }}
-                  >
-                    {reviewMode ? "Exit review" : "Review"}
-                  </Button>
-                  {correctCount < total && (
+                <>
+                  <div className="mt-4 flex gap-2">
                     <Button
+                      variant="outline"
                       size="sm"
                       className="flex-1 rounded-lg text-[11px] font-bold uppercase tracking-widest"
                       onClick={() => {
-                        const wrongQs = displayedQuestions.filter(
-                          (q) => answers[q.question_number] !== q.correct_answer
-                        );
-                        if (wrongQs.length === 0) return;
-                        const renumbered = wrongQs.map((q, i) => ({
-                          ...q,
-                          question_number: i + 1,
-                        }));
-                        setRetakeSubset(renumbered);
-                        setAnswers({});
-                        setRevealed({});
-                        setReviewMode(false);
+                        setRetakeReviewMode(false);
+                        setReviewMode((r) => !r);
                         setReviewIndex(0);
-                        setTakingIndex(0);
-                        setShuffleSeed((s) => s + 1);
                       }}
                     >
-                      <RefreshCw className="mr-1.5 h-3 w-3" />
-                      Retake wrong ({total - correctCount})
+                      {reviewMode ? "Exit review" : "Review"}
+                    </Button>
+                    {correctCount < total && (
+                      <Button
+                        size="sm"
+                        className="flex-1 rounded-lg text-[11px] font-bold uppercase tracking-widest"
+                        onClick={() => {
+                          const wrongQs = displayedQuestions.filter(
+                            (q) => answers[q.question_number] !== q.correct_answer
+                          );
+                          if (wrongQs.length === 0) return;
+                          const renumbered = wrongQs.map((q, i) => ({
+                            ...q,
+                            question_number: i + 1,
+                          }));
+                          setRetakeSubset(renumbered);
+                          setAnswers({});
+                          setRevealed({});
+                          setReviewMode(false);
+                          setReviewIndex(0);
+                          setTakingIndex(0);
+                          setShuffleSeed((s) => s + 1);
+                        }}
+                      >
+                        <RefreshCw className="mr-1.5 h-3 w-3" />
+                        Retake wrong ({total - correctCount})
+                      </Button>
+                    )}
+                  </div>
+                  {retakeSubset && correctCount < total && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2 w-full rounded-lg text-[11px] font-bold uppercase tracking-widest"
+                      onClick={() => {
+                        setRetakeReviewMode(true);
+                        setRetakeReviewIndex(0);
+                      }}
+                    >
+                      <Info className="mr-1.5 h-3 w-3" />
+                      Review missed ({total - correctCount})
                     </Button>
                   )}
-                </div>
+                </>
               )}
             </div>
           )}
@@ -1146,40 +1171,44 @@ function ExamGeneratorPage() {
           {!mutation.isPending && total > 0 && (
             <>
               {/* Progress dots */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                {displayedQuestions.map((qq, i) => {
-                  const answered = answers[qq.question_number] !== undefined;
-                  const correct =
-                    answered && answers[qq.question_number] === qq.correct_answer;
-                  const idx = reviewMode ? reviewIndex : takingIndex;
-                  const isCurrent = i === idx;
-                  return (
-                    <button
-                      key={qq.question_number}
-                      type="button"
-                      onClick={() =>
-                        reviewMode ? setReviewIndex(i) : setTakingIndex(i)
-                      }
-                      className={cn(
-                        "h-2.5 shrink-0 rounded-full transition-all",
-                        isCurrent ? "w-6" : "w-2.5",
-                        !answered && "bg-muted",
-                        answered && !reviewMode && !allRevealed && "bg-primary",
-                        answered && (reviewMode || allRevealed) && correct && "bg-emerald-500",
-                        answered && (reviewMode || allRevealed) && !correct && "bg-destructive"
-                      )}
-                      aria-label={`Question ${qq.question_number}`}
-                    />
-                  );
-                })}
-                <span className="ml-auto shrink-0 pl-3 text-xs text-muted-foreground">
-                  {reviewMode ? "Review" : `${answeredCount}/${total} answered`}
-                </span>
-              </div>
+              {!retakeReviewMode && (
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+                  {displayedQuestions.map((qq, i) => {
+                    const answered = answers[qq.question_number] !== undefined;
+                    const correct =
+                      answered && answers[qq.question_number] === qq.correct_answer;
+                    const idx = reviewMode ? reviewIndex : takingIndex;
+                    const isCurrent = i === idx;
+                    return (
+                      <button
+                        key={qq.question_number}
+                        type="button"
+                        onClick={() =>
+                          reviewMode ? setReviewIndex(i) : setTakingIndex(i)
+                        }
+                        className={cn(
+                          "h-2.5 shrink-0 rounded-full transition-all",
+                          isCurrent ? "w-6" : "w-2.5",
+                          !answered && "bg-muted",
+                          answered && !reviewMode && !allRevealed && "bg-primary",
+                          answered && (reviewMode || allRevealed) && correct && "bg-emerald-500",
+                          answered && (reviewMode || allRevealed) && !correct && "bg-destructive"
+                        )}
+                        aria-label={`Question ${qq.question_number}`}
+                      />
+                    );
+                  })}
+                  <span className="ml-auto shrink-0 pl-3 text-xs text-muted-foreground">
+                    {reviewMode ? "Review" : `${answeredCount}/${total} answered`}
+                  </span>
+                </div>
+              )}
 
-              {reviewMode
-                ? renderReviewCard()
-                : renderTakingCard()}
+              {retakeReviewMode
+                ? renderRetakeReviewCard()
+                : reviewMode
+                  ? renderReviewCard()
+                  : renderTakingCard()}
             </>
           )}
         </main>
@@ -1449,6 +1478,111 @@ function ExamGeneratorPage() {
           <Button
             disabled={reviewIndex === total - 1}
             onClick={() => setReviewIndex((i) => Math.min(total - 1, i + 1))}
+            className="rounded-xl bg-foreground font-display font-semibold text-background hover:bg-foreground/90"
+          >
+            Next
+            <ChevronRight className="ml-1 h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  function renderRetakeReviewCard() {
+    const wrongQs = displayedQuestions.filter(
+      (q) => answers[q.question_number] !== q.correct_answer
+    );
+    const q = wrongQs[retakeReviewIndex];
+
+    if (wrongQs.length === 0 || !q) {
+      return (
+        <div className="flex flex-col items-center justify-center gap-4 rounded-[28px] border border-border bg-card p-10">
+          <CheckCircle2 className="h-10 w-10 text-emerald-500" />
+          <p className="text-lg font-semibold text-foreground">Great job!</p>
+          <p className="text-sm text-muted-foreground">
+            You answered all retake questions correctly.
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => setRetakeReviewMode(false)}
+            className="rounded-xl"
+          >
+            Back to score
+          </Button>
+        </div>
+      );
+    }
+
+    return (
+      <div className="flex flex-1 flex-col gap-6 rounded-[28px] border border-border bg-card p-6 shadow-sm sm:p-10">
+        <div>
+          <span className="mb-3 block font-display text-xs font-bold uppercase tracking-[0.2em] text-primary">
+            Review missed · {retakeReviewIndex + 1} of {wrongQs.length}
+          </span>
+          <p className="text-base leading-relaxed text-foreground">{q.question}</p>
+        </div>
+
+        <div className="space-y-3">
+          {q.options.map((opt, i) => {
+            const letter = String.fromCharCode(65 + i);
+            const isAnswer = opt === q.correct_answer;
+            return (
+              <div
+                key={i}
+                className={cn(
+                  "flex items-center gap-4 rounded-2xl border-2 p-4 sm:p-5",
+                  isAnswer
+                    ? "border-emerald-500 bg-emerald-500/10"
+                    : "border-border opacity-60"
+                )}
+              >
+                <span
+                  className={cn(
+                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg font-display text-sm font-bold",
+                    isAnswer ? "bg-emerald-500 text-white" : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  {letter}
+                </span>
+                <span className="flex-1 text-sm font-medium text-foreground sm:text-base">
+                  {opt}
+                </span>
+                {isAnswer && <CheckCircle2 className="h-5 w-5 text-emerald-600" />}
+              </div>
+            );
+          })}
+        </div>
+
+        <div className="rounded-2xl border border-border bg-secondary/60 p-5">
+          <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            <Info className="h-4 w-4" />
+            Explanation
+          </div>
+          <p className="text-sm leading-relaxed text-foreground">{q.explanation}</p>
+        </div>
+
+        <div className="mt-auto flex items-center justify-between gap-3 pt-2">
+          <Button
+            variant="outline"
+            disabled={retakeReviewIndex === 0}
+            onClick={() => setRetakeReviewIndex((i) => Math.max(0, i - 1))}
+            className="rounded-xl"
+          >
+            <ChevronLeft className="mr-1 h-4 w-4" />
+            Previous
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => setRetakeReviewMode(false)}
+            className="rounded-xl"
+          >
+            Exit review
+          </Button>
+          <Button
+            disabled={retakeReviewIndex === wrongQs.length - 1}
+            onClick={() =>
+              setRetakeReviewIndex((i) => Math.min(wrongQs.length - 1, i + 1))
+            }
             className="rounded-xl bg-foreground font-display font-semibold text-background hover:bg-foreground/90"
           >
             Next
