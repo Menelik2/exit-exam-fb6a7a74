@@ -36,6 +36,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AccountPanel } from "@/components/account-panel";
 
 export const Route = createFileRoute("/")({
   component: ExamGeneratorPage,
@@ -311,6 +312,7 @@ function ExamGeneratorPage() {
   const [useBlueprint, setUseBlueprint] = useState(false);
   const [blueprint, setBlueprint] = useState<BlueprintItem[]>(DEFAULT_BLUEPRINT);
   const [hydrated, setHydrated] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
     const saved = loadSettings();
@@ -551,6 +553,7 @@ function ExamGeneratorPage() {
   );
   useEffect(() => {
     if (!autoGenerate) return;
+    if (!signedIn) return;
     if (docMode) return; // doc mode requires explicit click to avoid wasted runs
     const hasTopic = topic.trim().length > 0;
     const hasBlueprint =
@@ -568,7 +571,7 @@ function ExamGeneratorPage() {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topic, difficulty, numQuestions, autoGenerate, useBlueprint, blueprintKey, docMode]);
+  }, [topic, difficulty, numQuestions, autoGenerate, useBlueprint, blueprintKey, docMode, signedIn]);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -681,7 +684,10 @@ function ExamGeneratorPage() {
             </div>
           </div>
 
+          <AccountPanel onAuthChange={setSignedIn} />
+
           <form onSubmit={onSubmit} className="space-y-5">
+
             {/* Document upload */}
             <div className="space-y-2">
               <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
