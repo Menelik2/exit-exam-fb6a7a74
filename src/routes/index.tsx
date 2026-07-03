@@ -684,7 +684,10 @@ function ExamGeneratorPage() {
             </div>
           </div>
 
+          <AccountPanel onAuthChange={setSignedIn} />
+
           <form onSubmit={onSubmit} className="space-y-5">
+
             {/* Document upload */}
             <div className="space-y-2">
               <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
