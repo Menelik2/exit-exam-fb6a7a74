@@ -1,5 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 const BlueprintItemSchema = z.object({
   subject: z.string().min(1).max(120),
@@ -50,9 +52,21 @@ const RESPONSE_SCHEMA = {
 
 const MODEL_FALLBACKS = [GEMINI_MODEL, "gemini-2.5-flash", "gemini-2.0-flash"];
 
-async function callGemini(systemPrompt: string, userPrompt: string): Promise<ExamQuestion[]> {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
+async function fetchUserGeminiKey(supabase: SupabaseClient, userId: string): Promise<string> {
+  const { data, error } = await supabase
+    .from("user_gemini_keys")
+    .select("api_key")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data?.api_key) {
+    throw new Error("NO_GEMINI_KEY: Add your Gemini API key in the sidebar to generate exams.");
+  }
+  return data.api_key as string;
+}
+
+async function callGemini(apiKey: string, systemPrompt: string, userPrompt: string): Promise<ExamQuestion[]> {
+  if (!apiKey) throw new Error("Gemini API key missing");
 
   const body = JSON.stringify({
     system_instruction: { parts: [{ text: systemPrompt }] },
@@ -97,8 +111,10 @@ async function callGemini(systemPrompt: string, userPrompt: string): Promise<Exa
 }
 
 export const generateExam = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => InputSchema.parse(input))
-  .handler(async ({ data }): Promise<{ questions: ExamQuestion[] }> => {
+  .handler(async ({ data, context }): Promise<{ questions: ExamQuestion[] }> => {
+    const apiKey = await fetchUserGeminiKey(context.supabase, context.userId);
     const systemPrompt = `You are a senior Ethiopian university professor and official examiner for the Ethiopian Higher Education Exit Examination (EHEEE). You write rigorous, exam-grade multiple-choice questions that match the style, depth, and cognitive level of the real Ethiopian Exit Exam administered by the Ministry of Education.
 
 Follow these standards strictly:
