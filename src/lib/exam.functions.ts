@@ -48,36 +48,52 @@ const RESPONSE_SCHEMA = {
   required: ["questions"],
 } as const;
 
+const MODEL_FALLBACKS = [GEMINI_MODEL, "gemini-2.5-flash", "gemini-2.0-flash"];
+
 async function callGemini(systemPrompt: string, userPrompt: string): Promise<ExamQuestion[]> {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error("GEMINI_API_KEY is not configured");
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      system_instruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ role: "user", parts: [{ text: userPrompt }] }],
-      generationConfig: {
-        responseMimeType: "application/json",
-        responseSchema: RESPONSE_SCHEMA,
-        temperature: 0.9,
-      },
-    }),
+  const body = JSON.stringify({
+    system_instruction: { parts: [{ text: systemPrompt }] },
+    contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: RESPONSE_SCHEMA,
+      temperature: 0.9,
+    },
   });
 
-  if (!response.ok) {
-    const text = await response.text();
-    if (response.status === 429) throw new Error("Gemini rate limit exceeded. Please try again in a moment.");
-    throw new Error(`Gemini request failed: ${response.status} ${text}`);
-  }
+  let lastErr = "";
+  for (const model of MODEL_FALLBACKS) {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body,
+      });
 
-  const json = await response.json();
-  const text: string | undefined = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) throw new Error("Gemini did not return content");
-  const parsed = JSON.parse(text) as { questions: ExamQuestion[] };
-  return parsed.questions;
+      if (response.ok) {
+        const json = await response.json();
+        const text: string | undefined = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) throw new Error("Gemini did not return content");
+        const parsed = JSON.parse(text) as { questions: ExamQuestion[] };
+        return parsed.questions;
+      }
+
+      const text = await response.text();
+      lastErr = `${response.status} ${text}`;
+
+      if (response.status === 429) throw new Error("Gemini is rate limited. Please try again in a moment.");
+      if (response.status === 503 || response.status === 500 || response.status === 502) {
+        await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+        continue;
+      }
+      throw new Error(`Gemini request failed: ${lastErr}`);
+    }
+  }
+  throw new Error(`Gemini is overloaded right now. Please try again in a moment.`);
 }
 
 export const generateExam = createServerFn({ method: "POST" })
