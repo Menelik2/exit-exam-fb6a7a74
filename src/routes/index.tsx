@@ -36,6 +36,7 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { AccountPanel } from "@/components/account-panel";
 
 export const Route = createFileRoute("/")({
   component: ExamGeneratorPage,
@@ -311,6 +312,7 @@ function ExamGeneratorPage() {
   const [useBlueprint, setUseBlueprint] = useState(false);
   const [blueprint, setBlueprint] = useState<BlueprintItem[]>(DEFAULT_BLUEPRINT);
   const [hydrated, setHydrated] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
 
   useEffect(() => {
     const saved = loadSettings();
