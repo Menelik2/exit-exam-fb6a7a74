@@ -151,7 +151,7 @@ Difficulty: ${data.difficulty}
 Number of Questions: ${data.numQuestions}
 Variation seed: ${data.nonce ?? Date.now()} — generate a fresh, distinct set of questions different from any prior generation. Vary subtopics, phrasing, and which option is correct.${blueprintBlock}${avoidBlock}`;
 
-    const questions = await callGemini(systemPrompt, userPrompt);
+    const questions = await callGemini(apiKey, systemPrompt, userPrompt);
     return { questions };
   });
 
@@ -165,8 +165,10 @@ const DocInputSchema = z.object({
 });
 
 export const generateExamFromDocument = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => DocInputSchema.parse(input))
-  .handler(async ({ data }): Promise<{ questions: ExamQuestion[] }> => {
+  .handler(async ({ data, context }): Promise<{ questions: ExamQuestion[] }> => {
+    const apiKey = await fetchUserGeminiKey(context.supabase, context.userId);
     const systemPrompt = `You are a senior university professor writing rigorous multiple-choice exam questions STRICTLY from a provided source document.
 
 ABSOLUTE RULES:
@@ -198,6 +200,6 @@ ${data.documentText}
 
 Generate exactly ${data.numQuestions} multiple-choice questions based STRICTLY on the document above.${avoidBlock}`;
 
-    const questions = await callGemini(systemPrompt, userPrompt);
+    const questions = await callGemini(apiKey, systemPrompt, userPrompt);
     return { questions };
   });
