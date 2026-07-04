@@ -119,21 +119,21 @@ export function AccountPanel({ onAuthChange }: { onAuthChange?: (signedIn: boole
 
   return (
     <div className="space-y-3 rounded-2xl border border-border bg-card/70 p-4">
-      <div className="flex items-center justify-between gap-2">
+      <div className="space-y-2">
         <div className="min-w-0">
           <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-            <UserCircle2 className="h-3 w-3" /> Signed in
+            <UserCircle2 className="h-3 w-3" /> Signed in with Google
           </p>
           <p className="truncate text-sm font-semibold text-foreground">{auth.email}</p>
         </div>
-        <button
+        <Button
           type="button"
+          variant="outline"
           onClick={onSignOut}
-          title="Sign out"
-          className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+          className="h-9 w-full rounded-lg text-xs text-destructive hover:text-destructive gap-1.5"
         >
-          <LogOut className="h-4 w-4" />
-        </button>
+          <LogOut className="h-3.5 w-3.5" /> Sign out
+        </Button>
       </div>
 
       <div className="border-t border-border pt-3">
