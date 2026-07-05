@@ -640,6 +640,27 @@ function ExamGeneratorPage() {
   const pct = total > 0 ? Math.round((correctCount / total) * 100) : 0;
   const progressPct = total > 0 ? Math.round((answeredCount / total) * 100) : 0;
 
+  // Reset flagged + timer when a new exam loads or shuffle/topic changes
+  useEffect(() => {
+    setFlagged({});
+    setElapsedSec(0);
+  }, [rawQuestions, shuffleSeed]);
+
+  // Elapsed timer: ticks while an exam is in progress and not fully answered
+  useEffect(() => {
+    if (total === 0 || allRevealed || reviewMode || retakeReviewMode) return;
+    const id = setInterval(() => setElapsedSec((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [total, allRevealed, reviewMode, retakeReviewMode]);
+
+  const formatTime = (s: number) => {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return h > 0 ? `${pad(h)}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
+  };
+
   const handleFile = async (file: File | null) => {
     if (!file) return;
     setDocError(null);
