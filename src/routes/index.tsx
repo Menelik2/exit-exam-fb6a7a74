@@ -34,6 +34,8 @@ import {
   Upload,
   FileText,
   X,
+  Flag,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AccountPanel } from "@/components/account-panel";
@@ -332,6 +334,8 @@ function ExamGeneratorPage() {
   const [shuffleSeed, setShuffleSeed] = useState(1);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [revealed, setRevealed] = useState<Record<number, boolean>>({});
+  const [flagged, setFlagged] = useState<Record<number, boolean>>({});
+  const [elapsedSec, setElapsedSec] = useState(0);
   const [reviewMode, setReviewMode] = useState(false);
   const [reviewIndex, setReviewIndex] = useState(0);
   const [takingIndex, setTakingIndex] = useState(0);
@@ -637,6 +641,27 @@ function ExamGeneratorPage() {
   const allRevealed = total > 0 && answeredCount === total;
   const pct = total > 0 ? Math.round((correctCount / total) * 100) : 0;
   const progressPct = total > 0 ? Math.round((answeredCount / total) * 100) : 0;
+
+  // Reset flagged + timer when a new exam loads or shuffle/topic changes
+  useEffect(() => {
+    setFlagged({});
+    setElapsedSec(0);
+  }, [rawQuestions, shuffleSeed]);
+
+  // Elapsed timer: ticks while an exam is in progress and not fully answered
+  useEffect(() => {
+    if (total === 0 || allRevealed || reviewMode || retakeReviewMode) return;
+    const id = setInterval(() => setElapsedSec((s) => s + 1), 1000);
+    return () => clearInterval(id);
+  }, [total, allRevealed, reviewMode, retakeReviewMode]);
+
+  const formatTime = (s: number) => {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    return h > 0 ? `${pad(h)}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
+  };
 
   const handleFile = async (file: File | null) => {
     if (!file) return;
@@ -1176,39 +1201,91 @@ function ExamGeneratorPage() {
 
           {!mutation.isPending && total > 0 && (
             <>
-              {/* Progress dots */}
+              {/* CBT-style exam header: title strip + timer + question palette */}
               {!retakeReviewMode && (
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                  {displayedQuestions.map((qq, i) => {
-                    const answered = answers[qq.question_number] !== undefined;
-                    const correct =
-                      answered && answers[qq.question_number] === qq.correct_answer;
-                    const idx = reviewMode ? reviewIndex : takingIndex;
-                    const isCurrent = i === idx;
-                    return (
-                      <button
-                        key={qq.question_number}
-                        type="button"
-                        onClick={() =>
-                          reviewMode ? setReviewIndex(i) : setTakingIndex(i)
-                        }
-                        className={cn(
-                          "h-2.5 shrink-0 rounded-full transition-all",
-                          isCurrent ? "w-6" : "w-2.5",
-                          !answered && "bg-muted",
-                          answered && !reviewMode && !allRevealed && "bg-primary",
-                          answered && (reviewMode || allRevealed) && correct && "bg-emerald-500",
-                          answered && (reviewMode || allRevealed) && !correct && "bg-destructive"
-                        )}
-                        aria-label={`Question ${qq.question_number}`}
-                      />
-                    );
-                  })}
-                  <span className="ml-auto shrink-0 pl-3 text-xs text-muted-foreground">
-                    {reviewMode ? "Review" : `${answeredCount}/${total} answered`}
-                  </span>
+                <div className="rounded-lg border border-border bg-card shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+                  {/* Institutional title strip */}
+                  <div className="flex items-center justify-between border-b border-border bg-[color:var(--paper-2)] px-4 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-foreground text-[10px] font-bold text-background">
+                        EA
+                      </div>
+                      <div className="leading-tight">
+                        <p className="font-display text-[13px] font-bold text-foreground">
+                          Examination Booklet
+                        </p>
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                          {reviewMode ? "Review Session" : "Section A · Multiple Choice"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1 font-mono text-[13px] font-semibold tabular-nums text-foreground">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                      {formatTime(elapsedSec)}
+                    </div>
+                  </div>
+
+                  {/* Question palette */}
+                  <div className="px-4 py-3">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                        Question palette
+                      </p>
+                      <div className="flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
+                        <span className="flex items-center gap-1.5">
+                          <span className="h-2.5 w-2.5 rounded-sm border border-border bg-background" /> Not seen
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="h-2.5 w-2.5 rounded-sm bg-foreground" /> Answered
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="h-2.5 w-2.5 rounded-sm border border-foreground bg-background ring-1 ring-foreground/40 ring-offset-1 ring-offset-background" /> Current
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <Flag className="h-2.5 w-2.5" /> Flagged
+                        </span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(2rem,1fr))] gap-1.5">
+                      {displayedQuestions.map((qq, i) => {
+                        const answered = answers[qq.question_number] !== undefined;
+                        const correct =
+                          answered && answers[qq.question_number] === qq.correct_answer;
+                        const idx = reviewMode ? reviewIndex : takingIndex;
+                        const isCurrent = i === idx;
+                        const isFlagged = !!flagged[qq.question_number];
+                        return (
+                          <button
+                            key={qq.question_number}
+                            type="button"
+                            onClick={() =>
+                              reviewMode ? setReviewIndex(i) : setTakingIndex(i)
+                            }
+                            className={cn(
+                              "relative flex h-8 items-center justify-center rounded-sm border font-mono text-[11px] font-semibold tabular-nums transition-colors",
+                              "border-border bg-background text-foreground hover:border-foreground",
+                              answered && !reviewMode && !allRevealed &&
+                                "border-foreground bg-foreground text-background",
+                              (reviewMode || allRevealed) && answered && correct &&
+                                "border-emerald-700 bg-emerald-700 text-white",
+                              (reviewMode || allRevealed) && answered && !correct &&
+                                "border-destructive bg-destructive text-destructive-foreground",
+                              isCurrent && "ring-2 ring-foreground ring-offset-1 ring-offset-background"
+                            )}
+                            aria-label={`Question ${i + 1}`}
+                          >
+                            {i + 1}
+                            {isFlagged && (
+                              <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-amber-500" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               )}
+
 
               {retakeReviewMode
                 ? renderRetakeReviewCard()
@@ -1229,152 +1306,168 @@ function ExamGeneratorPage() {
     const selected = answers[q.question_number];
     const isRevealed = revealed[q.question_number];
     const isCorrect = selected === q.correct_answer;
+    const isFlagged = !!flagged[q.question_number];
 
     return (
-      <div className="flex flex-1 flex-col gap-6 rounded-[28px] border border-border bg-card p-6 shadow-sm sm:p-10">
-        <div>
-          <span className="mb-3 block font-display text-xs font-bold uppercase tracking-[0.2em] text-primary">
-            Question {String(safeIndex + 1).padStart(2, "0")} of{" "}
-            {String(total).padStart(2, "0")}
-          </span>
-          <p className="text-base leading-relaxed text-foreground">
-            {q.question}
-          </p>
-        </div>
-
-        <div className="space-y-3">
-          {q.options.map((opt, i) => {
-            const letter = String.fromCharCode(65 + i);
-            const isSelected = selected === opt;
-            const isAnswer = opt === q.correct_answer;
-            return (
-              <button
-                key={i}
-                type="button"
-                onClick={() => {
-                  if (isRevealed) return;
-                  setAnswers((a) => ({ ...a, [q.question_number]: opt }));
-                  setRevealed((r) => ({ ...r, [q.question_number]: true }));
-                }}
-                disabled={isRevealed}
-                className={cn(
-                  "group flex w-full items-center gap-4 rounded-2xl border-2 p-4 text-left transition-all sm:p-5",
-                  "border-border bg-card hover:border-primary/40 hover:bg-primary/5",
-                  isRevealed && "cursor-default",
-                  isRevealed && isAnswer && "border-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/10",
-                  isRevealed && isSelected && !isAnswer && "border-destructive bg-destructive/10 hover:bg-destructive/10",
-                  isRevealed && !isAnswer && !isSelected && "opacity-60"
-                )}
-              >
-                <span
-                  className={cn(
-                    "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg font-display text-sm font-bold transition-colors",
-                    "bg-muted text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary",
-                    isRevealed && isAnswer && "bg-emerald-500 text-white group-hover:bg-emerald-500 group-hover:text-white",
-                    isRevealed && isSelected && !isAnswer && "bg-destructive text-white group-hover:bg-destructive group-hover:text-white"
-                  )}
-                >
-                  {letter}
-                </span>
-                <span className="flex-1 text-sm font-medium text-foreground sm:text-base">
-                  {opt}
-                </span>
-                {isRevealed && isAnswer && (
-                  <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
-                )}
-                {isRevealed && isSelected && !isAnswer && (
-                  <XCircle className="h-5 w-5 shrink-0 text-destructive" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {isRevealed && (
-          <div
+      <div className="flex flex-1 flex-col overflow-hidden rounded-lg border border-border bg-card shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+        {/* Question header bar (like a real CBT strip) */}
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border bg-[color:var(--paper-2)] px-5 py-2.5">
+          <div className="flex items-center gap-3">
+            <span className="rounded-sm bg-foreground px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wider text-background">
+              Q {String(safeIndex + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
+            </span>
+            <span className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground">
+              1 mark · Single best answer
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() =>
+              setFlagged((f) => ({ ...f, [q.question_number]: !f[q.question_number] }))
+            }
             className={cn(
-              "animate-in fade-in slide-in-from-bottom-2 rounded-2xl border p-5",
-              isCorrect
-                ? "border-emerald-200 bg-emerald-50"
-                : "border-amber-200 bg-amber-50"
+              "flex items-center gap-1.5 rounded-sm border px-2 py-1 text-[11px] font-semibold uppercase tracking-wider transition-colors",
+              isFlagged
+                ? "border-amber-500 bg-amber-500/15 text-amber-800"
+                : "border-border bg-background text-muted-foreground hover:border-foreground hover:text-foreground"
             )}
           >
-            <div
-              className={cn(
-                "mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wider",
-                isCorrect ? "text-emerald-700" : "text-amber-700"
-              )}
-            >
-              {isCorrect ? (
-                <CheckCircle2 className="h-4 w-4" />
-              ) : (
-                <Info className="h-4 w-4" />
-              )}
-              {isCorrect ? "Correct" : `Answer: ${q.correct_answer}`}
-            </div>
-            <p
-              className={cn(
-                "text-sm leading-relaxed",
-                isCorrect ? "text-emerald-900" : "text-amber-900"
-              )}
-            >
-              {q.explanation}
+            <Flag className={cn("h-3 w-3", isFlagged && "fill-amber-500")} />
+            {isFlagged ? "Flagged" : "Flag for review"}
+          </button>
+        </div>
+
+        {/* Booklet body */}
+        <div className="flex flex-1 flex-col gap-6 p-6 sm:p-8">
+          <div className="flex gap-4">
+            <span className="mt-1 hidden shrink-0 font-display text-2xl font-bold leading-none text-muted-foreground sm:block">
+              {safeIndex + 1}.
+            </span>
+            <p className="font-display text-[17px] leading-[1.7] text-foreground sm:text-lg">
+              {q.question}
             </p>
           </div>
-        )}
 
-        {allRevealed && (
-          <div
-            className={cn(
-              "flex items-center gap-4 rounded-2xl border-2 p-5",
-              pct >= 70
-                ? "border-emerald-300 bg-emerald-50"
-                : "border-amber-300 bg-amber-50"
-            )}
-          >
-            <div
-              className={cn(
-                "flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl",
-                pct >= 70
-                  ? "bg-emerald-500/15 text-emerald-600"
-                  : "bg-amber-500/15 text-amber-700"
-              )}
-            >
-              <Trophy className="h-5 w-5" />
-            </div>
-            <div className="flex-1">
-              <p className="font-display text-sm font-bold text-foreground">
-                {pct >= 70 ? "Congratulations!" : "Keep practicing!"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                You scored {correctCount}/{total} ({pct}%).
-              </p>
-            </div>
-            <div
-              className={cn(
-                "rounded-xl px-3 py-1.5 font-display text-sm font-bold",
-                pct >= 70 ? "bg-emerald-500 text-white" : "bg-amber-500 text-white"
-              )}
-            >
-              {pct}%
-            </div>
+          <div className="space-y-2.5">
+            {q.options.map((opt, i) => {
+              const letter = String.fromCharCode(65 + i);
+              const isSelected = selected === opt;
+              const isAnswer = opt === q.correct_answer;
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => {
+                    if (isRevealed) return;
+                    setAnswers((a) => ({ ...a, [q.question_number]: opt }));
+                    setRevealed((r) => ({ ...r, [q.question_number]: true }));
+                  }}
+                  disabled={isRevealed}
+                  className={cn(
+                    "group flex w-full items-start gap-3.5 rounded-md border bg-card px-4 py-3 text-left transition-colors",
+                    "border-border hover:border-foreground hover:bg-[color:var(--paper-2)]",
+                    isSelected && !isRevealed && "border-foreground bg-[color:var(--paper-2)]",
+                    isRevealed && "cursor-default",
+                    isRevealed && isAnswer && "border-emerald-700 bg-emerald-50 hover:bg-emerald-50",
+                    isRevealed && isSelected && !isAnswer && "border-destructive bg-red-50 hover:bg-red-50",
+                    isRevealed && !isAnswer && !isSelected && "opacity-60"
+                  )}
+                >
+                  {/* Radio bubble with letter */}
+                  <span
+                    className={cn(
+                      "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 font-mono text-[12px] font-bold transition-colors",
+                      "border-border bg-background text-muted-foreground group-hover:border-foreground group-hover:text-foreground",
+                      isSelected && !isRevealed && "border-foreground bg-foreground text-background",
+                      isRevealed && isAnswer && "border-emerald-700 bg-emerald-700 text-white",
+                      isRevealed && isSelected && !isAnswer && "border-destructive bg-destructive text-destructive-foreground"
+                    )}
+                  >
+                    {letter}
+                  </span>
+                  <span className="flex-1 pt-0.5 text-[15px] leading-relaxed text-foreground">
+                    {opt}
+                  </span>
+                  {isRevealed && isAnswer && (
+                    <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-emerald-700" />
+                  )}
+                  {isRevealed && isSelected && !isAnswer && (
+                    <XCircle className="mt-1 h-5 w-5 shrink-0 text-destructive" />
+                  )}
+                </button>
+              );
+            })}
           </div>
-        )}
 
-        <div className="mt-auto flex items-center justify-between gap-3 pt-2">
+          {isRevealed && (
+            <div
+              className={cn(
+                "animate-in fade-in slide-in-from-bottom-1 rounded-md border-l-4 bg-[color:var(--paper-2)] p-4",
+                isCorrect ? "border-emerald-700" : "border-amber-600"
+              )}
+            >
+              <div
+                className={cn(
+                  "mb-1.5 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.18em]",
+                  isCorrect ? "text-emerald-800" : "text-amber-800"
+                )}
+              >
+                {isCorrect ? (
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                ) : (
+                  <Info className="h-3.5 w-3.5" />
+                )}
+                {isCorrect ? "Correct" : `Correct answer: ${q.correct_answer}`}
+              </div>
+              <p className="font-display text-[14px] leading-relaxed text-foreground">
+                {q.explanation}
+              </p>
+            </div>
+          )}
+
+          {allRevealed && (
+            <div className="flex items-center gap-4 rounded-md border border-border bg-[color:var(--paper-2)] p-4">
+              <div
+                className={cn(
+                  "flex h-11 w-11 shrink-0 items-center justify-center rounded-md",
+                  pct >= 70 ? "bg-emerald-700 text-white" : "bg-amber-600 text-white"
+                )}
+              >
+                <Trophy className="h-5 w-5" />
+              </div>
+              <div className="flex-1">
+                <p className="font-display text-sm font-bold text-foreground">
+                  Exam complete · {pct >= 70 ? "Pass" : "Below pass mark"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {correctCount}/{total} correct · {formatTime(elapsedSec)} elapsed
+                </p>
+              </div>
+              <div className="rounded-sm border border-foreground bg-background px-3 py-1.5 font-mono text-sm font-bold tabular-nums text-foreground">
+                {pct}%
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer nav bar (CBT style) */}
+        <div className="flex items-center justify-between gap-3 border-t border-border bg-[color:var(--paper-2)] px-4 py-3">
           <Button
             variant="outline"
             disabled={safeIndex === 0}
             onClick={() => setTakingIndex((i) => Math.max(0, i - 1))}
-            className="rounded-xl"
+            className="h-9 rounded-sm border-foreground/20 bg-background font-mono text-[12px] font-semibold uppercase tracking-wider"
           >
             <ChevronLeft className="mr-1 h-4 w-4" />
             Previous
           </Button>
+          <span className="hidden font-mono text-[11px] uppercase tracking-[0.18em] text-muted-foreground sm:block">
+            {answeredCount} / {total} answered
+          </span>
           <Button
             disabled={safeIndex === total - 1}
             onClick={() => setTakingIndex((i) => Math.min(total - 1, i + 1))}
-            className="rounded-xl bg-foreground font-display font-semibold text-background hover:bg-foreground/90"
+            className="h-9 rounded-sm bg-foreground font-mono text-[12px] font-semibold uppercase tracking-wider text-background hover:bg-foreground/90"
           >
             Next
             <ChevronRight className="ml-1 h-4 w-4" />
@@ -1383,6 +1476,7 @@ function ExamGeneratorPage() {
       </div>
     );
   }
+
 
   function renderReviewCard() {
     const q = displayedQuestions[reviewIndex];
