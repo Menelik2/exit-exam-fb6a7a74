@@ -34,6 +34,8 @@ import {
   Upload,
   FileText,
   X,
+  Flag,
+  Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AccountPanel } from "@/components/account-panel";
