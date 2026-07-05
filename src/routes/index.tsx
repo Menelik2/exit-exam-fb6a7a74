@@ -332,6 +332,8 @@ function ExamGeneratorPage() {
   const [shuffleSeed, setShuffleSeed] = useState(1);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [revealed, setRevealed] = useState<Record<number, boolean>>({});
+  const [flagged, setFlagged] = useState<Record<number, boolean>>({});
+  const [elapsedSec, setElapsedSec] = useState(0);
   const [reviewMode, setReviewMode] = useState(false);
   const [reviewIndex, setReviewIndex] = useState(0);
   const [takingIndex, setTakingIndex] = useState(0);
