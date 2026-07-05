@@ -1201,39 +1201,91 @@ function ExamGeneratorPage() {
 
           {!mutation.isPending && total > 0 && (
             <>
-              {/* Progress dots */}
+              {/* CBT-style exam header: title strip + timer + question palette */}
               {!retakeReviewMode && (
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                  {displayedQuestions.map((qq, i) => {
-                    const answered = answers[qq.question_number] !== undefined;
-                    const correct =
-                      answered && answers[qq.question_number] === qq.correct_answer;
-                    const idx = reviewMode ? reviewIndex : takingIndex;
-                    const isCurrent = i === idx;
-                    return (
-                      <button
-                        key={qq.question_number}
-                        type="button"
-                        onClick={() =>
-                          reviewMode ? setReviewIndex(i) : setTakingIndex(i)
-                        }
-                        className={cn(
-                          "h-2.5 shrink-0 rounded-full transition-all",
-                          isCurrent ? "w-6" : "w-2.5",
-                          !answered && "bg-muted",
-                          answered && !reviewMode && !allRevealed && "bg-primary",
-                          answered && (reviewMode || allRevealed) && correct && "bg-emerald-500",
-                          answered && (reviewMode || allRevealed) && !correct && "bg-destructive"
-                        )}
-                        aria-label={`Question ${qq.question_number}`}
-                      />
-                    );
-                  })}
-                  <span className="ml-auto shrink-0 pl-3 text-xs text-muted-foreground">
-                    {reviewMode ? "Review" : `${answeredCount}/${total} answered`}
-                  </span>
+                <div className="rounded-lg border border-border bg-card shadow-[0_1px_0_rgba(0,0,0,0.04)]">
+                  {/* Institutional title strip */}
+                  <div className="flex items-center justify-between border-b border-border bg-[color:var(--paper-2)] px-4 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-6 w-6 items-center justify-center rounded-sm bg-foreground text-[10px] font-bold text-background">
+                        EA
+                      </div>
+                      <div className="leading-tight">
+                        <p className="font-display text-[13px] font-bold text-foreground">
+                          Examination Booklet
+                        </p>
+                        <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+                          {reviewMode ? "Review Session" : "Section A · Multiple Choice"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 rounded-md border border-border bg-background px-2.5 py-1 font-mono text-[13px] font-semibold tabular-nums text-foreground">
+                      <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                      {formatTime(elapsedSec)}
+                    </div>
+                  </div>
+
+                  {/* Question palette */}
+                  <div className="px-4 py-3">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                        Question palette
+                      </p>
+                      <div className="flex flex-wrap items-center gap-3 text-[10px] text-muted-foreground">
+                        <span className="flex items-center gap-1.5">
+                          <span className="h-2.5 w-2.5 rounded-sm border border-border bg-background" /> Not seen
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="h-2.5 w-2.5 rounded-sm bg-foreground" /> Answered
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <span className="h-2.5 w-2.5 rounded-sm border border-foreground bg-background ring-1 ring-foreground/40 ring-offset-1 ring-offset-background" /> Current
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <Flag className="h-2.5 w-2.5" /> Flagged
+                        </span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-[repeat(auto-fill,minmax(2rem,1fr))] gap-1.5">
+                      {displayedQuestions.map((qq, i) => {
+                        const answered = answers[qq.question_number] !== undefined;
+                        const correct =
+                          answered && answers[qq.question_number] === qq.correct_answer;
+                        const idx = reviewMode ? reviewIndex : takingIndex;
+                        const isCurrent = i === idx;
+                        const isFlagged = !!flagged[qq.question_number];
+                        return (
+                          <button
+                            key={qq.question_number}
+                            type="button"
+                            onClick={() =>
+                              reviewMode ? setReviewIndex(i) : setTakingIndex(i)
+                            }
+                            className={cn(
+                              "relative flex h-8 items-center justify-center rounded-sm border font-mono text-[11px] font-semibold tabular-nums transition-colors",
+                              "border-border bg-background text-foreground hover:border-foreground",
+                              answered && !reviewMode && !allRevealed &&
+                                "border-foreground bg-foreground text-background",
+                              (reviewMode || allRevealed) && answered && correct &&
+                                "border-emerald-700 bg-emerald-700 text-white",
+                              (reviewMode || allRevealed) && answered && !correct &&
+                                "border-destructive bg-destructive text-destructive-foreground",
+                              isCurrent && "ring-2 ring-foreground ring-offset-1 ring-offset-background"
+                            )}
+                            aria-label={`Question ${i + 1}`}
+                          >
+                            {i + 1}
+                            {isFlagged && (
+                              <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-amber-500" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               )}
+
 
               {retakeReviewMode
                 ? renderRetakeReviewCard()
