@@ -582,7 +582,10 @@ function ExamGeneratorPage() {
     run();
   };
 
-  const rawQuestions: ExamQuestion[] = retakeSubset ?? mutation.data?.questions ?? [];
+  const rawQuestions: ExamQuestion[] = useMemo(
+    () => retakeSubset ?? mutation.data?.questions ?? [],
+    [retakeSubset, mutation.data]
+  );
 
   const displayedQuestions = useMemo(() => {
     if (!shuffleOptions) return rawQuestions;
