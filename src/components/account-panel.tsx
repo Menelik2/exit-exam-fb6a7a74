@@ -29,28 +29,36 @@ export function AccountPanel({ onAuthChange }: { onAuthChange?: (signedIn: boole
   const deleteFn = useServerFn(deleteGeminiKey);
 
   const refreshKey = async () => {
+    console.debug("[auth] refreshing Gemini key status");
     try {
       const s = await statusFn();
+      console.debug("[auth] gemini key status", { hasKey: s.hasKey, last4: s.hasKey ? s.last4 : undefined });
       setKeyStatus({ loading: false, hasKey: s.hasKey, last4: s.hasKey ? s.last4 : undefined });
-    } catch {
+    } catch (e) {
+      console.warn("[auth] gemini key status failed", e);
       setKeyStatus({ loading: false, hasKey: false });
     }
   };
 
   useEffect(() => {
     const sync = async () => {
-      const { data } = await supabase.auth.getUser();
+      console.debug("[auth] sync: fetching user");
+      const { data, error } = await supabase.auth.getUser();
+      if (error) console.warn("[auth] getUser error", error);
       if (data.user) {
+        console.debug("[auth] signed in", { userId: data.user.id, email: data.user.email });
         setAuth({ status: "signed_in", email: data.user.email ?? "" });
         onAuthChange?.(true);
         await refreshKey();
       } else {
+        console.debug("[auth] signed out");
         setAuth({ status: "signed_out" });
         onAuthChange?.(false);
       }
     };
     sync();
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      console.debug("[auth] onAuthStateChange", event);
       if (event === "SIGNED_IN" || event === "SIGNED_OUT" || event === "USER_UPDATED") sync();
     });
     return () => sub.subscription.unsubscribe();

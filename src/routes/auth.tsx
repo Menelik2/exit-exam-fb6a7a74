@@ -29,12 +29,20 @@ function AuthPage() {
   const onGoogle = async () => {
     setError(null);
     setBusy(true);
+    console.debug("[auth] starting Google OAuth", { redirect_uri: window.location.origin });
     try {
       const result = await lovable.auth.signInWithOAuth("google", {
         redirect_uri: window.location.origin,
       });
-      if (result.error) throw result.error;
-      if (result.redirected) return;
+      if (result.error) {
+        console.warn("[auth] Google OAuth error", result.error);
+        throw result.error;
+      }
+      if (result.redirected) {
+        console.debug("[auth] redirecting to Google");
+        return;
+      }
+      console.debug("[auth] Google OAuth success, navigating home");
       navigate({ to: "/" });
     } catch (err) {
       setError((err as Error).message);
