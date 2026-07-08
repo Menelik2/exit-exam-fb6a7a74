@@ -12,7 +12,8 @@
     "build:verify": "bun run build:workers && bun run build:vercel",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test:smoke": "playwright test --config=tests/smoke/playwright.config.ts"
   },
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.25.5",
