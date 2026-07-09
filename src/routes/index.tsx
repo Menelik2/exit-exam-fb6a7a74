@@ -1178,7 +1178,7 @@ function ExamGeneratorPage() {
         <main className="flex flex-col gap-5">
           {mutation.isError && (
             <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              {(mutation.error as Error).message.replace(/^NO_GEMINI_KEY:\s*/, "")}
+              {(mutation.error as Error).message}
             </div>
           )}
 

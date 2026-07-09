@@ -29,34 +29,14 @@ function AuthPage() {
   const onGoogle = async () => {
     setError(null);
     setBusy(true);
-    const host = window.location.hostname;
-    // Lovable's OAuth broker only exists on *.lovable.app / *.lovable.dev hosts
-    // (it intercepts /~oauth/*). On Vercel/custom domains that path 404s, so
-    // fall back to Supabase's native Google OAuth flow.
-    const useLovableBroker = /\.lovable\.(app|dev)$/i.test(host);
-    console.debug("[auth] starting Google OAuth", {
-      host,
-      useLovableBroker,
-      redirect_uri: window.location.origin,
-    });
     try {
-      if (useLovableBroker) {
-        const result = await lovable.auth.signInWithOAuth("google", {
-          redirect_uri: window.location.origin,
-        });
-        if (result.error) throw result.error;
-        if (result.redirected) return;
-        navigate({ to: "/" });
-      } else {
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: { redirectTo: window.location.origin },
-        });
-        if (error) throw error;
-        // Browser is redirecting to Google; nothing more to do.
-      }
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      if (result.error) throw result.error;
+      if (result.redirected) return;
+      navigate({ to: "/" });
     } catch (err) {
-      console.warn("[auth] Google OAuth error", err);
       setError((err as Error).message);
       setBusy(false);
     }
