@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { GraduationCap, Loader2, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
@@ -19,12 +20,42 @@ function AuthPage() {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [linkSent, setLinkSent] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) navigate({ to: "/" });
     });
   }, [navigate]);
+
+  const onMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const address = email.trim();
+    if (!address) return;
+    setError(null);
+    setLinkSent(false);
+    setLinkBusy(true);
+    try {
+      const { error: linkError } = await supabase.auth.signInWithOtp({
+        email: address,
+        options: { emailRedirectTo: `${window.location.origin}/` },
+      });
+      if (linkError) throw linkError;
+      setLinkSent(true);
+    } catch (err) {
+      const message = (err as Error).message ?? String(err);
+      setError(
+        /provider is not enabled|Email logins are disabled/i.test(message)
+          ? "Email sign-in is turned off for this project. Enable the Email provider in the backend Auth settings to use magic links."
+          : message,
+      );
+    } finally {
+      setLinkBusy(false);
+    }
+  };
+
 
   const onGoogle = async () => {
     setError(null);
@@ -71,7 +102,7 @@ function AuthPage() {
           </div>
           <div>
             <h1 className="font-display text-lg font-bold tracking-tight">Welcome</h1>
-            <p className="text-xs text-muted-foreground">Sign in with Google to continue</p>
+            <p className="text-xs text-muted-foreground">Sign in with Google or a magic link</p>
           </div>
         </div>
 
@@ -92,7 +123,40 @@ function AuthPage() {
           )}
         </Button>
 
+        <div className="my-5 flex items-center gap-3">
+          <span className="h-px flex-1 bg-border" />
+          <span className="text-[11px] uppercase tracking-wider text-muted-foreground">or</span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
+
+        <form onSubmit={onMagicLink} className="space-y-3">
+          <label htmlFor="magic-email" className="block text-xs font-medium text-muted-foreground">
+            Email address
+          </label>
+          <Input
+            id="magic-email"
+            type="email"
+            required
+            autoComplete="email"
+            placeholder="you@example.com"
+            value={email}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
+            className="h-11 rounded-xl"
+          />
+          <Button type="submit" disabled={linkBusy || !email.trim()} className="h-11 w-full rounded-xl gap-2">
+            {linkBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+            Email me a magic link
+          </Button>
+        </form>
+
+        {linkSent && (
+          <p className="mt-3 text-sm text-emerald-600">
+            Check your inbox — we sent a sign-in link to {email.trim()}. It opens this app already signed in.
+          </p>
+        )}
+
         {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
+
 
         <p className="mt-6 text-center text-xs text-muted-foreground">
           After signing in, add your own Gemini API key in the sidebar.
