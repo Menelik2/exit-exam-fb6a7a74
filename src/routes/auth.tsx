@@ -3,7 +3,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { GraduationCap, Loader2, Mail } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({
   component: AuthPage,
