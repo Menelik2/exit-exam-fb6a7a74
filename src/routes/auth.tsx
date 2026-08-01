@@ -140,7 +140,7 @@ function AuthPage() {
             autoComplete="email"
             placeholder="you@example.com"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
             className="h-11 rounded-xl"
           />
           <Button type="submit" disabled={linkBusy || !email.trim()} className="h-11 w-full rounded-xl gap-2">
