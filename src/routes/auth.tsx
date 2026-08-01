@@ -19,12 +19,42 @@ function AuthPage() {
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [linkBusy, setLinkBusy] = useState(false);
+  const [linkSent, setLinkSent] = useState(false);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) navigate({ to: "/" });
     });
   }, [navigate]);
+
+  const onMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const address = email.trim();
+    if (!address) return;
+    setError(null);
+    setLinkSent(false);
+    setLinkBusy(true);
+    try {
+      const { error: linkError } = await supabase.auth.signInWithOtp({
+        email: address,
+        options: { emailRedirectTo: `${window.location.origin}/` },
+      });
+      if (linkError) throw linkError;
+      setLinkSent(true);
+    } catch (err) {
+      const message = (err as Error).message ?? String(err);
+      setError(
+        /provider is not enabled|Email logins are disabled/i.test(message)
+          ? "Email sign-in is turned off for this project. Enable the Email provider in the backend Auth settings to use magic links."
+          : message,
+      );
+    } finally {
+      setLinkBusy(false);
+    }
+  };
+
 
   const onGoogle = async () => {
     setError(null);
