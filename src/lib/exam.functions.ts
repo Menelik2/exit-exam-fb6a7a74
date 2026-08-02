@@ -52,17 +52,19 @@ const RESPONSE_SCHEMA = {
 
 const MODEL_FALLBACKS = [GEMINI_MODEL, "gemini-2.5-flash", "gemini-2.0-flash"];
 
-async function fetchUserGeminiKey(supabase: SupabaseClient, userId: string): Promise<string> {
-  const { data, error } = await supabase
+async function fetchUserGeminiKey(_supabase: SupabaseClient, userId: string): Promise<string> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { data, error } = await supabaseAdmin
     .from("user_gemini_keys")
-    .select("api_key")
+    .select("key_ciphertext")
     .eq("user_id", userId)
     .maybeSingle();
-  if (error) throw new Error(error.message);
-  if (!data?.api_key) {
+  if (error) throw new Error("Could not read your saved Gemini key.");
+  if (!data?.key_ciphertext) {
     throw new Error("NO_GEMINI_KEY: Add your Gemini API key in the sidebar to generate exams.");
   }
-  return data.api_key as string;
+  const { decryptApiKey } = await import("@/lib/key-crypto.server");
+  return decryptApiKey(data.key_ciphertext);
 }
 
 async function callGemini(apiKey: string, systemPrompt: string, userPrompt: string): Promise<ExamQuestion[]> {
