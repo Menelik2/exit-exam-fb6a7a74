@@ -30,31 +30,47 @@ function AuthPage() {
     });
   }, [navigate]);
 
-  const onMagicLink = async (e: React.FormEvent) => {
+  // Email-only sign-in: no password to remember, no verification email.
+  // A deterministic passphrase is derived from the address so the same email
+  // always returns to the same account.
+  const passphraseFor = (address: string) =>
+    `exam-gen::${btoa(unescape(encodeURIComponent(address.toLowerCase())))}::v1`;
+
+  const onEmailContinue = async (e: React.FormEvent) => {
     e.preventDefault();
-    const address = email.trim();
+    const address = email.trim().toLowerCase();
     if (!address) return;
     setError(null);
-    setLinkSent(false);
     setLinkBusy(true);
     try {
-      const { error: linkError } = await supabase.auth.signInWithOtp({
-        email: address,
-        options: { emailRedirectTo: `${window.location.origin}/` },
-      });
-      if (linkError) throw linkError;
+      const password = passphraseFor(address);
+      const signIn = await supabase.auth.signInWithPassword({ email: address, password });
+      if (signIn.error) {
+        const signUp = await supabase.auth.signUp({
+          email: address,
+          password,
+          options: { emailRedirectTo: `${window.location.origin}/` },
+        });
+        if (signUp.error) throw signUp.error;
+        if (!signUp.data.session) {
+          const retry = await supabase.auth.signInWithPassword({ email: address, password });
+          if (retry.error) throw retry.error;
+        }
+      }
       setLinkSent(true);
+      navigate({ to: "/" });
     } catch (err) {
       const message = (err as Error).message ?? String(err);
       setError(
-        /provider is not enabled|Email logins are disabled/i.test(message)
-          ? "Email sign-in is turned off for this project. Enable the Email provider in the backend Auth settings to use magic links."
+        /provider is not enabled|Email logins are disabled|Email signups are disabled/i.test(message)
+          ? "Email sign-in is turned off for this project. Enable the Email provider in the backend Auth settings."
           : message,
       );
     } finally {
       setLinkBusy(false);
     }
   };
+
 
 
   const onGoogle = async () => {
