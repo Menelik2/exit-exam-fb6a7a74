@@ -122,7 +122,7 @@ export function AccountPanel({ onAuthChange }: { onAuthChange?: (signedIn: boole
       <div className="space-y-2">
         <div className="min-w-0">
           <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-            <UserCircle2 className="h-3 w-3" /> Signed in with Google
+            <UserCircle2 className="h-3 w-3" /> Signed in
           </p>
           <p className="truncate text-sm font-semibold text-foreground">{auth.email}</p>
         </div>
