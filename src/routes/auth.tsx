@@ -73,44 +73,6 @@ function AuthPage() {
     }
   };
 
-
-
-  const onGoogle = async () => {
-    setError(null);
-    setBusy(true);
-    try {
-      const host = window.location.hostname;
-      const onLovable = host.endsWith("lovable.app") || host.endsWith("lovable.dev") || host === "localhost";
-
-      if (onLovable) {
-        const result = await lovable.auth.signInWithOAuth("google", {
-          redirect_uri: window.location.origin,
-        });
-        if (result.error) throw result.error;
-        if (result.redirected) return;
-        navigate({ to: "/" });
-        return;
-      }
-
-      // Custom hosting (e.g. Vercel): the Lovable OAuth broker paths are not
-      // available, so go straight to the backend's own Google provider.
-      const { error: oauthError } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: { redirectTo: `${window.location.origin}/` },
-      });
-      if (oauthError) throw oauthError;
-    } catch (err) {
-      const message = (err as Error).message ?? String(err);
-      setError(
-        /missing OAuth secret|Unsupported provider/i.test(message)
-          ? "Google sign-in isn't configured for this domain yet. Add your own Google OAuth Client ID and Secret in the backend Auth settings (Users → Authentication Settings → Google), and add this site's URL to the allowed redirect URLs."
-          : message,
-      );
-      setBusy(false);
-    }
-  };
-
-
   return (
     <div className="min-h-screen w-full bg-background text-foreground flex items-center justify-center p-4">
       <div className="w-full max-w-md rounded-3xl border border-border bg-secondary/60 p-7">
@@ -124,28 +86,7 @@ function AuthPage() {
           </div>
         </div>
 
-        <Button
-          type="button"
-          onClick={onGoogle}
-          disabled={busy}
-          className="h-11 w-full rounded-xl gap-2"
-          variant="outline"
-        >
-          {busy ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <>
-              <GoogleIcon />
-              Continue with Google
-            </>
-          )}
-        </Button>
 
-        <div className="my-5 flex items-center gap-3">
-          <span className="h-px flex-1 bg-border" />
-          <span className="text-[11px] uppercase tracking-wider text-muted-foreground">or</span>
-          <span className="h-px flex-1 bg-border" />
-        </div>
 
         <form onSubmit={onEmailContinue} className="space-y-3">
           <label htmlFor="magic-email" className="block text-xs font-medium text-muted-foreground">
