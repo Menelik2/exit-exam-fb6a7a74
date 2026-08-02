@@ -16,17 +16,20 @@ export type Database = {
     Tables: {
       user_gemini_keys: {
         Row: {
-          api_key: string
+          key_ciphertext: string
+          key_last4: string
           updated_at: string
           user_id: string
         }
         Insert: {
-          api_key: string
+          key_ciphertext: string
+          key_last4: string
           updated_at?: string
           user_id: string
         }
         Update: {
-          api_key?: string
+          key_ciphertext?: string
+          key_last4?: string
           updated_at?: string
           user_id?: string
         }
