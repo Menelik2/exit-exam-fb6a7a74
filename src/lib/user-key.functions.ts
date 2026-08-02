@@ -14,57 +14,63 @@ export const saveGeminiKey = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => SaveSchema.parse(input))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
+    const { userId } = context;
 
     // Verify the key is a real, working Gemini key before storing it.
+    // Never log the key or the raw Google response body.
     const check = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(data.apiKey)}`,
     );
     if (!check.ok) {
-      const body = await check.text();
       if (check.status === 400 || check.status === 401 || check.status === 403) {
-        throw new Error("That Gemini API key was rejected by Google. Paste a real key from aistudio.google.com/apikey.");
+        throw new Error(
+          "That Gemini API key was rejected by Google. Paste a real key from aistudio.google.com/apikey.",
+        );
       }
-      throw new Error(`Could not verify the key with Google (${check.status}). ${body.slice(0, 200)}`);
+      throw new Error(`Could not verify the key with Google (${check.status}). Please try again.`);
     }
 
-    const { error } = await supabase
-      .from("user_gemini_keys")
-      .upsert(
-        { user_id: userId, api_key: data.apiKey, updated_at: new Date().toISOString() },
-        { onConflict: "user_id" }
-      );
-    if (error) throw new Error(error.message);
+    const { encryptApiKey } = await import("@/lib/key-crypto.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { error } = await supabaseAdmin.from("user_gemini_keys").upsert(
+      {
+        user_id: userId,
+        key_ciphertext: await encryptApiKey(data.apiKey),
+        key_last4: data.apiKey.slice(-4),
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "user_id" },
+    );
+    if (error) throw new Error("Could not save your key. Please try again.");
     return { ok: true, last4: data.apiKey.slice(-4) };
   });
-
 
 export const getGeminiKeyStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase, userId } = context;
-    const { data, error } = await supabase
+    const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data, error } = await supabaseAdmin
       .from("user_gemini_keys")
-      .select("api_key, updated_at")
+      .select("key_last4, updated_at")
       .eq("user_id", userId)
       .maybeSingle();
-    if (error) throw new Error(error.message);
+    if (error) throw new Error("Could not read your key status.");
     if (!data) return { hasKey: false as const };
     return {
       hasKey: true as const,
-      last4: (data.api_key as string).slice(-4),
-      updatedAt: data.updated_at as string,
+      last4: data.key_last4,
+      updatedAt: data.updated_at,
     };
   });
 
 export const deleteGeminiKey = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
-    const { supabase, userId } = context;
-    const { error } = await supabase
-      .from("user_gemini_keys")
-      .delete()
-      .eq("user_id", userId);
-    if (error) throw new Error(error.message);
+    const { userId } = context;
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("user_gemini_keys").delete().eq("user_id", userId);
+    if (error) throw new Error("Could not remove your key. Please try again.");
     return { ok: true };
   });
