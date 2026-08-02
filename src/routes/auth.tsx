@@ -145,7 +145,7 @@ function AuthPage() {
           <span className="h-px flex-1 bg-border" />
         </div>
 
-        <form onSubmit={onMagicLink} className="space-y-3">
+        <form onSubmit={onEmailContinue} className="space-y-3">
           <label htmlFor="magic-email" className="block text-xs font-medium text-muted-foreground">
             Email address
           </label>
@@ -161,15 +161,17 @@ function AuthPage() {
           />
           <Button type="submit" disabled={linkBusy || !email.trim()} className="h-11 w-full rounded-xl gap-2">
             {linkBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
-            Email me a magic link
+            Continue with email
           </Button>
+          <p className="text-[11px] text-muted-foreground">
+            No password, no verification email — just your address. Your real Gemini API key is added next.
+          </p>
         </form>
 
         {linkSent && (
-          <p className="mt-3 text-sm text-emerald-600">
-            Check your inbox — we sent a sign-in link to {email.trim()}. It opens this app already signed in.
-          </p>
+          <p className="mt-3 text-sm text-emerald-600">Signed in as {email.trim()}.</p>
         )}
+
 
         {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 
