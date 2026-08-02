@@ -118,7 +118,7 @@ function AuthPage() {
           </div>
           <div>
             <h1 className="font-display text-lg font-bold tracking-tight">Welcome</h1>
-            <p className="text-xs text-muted-foreground">Sign in with Google or a magic link</p>
+            <p className="text-xs text-muted-foreground">Just your email — then add your Gemini key</p>
           </div>
         </div>
 
