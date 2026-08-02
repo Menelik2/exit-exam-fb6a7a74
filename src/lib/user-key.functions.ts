@@ -15,6 +15,19 @@ export const saveGeminiKey = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => SaveSchema.parse(input))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
+
+    // Verify the key is a real, working Gemini key before storing it.
+    const check = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(data.apiKey)}`,
+    );
+    if (!check.ok) {
+      const body = await check.text();
+      if (check.status === 400 || check.status === 401 || check.status === 403) {
+        throw new Error("That Gemini API key was rejected by Google. Paste a real key from aistudio.google.com/apikey.");
+      }
+      throw new Error(`Could not verify the key with Google (${check.status}). ${body.slice(0, 200)}`);
+    }
+
     const { error } = await supabase
       .from("user_gemini_keys")
       .upsert(
@@ -24,6 +37,7 @@ export const saveGeminiKey = createServerFn({ method: "POST" })
     if (error) throw new Error(error.message);
     return { ok: true, last4: data.apiKey.slice(-4) };
   });
+
 
 export const getGeminiKeyStatus = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
