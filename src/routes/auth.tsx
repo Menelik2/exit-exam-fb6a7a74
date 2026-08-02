@@ -1,7 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GraduationCap, Loader2, Mail } from "lucide-react";
@@ -11,14 +10,17 @@ export const Route = createFileRoute("/auth")({
   head: () => ({
     meta: [
       { title: "Sign in — Exam Generator" },
-      { name: "description", content: "Sign in with Google to generate exams with your own Gemini API key." },
+      { name: "description", content: "Type your email to sign in, then add your own Gemini API key to generate exams." },
+      { property: "og:title", content: "Sign in — Exam Generator" },
+      { property: "og:description", content: "Email-only sign in. Bring your own Gemini API key." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
 });
 
 function AuthPage() {
   const navigate = useNavigate();
-  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [linkBusy, setLinkBusy] = useState(false);
