@@ -28,7 +28,7 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/" });
+      if (data.user) navigate({ to: "/", replace: true });
     });
   }, [navigate]);
 
@@ -38,6 +38,17 @@ function AuthPage() {
   const passphraseFor = (address: string) =>
     `exam-gen::${btoa(unescape(encodeURIComponent(address.toLowerCase())))}::v1`;
 
+  // The session is written to localStorage asynchronously; wait for it so the
+  // redirect never lands on the app before the session exists.
+  const waitForSession = async () => {
+    for (let i = 0; i < 25; i++) {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) return data.session;
+      await new Promise((r) => setTimeout(r, 100));
+    }
+    return null;
+  };
+
   const onEmailContinue = async (e: React.FormEvent) => {
     e.preventDefault();
     const address = email.trim().toLowerCase();
@@ -46,32 +57,53 @@ function AuthPage() {
     setLinkBusy(true);
     try {
       const password = passphraseFor(address);
-      const signIn = await supabase.auth.signInWithPassword({ email: address, password });
-      if (signIn.error) {
+
+      // 1) Existing account → straight in.
+      let { error: signInError } = await supabase.auth.signInWithPassword({
+        email: address,
+        password,
+      });
+
+      // 2) New account → create it, then sign in.
+      if (signInError) {
         const signUp = await supabase.auth.signUp({
           email: address,
           password,
           options: { emailRedirectTo: `${window.location.origin}/` },
         });
-        if (signUp.error) throw signUp.error;
-        if (!signUp.data.session) {
+        const alreadyRegistered =
+          signUp.error && /already registered|already exists/i.test(signUp.error.message);
+        if (signUp.error && !alreadyRegistered) throw signUp.error;
+
+        if (!signUp.data?.session) {
           const retry = await supabase.auth.signInWithPassword({ email: address, password });
           if (retry.error) throw retry.error;
         }
       }
+
+      const session = await waitForSession();
+      if (!session) {
+        throw new Error(
+          "Signed in, but the session didn't persist. Allow site data/cookies for this site and try again.",
+        );
+      }
+
       setLinkSent(true);
-      navigate({ to: "/" });
+      navigate({ to: "/", replace: true });
     } catch (err) {
       const message = (err as Error).message ?? String(err);
       setError(
         /provider is not enabled|Email logins are disabled|Email signups are disabled/i.test(message)
           ? "Email sign-in is turned off for this project. Enable the Email provider in the backend Auth settings."
-          : message,
+          : /Email not confirmed/i.test(message)
+            ? "This address needs email confirmation. Confirm it once from the link we sent, then continue."
+            : message,
       );
     } finally {
       setLinkBusy(false);
     }
   };
+
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground flex items-center justify-center p-4">
