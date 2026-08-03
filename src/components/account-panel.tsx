@@ -39,9 +39,16 @@ export function AccountPanel({ onAuthChange }: { onAuthChange?: (signedIn: boole
 
   useEffect(() => {
     const sync = async () => {
+      // getUser() re-validates the token with the auth server, so a stale
+      // localStorage session won't show up as "signed in".
       const { data } = await supabase.auth.getUser();
       if (data.user) {
-        setAuth({ status: "signed_in", email: data.user.email ?? "" });
+        const { data: s } = await supabase.auth.getSession();
+        setAuth({
+          status: "signed_in",
+          email: data.user.email ?? "",
+          expiresAt: s.session?.expires_at ?? null,
+        });
         onAuthChange?.(true);
         await refreshKey();
       } else {
