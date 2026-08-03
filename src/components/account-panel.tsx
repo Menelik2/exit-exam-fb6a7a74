@@ -11,7 +11,7 @@ import { Loader2, KeyRound, LogOut, CheckCircle2, ExternalLink, UserCircle2 } fr
 type AuthState =
   | { status: "loading" }
   | { status: "signed_out" }
-  | { status: "signed_in"; email: string };
+  | { status: "signed_in"; email: string; expiresAt: number | null };
 
 export function AccountPanel({ onAuthChange }: { onAuthChange?: (signedIn: boolean) => void }) {
   const navigate = useNavigate();
