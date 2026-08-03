@@ -1,7 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import type { SupabaseClient } from "@supabase/supabase-js";
 
 const BlueprintItemSchema = z.object({
   subject: z.string().min(1).max(120),
@@ -11,6 +9,7 @@ const BlueprintItemSchema = z.object({
 });
 
 const InputSchema = z.object({
+  apiKey: z.string().min(20).max(200),
   topic: z.string().min(1).max(400),
   difficulty: z.enum(["Beginner", "Intermediate", "Advanced"]),
   numQuestions: z.number().int().min(1).max(200),
@@ -51,21 +50,6 @@ const RESPONSE_SCHEMA = {
 } as const;
 
 const MODEL_FALLBACKS = [GEMINI_MODEL, "gemini-2.5-flash", "gemini-2.0-flash"];
-
-async function fetchUserGeminiKey(_supabase: SupabaseClient, userId: string): Promise<string> {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { data, error } = await supabaseAdmin
-    .from("user_gemini_keys")
-    .select("key_ciphertext")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (error) throw new Error("Could not read your saved Gemini key.");
-  if (!data?.key_ciphertext) {
-    throw new Error("NO_GEMINI_KEY: Add your Gemini API key in the sidebar to generate exams.");
-  }
-  const { decryptApiKey } = await import("@/lib/key-crypto.server");
-  return decryptApiKey(data.key_ciphertext);
-}
 
 async function callGemini(apiKey: string, systemPrompt: string, userPrompt: string): Promise<ExamQuestion[]> {
   if (!apiKey) throw new Error("Gemini API key missing");
@@ -113,10 +97,9 @@ async function callGemini(apiKey: string, systemPrompt: string, userPrompt: stri
 }
 
 export const generateExam = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => InputSchema.parse(input))
-  .handler(async ({ data, context }): Promise<{ questions: ExamQuestion[] }> => {
-    const apiKey = await fetchUserGeminiKey(context.supabase, context.userId);
+  .handler(async ({ data }): Promise<{ questions: ExamQuestion[] }> => {
+    const apiKey = data.apiKey.trim();
     const systemPrompt = `You are a senior Ethiopian university professor and official examiner for the Ethiopian Higher Education Exit Examination (EHEEE). You write rigorous, exam-grade multiple-choice questions that match the style, depth, and cognitive level of the real Ethiopian Exit Exam administered by the Ministry of Education.
 
 Follow these standards strictly:
@@ -158,6 +141,7 @@ Variation seed: ${data.nonce ?? Date.now()} — generate a fresh, distinct set o
   });
 
 const DocInputSchema = z.object({
+  apiKey: z.string().min(20).max(200),
   documentName: z.string().min(1).max(200),
   documentText: z.string().min(20).max(200000),
   difficulty: z.enum(["Beginner", "Intermediate", "Advanced"]),
@@ -167,10 +151,9 @@ const DocInputSchema = z.object({
 });
 
 export const generateExamFromDocument = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
   .inputValidator((input: unknown) => DocInputSchema.parse(input))
-  .handler(async ({ data, context }): Promise<{ questions: ExamQuestion[] }> => {
-    const apiKey = await fetchUserGeminiKey(context.supabase, context.userId);
+  .handler(async ({ data }): Promise<{ questions: ExamQuestion[] }> => {
+    const apiKey = data.apiKey.trim();
     const systemPrompt = `You are a senior university professor writing rigorous multiple-choice exam questions STRICTLY from a provided source document.
 
 ABSOLUTE RULES:
