@@ -38,7 +38,7 @@ import {
   Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { AccountPanel } from "@/components/account-panel";
+import { ApiKeyPanel } from "@/components/api-key-panel";
 
 export const Route = createFileRoute("/")({
   component: ExamGeneratorPage,
@@ -314,7 +314,7 @@ function ExamGeneratorPage() {
   const [useBlueprint, setUseBlueprint] = useState(false);
   const [blueprint, setBlueprint] = useState<BlueprintItem[]>(DEFAULT_BLUEPRINT);
   const [hydrated, setHydrated] = useState(false);
-  const [signedIn, setSignedIn] = useState(false);
+  const [geminiKey, setGeminiKey] = useState("");
 
   useEffect(() => {
     const saved = loadSettings();
@@ -435,6 +435,7 @@ function ExamGeneratorPage() {
       if (vars.mode === "doc") {
         return generateDocFn({
           data: {
+            apiKey: geminiKey,
             documentName: vars.documentName,
             documentText: vars.documentText,
             difficulty: vars.difficulty,
@@ -446,6 +447,7 @@ function ExamGeneratorPage() {
       }
       return generateFn({
         data: {
+          apiKey: geminiKey,
           topic: vars.topic,
           difficulty: vars.difficulty,
           numQuestions: vars.numQuestions,
@@ -557,7 +559,7 @@ function ExamGeneratorPage() {
   );
   useEffect(() => {
     if (!autoGenerate) return;
-    if (!signedIn) return;
+    if (!geminiKey) return;
     if (docMode) return; // doc mode requires explicit click to avoid wasted runs
     const hasTopic = topic.trim().length > 0;
     const hasBlueprint =
@@ -575,7 +577,7 @@ function ExamGeneratorPage() {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topic, difficulty, numQuestions, autoGenerate, useBlueprint, blueprintKey, docMode, signedIn]);
+  }, [topic, difficulty, numQuestions, autoGenerate, useBlueprint, blueprintKey, docMode, geminiKey]);
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -712,7 +714,7 @@ function ExamGeneratorPage() {
             </div>
           </div>
 
-          <AccountPanel onAuthChange={setSignedIn} />
+          <ApiKeyPanel onKeyChange={setGeminiKey} />
 
           <form onSubmit={onSubmit} className="space-y-5">
 
