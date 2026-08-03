@@ -127,12 +127,26 @@ export function AccountPanel({ onAuthChange }: { onAuthChange?: (signedIn: boole
   return (
     <div className="space-y-3 rounded-2xl border border-border bg-card/70 p-4">
       <div className="space-y-2">
-        <div className="min-w-0">
-          <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-            <UserCircle2 className="h-3 w-3" /> Signed in
+        <div className="min-w-0 rounded-xl border border-primary/25 bg-primary/5 px-3 py-2">
+          <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-primary">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+            </span>
+            Signed in as
           </p>
-          <p className="truncate text-sm font-semibold text-foreground">{auth.email}</p>
+          <p className="truncate text-sm font-semibold text-foreground" title={auth.email}>
+            {auth.email}
+          </p>
+          <p className="mt-0.5 flex items-center gap-1 text-[11px] text-muted-foreground">
+            <CheckCircle2 className="h-3 w-3 text-primary" />
+            Session active
+            {auth.expiresAt
+              ? ` · expires ${new Date(auth.expiresAt * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
+              : ""}
+          </p>
         </div>
+
         <Button
           type="button"
           variant="outline"
