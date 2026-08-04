@@ -1495,8 +1495,10 @@ function ExamGeneratorPage() {
 
 
   function renderReviewCard() {
-    const q = displayedQuestions[reviewIndex];
+    const q = displayedQuestions[Math.max(0, Math.min(reviewIndex, total - 1))];
+    if (!q) return null;
     const selected = answers[q.question_number];
+
     const isCorrect = selected === q.correct_answer;
 
     return (
