@@ -36,9 +36,11 @@ import {
   X,
   Flag,
   Clock,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ApiKeyPanel } from "@/components/api-key-panel";
+import { downloadExamPdf } from "@/lib/exam-pdf";
 
 export const Route = createFileRoute("/")({
   component: ExamGeneratorPage,
@@ -1107,6 +1109,22 @@ function ExamGeneratorPage() {
             </Button>
           </form>
 
+          {total > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() =>
+                downloadExamPdf(displayedQuestions, {
+                  title: docMode ? docName : topic.trim() || "Generated exam",
+                  difficulty,
+                })
+              }
+              className="h-11 w-full rounded-xl text-[11px] font-bold uppercase tracking-widest"
+            >
+              <Download className="mr-2 h-4 w-4" />
+              Download exam PDF
+            </Button>
+          )}
 
           {total > 0 && (
             <div className="mt-1 border-t border-border/70 pt-6">
