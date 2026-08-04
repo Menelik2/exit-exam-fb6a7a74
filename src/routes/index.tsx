@@ -286,7 +286,7 @@ function loadSettings() {
       difficulty: validDiff ? (parsed.difficulty as Difficulty) : ("Beginner" as Difficulty),
       numQuestions:
         typeof parsed.numQuestions === "number"
-          ? Math.max(1, parsed.numQuestions)
+          ? Math.min(200, Math.max(1, Math.floor(parsed.numQuestions)))
           : 5,
       autoGenerate: typeof parsed.autoGenerate === "boolean" ? parsed.autoGenerate : true,
       shuffleOptions: typeof parsed.shuffleOptions === "boolean" ? parsed.shuffleOptions : false,
@@ -544,6 +544,7 @@ function ExamGeneratorPage() {
     setReviewMode(false);
     setReviewIndex(0);
     setTakingIndex(0);
+    setRetakeSubset(null);
     setRetakeReviewMode(false);
     setRetakeReviewIndex(0);
   }, [topic, difficulty, numQuestions]);
@@ -837,6 +838,7 @@ function ExamGeneratorPage() {
                   type="number"
                   inputMode="numeric"
                   min={1}
+                  max={200}
                   step={1}
                   className="h-11 rounded-xl border-border bg-card px-4 text-sm"
                   value={numQuestions === 0 ? "" : numQuestions}
@@ -848,10 +850,11 @@ function ExamGeneratorPage() {
                     }
                     const n = parseInt(raw, 10);
                     if (Number.isNaN(n)) return;
-                    setNumQuestions(Math.max(1, n));
+                    setNumQuestions(Math.min(200, Math.max(1, n)));
                   }}
                   onBlur={() => {
                     if (!numQuestions || numQuestions < 1) setNumQuestions(1);
+                    else if (numQuestions > 200) setNumQuestions(200);
                   }}
                 />
               </div>
@@ -1313,8 +1316,9 @@ function ExamGeneratorPage() {
 
   // ---- Card renderers ----
   function renderTakingCard() {
-    const safeIndex = Math.min(takingIndex, total - 1);
+    const safeIndex = Math.max(0, Math.min(takingIndex, total - 1));
     const q = displayedQuestions[safeIndex];
+    if (!q) return null;
     const selected = answers[q.question_number];
     const isRevealed = revealed[q.question_number];
     const isCorrect = selected === q.correct_answer;
