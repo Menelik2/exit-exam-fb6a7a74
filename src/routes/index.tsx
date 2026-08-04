@@ -283,7 +283,7 @@ function loadSettings() {
     );
     return {
       topic: typeof parsed.topic === "string" ? parsed.topic : "",
-      difficulty: validDiff ? (parsed.difficulty as Difficulty) : ("Intermediate" as Difficulty),
+      difficulty: validDiff ? (parsed.difficulty as Difficulty) : ("Beginner" as Difficulty),
       numQuestions:
         typeof parsed.numQuestions === "number"
           ? Math.max(1, parsed.numQuestions)
@@ -307,7 +307,7 @@ function loadSettings() {
 
 function ExamGeneratorPage() {
   const [topic, setTopic] = useState("");
-  const [difficulty, setDifficulty] = useState<Difficulty>("Intermediate");
+  const [difficulty, setDifficulty] = useState<Difficulty>("Beginner");
   const [numQuestions, setNumQuestions] = useState(5);
   const [autoGenerate, setAutoGenerate] = useState(true);
   const [shuffleOptions, setShuffleOptions] = useState(false);
@@ -320,7 +320,7 @@ function ExamGeneratorPage() {
     const saved = loadSettings();
     if (saved) {
       setTopic(saved.topic ?? "");
-      setDifficulty(saved.difficulty ?? "Intermediate");
+      setDifficulty(saved.difficulty ?? "Beginner");
       setNumQuestions(saved.numQuestions ?? 5);
       setAutoGenerate(saved.autoGenerate ?? true);
       setShuffleOptions(saved.shuffleOptions ?? false);
