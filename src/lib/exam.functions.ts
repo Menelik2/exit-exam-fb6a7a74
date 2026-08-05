@@ -10,6 +10,7 @@ const BlueprintItemSchema = z.object({
 
 const InputSchema = z.object({
   apiKey: z.string().min(20).max(200),
+  provider: z.enum(["gemini", "openai"]).optional().default("gemini"),
   topic: z.string().min(1).max(400),
   difficulty: z.enum(["Beginner", "Intermediate", "Advanced"]),
   numQuestions: z.number().int().min(1).max(200),
@@ -50,6 +51,66 @@ const RESPONSE_SCHEMA = {
 } as const;
 
 const MODEL_FALLBACKS = [GEMINI_MODEL, "gemini-2.5-flash", "gemini-2.0-flash"];
+
+export type AiProvider = "gemini" | "openai";
+
+const OPENAI_MODEL = "gpt-4o-mini";
+
+async function callOpenAI(
+  apiKey: string,
+  systemPrompt: string,
+  userPrompt: string,
+): Promise<ExamQuestion[]> {
+  if (!apiKey) throw new Error("OpenAI API key missing");
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      model: OPENAI_MODEL,
+      temperature: 0.9,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: `${userPrompt}\n\nReturn a JSON object shaped as {"questions": [{"question_number": number, "question": string, "options": string[4], "correct_answer": string, "explanation": string}]}.`,
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    if (response.status === 401 || response.status === 403) {
+      throw new Error("Your OpenAI API key was rejected. Check the key and try again.");
+    }
+    if (response.status === 429) {
+      throw new Error("OpenAI is rate limited or out of credit. Try again in a moment.");
+    }
+    throw new Error(`OpenAI request failed: ${response.status} ${text}`);
+  }
+
+  const json = await response.json();
+  const text: string | undefined = json?.choices?.[0]?.message?.content;
+  if (!text) throw new Error("OpenAI did not return content");
+  const parsed = JSON.parse(text) as { questions?: ExamQuestion[] };
+  return parsed.questions ?? [];
+}
+
+function callModel(
+  provider: AiProvider,
+  apiKey: string,
+  systemPrompt: string,
+  userPrompt: string,
+): Promise<ExamQuestion[]> {
+  return provider === "openai"
+    ? callOpenAI(apiKey, systemPrompt, userPrompt)
+    : callGemini(apiKey, systemPrompt, userPrompt);
+}
 
 async function callGemini(apiKey: string, systemPrompt: string, userPrompt: string): Promise<ExamQuestion[]> {
   if (!apiKey) throw new Error("Gemini API key missing");
@@ -107,6 +168,7 @@ function normalizeKey(q: string) {
  * whenever the model returns fewer items than asked for.
  */
 async function generateExactly(
+  provider: AiProvider,
   apiKey: string,
   systemPrompt: string,
   buildUserPrompt: (need: number, extraAvoid: string[]) => string,
@@ -122,7 +184,7 @@ async function generateExactly(
     const need = Math.min(BATCH_SIZE, target - collected.length);
     let batch: ExamQuestion[] = [];
     try {
-      batch = await callGemini(apiKey, systemPrompt, buildUserPrompt(need, collected.map((q) => q.question)));
+      batch = await callModel(provider, apiKey, systemPrompt, buildUserPrompt(need, collected.map((q) => q.question)));
     } catch (err) {
       if (collected.length === 0) throw err;
       break;
@@ -146,6 +208,7 @@ export const generateExam = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }): Promise<{ questions: ExamQuestion[] }> => {
     const apiKey = data.apiKey.trim();
+    const provider: AiProvider = data.provider ?? "gemini";
     const systemPrompt = `You are a senior Ethiopian university professor and official examiner for the Ethiopian Higher Education Exit Examination (EHEEE). You write rigorous, exam-grade multiple-choice questions that match the style, depth, and cognitive level of the real Ethiopian Exit Exam administered by the Ministry of Education.
 
 Follow these standards strictly:
@@ -176,6 +239,7 @@ Respond ONLY with valid JSON matching the schema. No prose, no markdown.`;
       for (const b of blueprint) {
         if (b.count <= 0) continue;
         const subjectQs = await generateExactly(
+          provider,
           apiKey,
           systemPrompt,
           (need, extra) => `Topic / Course: ${data.topic}
@@ -194,6 +258,7 @@ Generate EXACTLY ${need} multiple-choice questions for the subject area above. N
     }
 
     const questions = await generateExactly(
+      provider,
       apiKey,
       systemPrompt,
       (need, extra) => `Topic / Course: ${data.topic}
@@ -210,6 +275,7 @@ Generate EXACTLY ${need} multiple-choice questions. Number them 1..${need}. Neve
 
 const DocInputSchema = z.object({
   apiKey: z.string().min(20).max(200),
+  provider: z.enum(["gemini", "openai"]).optional().default("gemini"),
   documentName: z.string().min(1).max(200),
   documentText: z.string().min(20).max(200000),
   difficulty: z.enum(["Beginner", "Intermediate", "Advanced"]),
@@ -222,6 +288,7 @@ export const generateExamFromDocument = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => DocInputSchema.parse(input))
   .handler(async ({ data }): Promise<{ questions: ExamQuestion[] }> => {
     const apiKey = data.apiKey.trim();
+    const provider: AiProvider = data.provider ?? "gemini";
     const systemPrompt = `You are a senior university professor writing rigorous multiple-choice exam questions STRICTLY from a provided source document.
 
 ABSOLUTE RULES:
@@ -240,6 +307,7 @@ Respond ONLY with valid JSON matching the schema. No prose, no markdown.`;
     const seed = data.nonce ?? String(Date.now());
 
     const questions = await generateExactly(
+      provider,
       apiKey,
       systemPrompt,
       (need, extra) => {
