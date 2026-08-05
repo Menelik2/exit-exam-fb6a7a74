@@ -237,22 +237,30 @@ ABSOLUTE RULES:
 Respond ONLY with valid JSON matching the schema. No prose, no markdown.`;
 
     const avoidList = (data.avoid ?? []).slice(-200);
-    const avoidBlock =
-      avoidList.length > 0
-        ? `\n\nDo NOT repeat or rephrase these previously generated questions:\n${avoidList.map((q, i) => `${i + 1}. ${q}`).join("\n")}`
-        : "";
+    const seed = data.nonce ?? String(Date.now());
 
-    const userPrompt = `Source Document: "${data.documentName}"
+    const questions = await generateExactly(
+      apiKey,
+      systemPrompt,
+      (need, extra) => {
+        const all = [...avoidList, ...extra].slice(-300);
+        const avoidBlock =
+          all.length > 0
+            ? `\n\nDo NOT repeat or rephrase these already generated questions:\n${all.map((q, i) => `${i + 1}. ${q}`).join("\n")}`
+            : "";
+        return `Source Document: "${data.documentName}"
 Difficulty: ${data.difficulty}
-Number of Questions: ${data.numQuestions}
-Variation seed: ${data.nonce ?? Date.now()}
+Number of Questions: ${need}
+Variation seed: ${seed}
 
 === DOCUMENT CONTENT START ===
 ${data.documentText}
 === DOCUMENT CONTENT END ===
 
-Generate exactly ${data.numQuestions} multiple-choice questions based STRICTLY on the document above.${avoidBlock}`;
-
-    const questions = await callGemini(apiKey, systemPrompt, userPrompt);
+Generate EXACTLY ${need} multiple-choice questions based STRICTLY on the document above. Number them 1..${need}.${avoidBlock}`;
+      },
+      data.numQuestions
+    );
     return { questions };
   });
+
