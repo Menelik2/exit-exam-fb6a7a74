@@ -4,17 +4,87 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { KeyRound, CheckCircle2, ExternalLink, Loader2 } from "lucide-react";
 
-export const GEMINI_LS_KEY = "exam-gen-gemini-key-v1";
+export type AiProvider = "gemini" | "openai";
 
-export function readGeminiKey(): string {
+export const GEMINI_LS_KEY = "exam-gen-gemini-key-v1";
+export const OPENAI_LS_KEY = "exam-gen-openai-key-v1";
+export const PROVIDER_LS_KEY = "exam-gen-provider-v1";
+
+const LS_KEY: Record<AiProvider, string> = {
+  gemini: GEMINI_LS_KEY,
+  openai: OPENAI_LS_KEY,
+};
+
+const META: Record<
+  AiProvider,
+  { label: string; placeholder: string; link: string; linkLabel: string }
+> = {
+  gemini: {
+    label: "Google Gemini",
+    placeholder: "AIza...",
+    link: "https://aistudio.google.com/apikey",
+    linkLabel: "Get a free key from Google AI Studio",
+  },
+  openai: {
+    label: "OpenAI (ChatGPT)",
+    placeholder: "sk-...",
+    link: "https://platform.openai.com/api-keys",
+    linkLabel: "Get a key from the OpenAI dashboard",
+  },
+};
+
+export function readProvider(): AiProvider {
   try {
-    return localStorage.getItem(GEMINI_LS_KEY) ?? "";
+    return localStorage.getItem(PROVIDER_LS_KEY) === "openai" ? "openai" : "gemini";
+  } catch {
+    return "gemini";
+  }
+}
+
+export function readKey(provider: AiProvider): string {
+  try {
+    return localStorage.getItem(LS_KEY[provider]) ?? "";
   } catch {
     return "";
   }
 }
 
-export function ApiKeyPanel({ onKeyChange }: { onKeyChange?: (key: string) => void }) {
+export function readGeminiKey(): string {
+  return readKey("gemini");
+}
+
+async function validateKey(provider: AiProvider, key: string) {
+  if (provider === "gemini") {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`,
+    );
+    if (!res.ok) {
+      throw new Error(
+        res.status === 400 || res.status === 401 || res.status === 403
+          ? "That key was rejected by Google. Check it and try again."
+          : "Couldn't verify the key right now. Try again in a moment.",
+      );
+    }
+    return;
+  }
+  const res = await fetch("https://api.openai.com/v1/models", {
+    headers: { Authorization: `Bearer ${key}` },
+  });
+  if (!res.ok) {
+    throw new Error(
+      res.status === 401 || res.status === 403
+        ? "That key was rejected by OpenAI. Check it and try again."
+        : "Couldn't verify the key right now. Try again in a moment.",
+    );
+  }
+}
+
+export function ApiKeyPanel({
+  onKeyChange,
+}: {
+  onKeyChange?: (key: string, provider: AiProvider) => void;
+}) {
+  const [provider, setProvider] = useState<AiProvider>("gemini");
   const [saved, setSaved] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState("");
   const [editing, setEditing] = useState(false);
@@ -23,12 +93,29 @@ export function ApiKeyPanel({ onKeyChange }: { onKeyChange?: (key: string) => vo
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const k = readGeminiKey();
+    const p = readProvider();
+    const k = readKey(p);
+    setProvider(p);
     setSaved(k || null);
     setReady(true);
-    onKeyChange?.(k);
+    onKeyChange?.(k, p);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const switchProvider = (p: AiProvider) => {
+    setProvider(p);
+    setErr(null);
+    setApiKey("");
+    setEditing(false);
+    try {
+      localStorage.setItem(PROVIDER_LS_KEY, p);
+    } catch {
+      /* ignore */
+    }
+    const k = readKey(p);
+    setSaved(k || null);
+    onKeyChange?.(k, p);
+  };
 
   const onSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,22 +123,13 @@ export function ApiKeyPanel({ onKeyChange }: { onKeyChange?: (key: string) => vo
     setErr(null);
     setChecking(true);
     try {
-      // Validate directly against Google so only a real key is stored.
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`,
-      );
-      if (!res.ok) {
-        throw new Error(
-          res.status === 400 || res.status === 401 || res.status === 403
-            ? "That key was rejected by Google. Check it and try again."
-            : "Couldn't verify the key right now. Try again in a moment.",
-        );
-      }
-      localStorage.setItem(GEMINI_LS_KEY, key);
+      await validateKey(provider, key);
+      localStorage.setItem(LS_KEY[provider], key);
+      localStorage.setItem(PROVIDER_LS_KEY, provider);
       setSaved(key);
       setApiKey("");
       setEditing(false);
-      onKeyChange?.(key);
+      onKeyChange?.(key, provider);
     } catch (e) {
       setErr((e as Error).message);
     } finally {
@@ -60,11 +138,11 @@ export function ApiKeyPanel({ onKeyChange }: { onKeyChange?: (key: string) => vo
   };
 
   const onRemove = () => {
-    if (!confirm("Remove your Gemini API key from this browser?")) return;
-    localStorage.removeItem(GEMINI_LS_KEY);
+    if (!confirm(`Remove your ${META[provider].label} API key from this browser?`)) return;
+    localStorage.removeItem(LS_KEY[provider]);
     setSaved(null);
     setEditing(false);
-    onKeyChange?.("");
+    onKeyChange?.("", provider);
   };
 
   if (!ready) {
@@ -76,14 +154,32 @@ export function ApiKeyPanel({ onKeyChange }: { onKeyChange?: (key: string) => vo
   }
 
   const showForm = editing || !saved;
+  const meta = META[provider];
 
   return (
     <div className="space-y-3 rounded-2xl border border-border bg-card/70 p-4">
+      <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
+        {(["gemini", "openai"] as AiProvider[]).map((p) => (
+          <button
+            key={p}
+            type="button"
+            onClick={() => switchProvider(p)}
+            className={`rounded-lg px-2 py-1.5 text-[11px] font-semibold transition-colors ${
+              provider === p
+                ? "bg-card text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {p === "gemini" ? "Gemini" : "ChatGPT"}
+          </button>
+        ))}
+      </div>
+
       {saved && !editing ? (
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm">
             <CheckCircle2 className="h-4 w-4 text-primary" />
-            <span className="font-semibold text-foreground">Gemini key connected</span>
+            <span className="font-semibold text-foreground">{meta.label} connected</span>
             <span className="ml-auto rounded-md bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
               ••••{saved.slice(-4)}
             </span>
@@ -120,13 +216,13 @@ export function ApiKeyPanel({ onKeyChange }: { onKeyChange?: (key: string) => vo
               htmlFor="gkey"
               className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground"
             >
-              Your Gemini API key
+              Your {meta.label} API key
             </Label>
           </div>
           <Input
             id="gkey"
             type="password"
-            placeholder="AIza..."
+            placeholder={meta.placeholder}
             value={apiKey}
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setApiKey(e.target.value)}
             className="h-10 rounded-xl bg-card font-mono text-xs"
@@ -134,12 +230,12 @@ export function ApiKeyPanel({ onKeyChange }: { onKeyChange?: (key: string) => vo
             autoComplete="off"
           />
           <a
-            href="https://aistudio.google.com/apikey"
+            href={meta.link}
             target="_blank"
             rel="noreferrer"
             className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
           >
-            Get a free key from Google AI Studio <ExternalLink className="h-3 w-3" />
+            {meta.linkLabel} <ExternalLink className="h-3 w-3" />
           </a>
           {err && <p className="text-xs text-destructive">{err}</p>}
           <div className="flex gap-2 pt-1">
