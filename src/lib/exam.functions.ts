@@ -10,6 +10,7 @@ const BlueprintItemSchema = z.object({
 
 const InputSchema = z.object({
   apiKey: z.string().min(20).max(200),
+  provider: z.enum(["gemini", "openai"]).optional().default("gemini"),
   topic: z.string().min(1).max(400),
   difficulty: z.enum(["Beginner", "Intermediate", "Advanced"]),
   numQuestions: z.number().int().min(1).max(200),
