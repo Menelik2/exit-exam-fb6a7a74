@@ -96,6 +96,52 @@ async function callGemini(apiKey: string, systemPrompt: string, userPrompt: stri
   throw new Error(`Gemini is overloaded right now. Please try again in a moment.`);
 }
 
+const BATCH_SIZE = 25;
+
+function normalizeKey(q: string) {
+  return q.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+/**
+ * Generates EXACTLY `target` questions by batching requests and topping up
+ * whenever the model returns fewer items than asked for.
+ */
+async function generateExactly(
+  apiKey: string,
+  systemPrompt: string,
+  buildUserPrompt: (need: number, extraAvoid: string[]) => string,
+  target: number
+): Promise<ExamQuestion[]> {
+  const collected: ExamQuestion[] = [];
+  const seen = new Set<string>();
+  let attempts = 0;
+  const maxAttempts = Math.ceil(target / BATCH_SIZE) + 6;
+
+  while (collected.length < target && attempts < maxAttempts) {
+    attempts++;
+    const need = Math.min(BATCH_SIZE, target - collected.length);
+    let batch: ExamQuestion[] = [];
+    try {
+      batch = await callGemini(apiKey, systemPrompt, buildUserPrompt(need, collected.map((q) => q.question)));
+    } catch (err) {
+      if (collected.length === 0) throw err;
+      break;
+    }
+
+    for (const q of batch) {
+      if (collected.length >= target) break;
+      if (!q?.question || !Array.isArray(q.options) || q.options.length < 2) continue;
+      const key = normalizeKey(q.question);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      collected.push(q);
+    }
+  }
+
+  return collected.slice(0, target).map((q, i) => ({ ...q, question_number: i + 1 }));
+}
+
+
 export const generateExam = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }): Promise<{ questions: ExamQuestion[] }> => {
@@ -115,30 +161,52 @@ Follow these standards strictly:
 Respond ONLY with valid JSON matching the schema. No prose, no markdown.`;
 
     const avoidList = (data.avoid ?? []).slice(-200);
-    const avoidBlock =
-      avoidList.length > 0
-        ? `\n\nSTRICT NO-REPEAT RULE: Do NOT repeat, rephrase, or produce semantically equivalent versions of any of these previously generated questions. Pick entirely different subtopics, angles, scenarios, and wording. Previously generated questions (one per line):\n${avoidList.map((q, i) => `${i + 1}. ${q}`).join("\n")}`
+    const avoidText = (extra: string[]) => {
+      const all = [...avoidList, ...extra].slice(-300);
+      return all.length > 0
+        ? `\n\nSTRICT NO-REPEAT RULE: Do NOT repeat, rephrase, or produce semantically equivalent versions of any of these questions. Pick entirely different subtopics, angles, scenarios, and wording. Already used questions (one per line):\n${all.map((q, i) => `${i + 1}. ${q}`).join("\n")}`
         : "";
+    };
 
     const blueprint = data.blueprint ?? [];
-    const blueprintBlock =
-      blueprint.length > 0
-        ? `\n\nEXAM BLUEPRINT — you MUST follow this subject distribution exactly. Produce questions grouped per subject in the listed order, totaling ${data.numQuestions} questions:\n${blueprint
-            .map(
-              (b, i) =>
-                `${i + 1}. Subject: "${b.subject}" — ${b.count} question(s) (weight ${b.weight}%)${b.objectives ? `\n   Learning objectives to cover: ${b.objectives}` : ""}`
-            )
-            .join("\n")}\n\nFor each subject, ensure the questions explicitly target the listed learning objectives. Do not exceed or fall short of the per-subject counts. Number questions globally 1..${data.numQuestions}.`
-        : "";
+    const seed = data.nonce ?? String(Date.now());
 
-    const userPrompt = `Topic / Course: ${data.topic}
+    if (blueprint.length > 0) {
+      const all: ExamQuestion[] = [];
+      for (const b of blueprint) {
+        if (b.count <= 0) continue;
+        const subjectQs = await generateExactly(
+          apiKey,
+          systemPrompt,
+          (need, extra) => `Topic / Course: ${data.topic}
+Subject area: ${b.subject}${b.objectives ? `\nLearning objectives to cover: ${b.objectives}` : ""}
 Difficulty: ${data.difficulty}
-Number of Questions: ${data.numQuestions}
-Variation seed: ${data.nonce ?? Date.now()} — generate a fresh, distinct set of questions different from any prior generation. Vary subtopics, phrasing, and which option is correct.${blueprintBlock}${avoidBlock}`;
+Number of Questions: ${need}
+Variation seed: ${seed}
 
-    const questions = await callGemini(apiKey, systemPrompt, userPrompt);
+Generate EXACTLY ${need} multiple-choice questions for the subject area above. Number them 1..${need}.${avoidText([...all.map((q) => q.question), ...extra])}`,
+          b.count
+        );
+        all.push(...subjectQs);
+      }
+      const questions = all.slice(0, data.numQuestions).map((q, i) => ({ ...q, question_number: i + 1 }));
+      return { questions };
+    }
+
+    const questions = await generateExactly(
+      apiKey,
+      systemPrompt,
+      (need, extra) => `Topic / Course: ${data.topic}
+Difficulty: ${data.difficulty}
+Number of Questions: ${need}
+Variation seed: ${seed} — generate a fresh, distinct set of questions different from any prior generation. Vary subtopics, phrasing, and which option is correct.
+
+Generate EXACTLY ${need} multiple-choice questions. Number them 1..${need}. Never return fewer than ${need}.${avoidText(extra)}`,
+      data.numQuestions
+    );
     return { questions };
   });
+
 
 const DocInputSchema = z.object({
   apiKey: z.string().min(20).max(200),
@@ -169,22 +237,30 @@ ABSOLUTE RULES:
 Respond ONLY with valid JSON matching the schema. No prose, no markdown.`;
 
     const avoidList = (data.avoid ?? []).slice(-200);
-    const avoidBlock =
-      avoidList.length > 0
-        ? `\n\nDo NOT repeat or rephrase these previously generated questions:\n${avoidList.map((q, i) => `${i + 1}. ${q}`).join("\n")}`
-        : "";
+    const seed = data.nonce ?? String(Date.now());
 
-    const userPrompt = `Source Document: "${data.documentName}"
+    const questions = await generateExactly(
+      apiKey,
+      systemPrompt,
+      (need, extra) => {
+        const all = [...avoidList, ...extra].slice(-300);
+        const avoidBlock =
+          all.length > 0
+            ? `\n\nDo NOT repeat or rephrase these already generated questions:\n${all.map((q, i) => `${i + 1}. ${q}`).join("\n")}`
+            : "";
+        return `Source Document: "${data.documentName}"
 Difficulty: ${data.difficulty}
-Number of Questions: ${data.numQuestions}
-Variation seed: ${data.nonce ?? Date.now()}
+Number of Questions: ${need}
+Variation seed: ${seed}
 
 === DOCUMENT CONTENT START ===
 ${data.documentText}
 === DOCUMENT CONTENT END ===
 
-Generate exactly ${data.numQuestions} multiple-choice questions based STRICTLY on the document above.${avoidBlock}`;
-
-    const questions = await callGemini(apiKey, systemPrompt, userPrompt);
+Generate EXACTLY ${need} multiple-choice questions based STRICTLY on the document above. Number them 1..${need}.${avoidBlock}`;
+      },
+      data.numQuestions
+    );
     return { questions };
   });
+
