@@ -96,6 +96,52 @@ async function callGemini(apiKey: string, systemPrompt: string, userPrompt: stri
   throw new Error(`Gemini is overloaded right now. Please try again in a moment.`);
 }
 
+const BATCH_SIZE = 25;
+
+function normalizeKey(q: string) {
+  return q.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+/**
+ * Generates EXACTLY `target` questions by batching requests and topping up
+ * whenever the model returns fewer items than asked for.
+ */
+async function generateExactly(
+  apiKey: string,
+  systemPrompt: string,
+  buildUserPrompt: (need: number, extraAvoid: string[]) => string,
+  target: number
+): Promise<ExamQuestion[]> {
+  const collected: ExamQuestion[] = [];
+  const seen = new Set<string>();
+  let attempts = 0;
+  const maxAttempts = Math.ceil(target / BATCH_SIZE) + 6;
+
+  while (collected.length < target && attempts < maxAttempts) {
+    attempts++;
+    const need = Math.min(BATCH_SIZE, target - collected.length);
+    let batch: ExamQuestion[] = [];
+    try {
+      batch = await callGemini(apiKey, systemPrompt, buildUserPrompt(need, collected.map((q) => q.question)));
+    } catch (err) {
+      if (collected.length === 0) throw err;
+      break;
+    }
+
+    for (const q of batch) {
+      if (collected.length >= target) break;
+      if (!q?.question || !Array.isArray(q.options) || q.options.length < 2) continue;
+      const key = normalizeKey(q.question);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      collected.push(q);
+    }
+  }
+
+  return collected.slice(0, target).map((q, i) => ({ ...q, question_number: i + 1 }));
+}
+
+
 export const generateExam = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }): Promise<{ questions: ExamQuestion[] }> => {
