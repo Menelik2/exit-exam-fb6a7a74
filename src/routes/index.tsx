@@ -39,7 +39,7 @@ import {
   Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ApiKeyPanel } from "@/components/api-key-panel";
+import { ApiKeyPanel, type AiProvider } from "@/components/api-key-panel";
 import { downloadExamPdf } from "@/lib/exam-pdf";
 
 export const Route = createFileRoute("/")({
@@ -317,6 +317,7 @@ function ExamGeneratorPage() {
   const [blueprint, setBlueprint] = useState<BlueprintItem[]>(DEFAULT_BLUEPRINT);
   const [hydrated, setHydrated] = useState(false);
   const [geminiKey, setGeminiKey] = useState("");
+  const [aiProvider, setAiProvider] = useState<AiProvider>("gemini");
 
   useEffect(() => {
     const saved = loadSettings();
@@ -438,6 +439,7 @@ function ExamGeneratorPage() {
         return generateDocFn({
           data: {
             apiKey: geminiKey,
+            provider: aiProvider,
             documentName: vars.documentName,
             documentText: vars.documentText,
             difficulty: vars.difficulty,
@@ -450,6 +452,7 @@ function ExamGeneratorPage() {
       return generateFn({
         data: {
           apiKey: geminiKey,
+          provider: aiProvider,
           topic: vars.topic,
           difficulty: vars.difficulty,
           numQuestions: vars.numQuestions,
@@ -717,7 +720,12 @@ function ExamGeneratorPage() {
             </div>
           </div>
 
-          <ApiKeyPanel onKeyChange={setGeminiKey} />
+          <ApiKeyPanel
+            onKeyChange={(key, provider) => {
+              setGeminiKey(key);
+              setAiProvider(provider);
+            }}
+          />
 
           <form onSubmit={onSubmit} className="space-y-5">
 
