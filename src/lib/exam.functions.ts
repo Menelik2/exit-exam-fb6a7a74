@@ -27,7 +27,7 @@ export type ExamQuestion = {
   explanation: string;
 };
 
-const GEMINI_MODEL = "gemini-2.5-flash-lite";
+const GEMINI_MODEL = "gemini-2.5-flash";
 
 const RESPONSE_SCHEMA = {
   type: "OBJECT",
@@ -50,7 +50,12 @@ const RESPONSE_SCHEMA = {
   required: ["questions"],
 } as const;
 
-const MODEL_FALLBACKS = [GEMINI_MODEL, "gemini-2.5-flash", "gemini-2.0-flash"];
+const MODEL_FALLBACKS = [
+  GEMINI_MODEL,
+  "gemini-flash-latest",
+  "gemini-2.0-flash",
+  "gemini-flash-lite-latest",
+];
 
 export type AiProvider = "gemini" | "openai";
 
