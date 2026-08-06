@@ -152,6 +152,7 @@ async function callGemini(apiKey: string, systemPrompt: string, userPrompt: stri
       lastErr = `${response.status} ${text}`;
 
       if (response.status === 429) throw new Error("Gemini is rate limited. Please try again in a moment.");
+      if (response.status === 404 || response.status === 400) break; // model unavailable — try next model
       if (response.status === 503 || response.status === 500 || response.status === 502) {
         await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
         continue;
@@ -159,7 +160,7 @@ async function callGemini(apiKey: string, systemPrompt: string, userPrompt: stri
       throw new Error(`Gemini request failed: ${lastErr}`);
     }
   }
-  throw new Error(`Gemini is overloaded right now. Please try again in a moment.`);
+  throw new Error(`Gemini request failed: ${lastErr || "no available model"}`);
 }
 
 const BATCH_SIZE = 25;
