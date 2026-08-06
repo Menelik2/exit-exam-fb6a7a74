@@ -10,7 +10,7 @@ const BlueprintItemSchema = z.object({
 
 const InputSchema = z.object({
   apiKey: z.string().min(20).max(200),
-  provider: z.enum(["gemini", "openai"]).optional().default("gemini"),
+  provider: z.enum(["gemini", "openai", "deepseek"]).optional().default("gemini"),
   topic: z.string().min(1).max(400),
   difficulty: z.enum(["Beginner", "Intermediate", "Advanced"]),
   numQuestions: z.number().int().min(1).max(200),
@@ -57,25 +57,33 @@ const MODEL_FALLBACKS = [
   "gemini-flash-lite-latest",
 ];
 
-export type AiProvider = "gemini" | "openai";
+export type AiProvider = "gemini" | "openai" | "deepseek";
 
 const OPENAI_MODEL = "gpt-4o-mini";
+const DEEPSEEK_MODEL = "deepseek-chat";
 
-async function callOpenAI(
+async function callOpenAICompatible(
+  provider: "openai" | "deepseek",
   apiKey: string,
   systemPrompt: string,
   userPrompt: string,
 ): Promise<ExamQuestion[]> {
-  if (!apiKey) throw new Error("OpenAI API key missing");
+  const label = provider === "deepseek" ? "DeepSeek" : "OpenAI";
+  if (!apiKey) throw new Error(`${label} API key missing`);
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
+  const url =
+    provider === "deepseek"
+      ? "https://api.deepseek.com/chat/completions"
+      : "https://api.openai.com/v1/chat/completions";
+
+  const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
-      model: OPENAI_MODEL,
+      model: provider === "deepseek" ? DEEPSEEK_MODEL : OPENAI_MODEL,
       temperature: 0.9,
       response_format: { type: "json_object" },
       messages: [
@@ -91,17 +99,20 @@ async function callOpenAI(
   if (!response.ok) {
     const text = await response.text();
     if (response.status === 401 || response.status === 403) {
-      throw new Error("Your OpenAI API key was rejected. Check the key and try again.");
+      throw new Error(`Your ${label} API key was rejected. Check the key and try again.`);
     }
     if (response.status === 429) {
-      throw new Error("OpenAI is rate limited or out of credit. Try again in a moment.");
+      throw new Error(`${label} is rate limited or out of credit. Try again in a moment.`);
     }
-    throw new Error(`OpenAI request failed: ${response.status} ${text}`);
+    if (response.status === 402) {
+      throw new Error(`${label} account has insufficient balance.`);
+    }
+    throw new Error(`${label} request failed: ${response.status} ${text}`);
   }
 
   const json = await response.json();
   const text: string | undefined = json?.choices?.[0]?.message?.content;
-  if (!text) throw new Error("OpenAI did not return content");
+  if (!text) throw new Error(`${label} did not return content`);
   const parsed = JSON.parse(text) as { questions?: ExamQuestion[] };
   return parsed.questions ?? [];
 }
@@ -112,9 +123,9 @@ function callModel(
   systemPrompt: string,
   userPrompt: string,
 ): Promise<ExamQuestion[]> {
-  return provider === "openai"
-    ? callOpenAI(apiKey, systemPrompt, userPrompt)
-    : callGemini(apiKey, systemPrompt, userPrompt);
+  return provider === "gemini"
+    ? callGemini(apiKey, systemPrompt, userPrompt)
+    : callOpenAICompatible(provider, apiKey, systemPrompt, userPrompt);
 }
 
 async function callGemini(apiKey: string, systemPrompt: string, userPrompt: string): Promise<ExamQuestion[]> {
@@ -281,7 +292,7 @@ Generate EXACTLY ${need} multiple-choice questions. Number them 1..${need}. Neve
 
 const DocInputSchema = z.object({
   apiKey: z.string().min(20).max(200),
-  provider: z.enum(["gemini", "openai"]).optional().default("gemini"),
+  provider: z.enum(["gemini", "openai", "deepseek"]).optional().default("gemini"),
   documentName: z.string().min(1).max(200),
   documentText: z.string().min(20).max(200000),
   difficulty: z.enum(["Beginner", "Intermediate", "Advanced"]),

@@ -4,15 +4,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { KeyRound, CheckCircle2, ExternalLink, Loader2 } from "lucide-react";
 
-export type AiProvider = "gemini" | "openai";
+export type AiProvider = "gemini" | "openai" | "deepseek";
 
 export const GEMINI_LS_KEY = "exam-gen-gemini-key-v1";
 export const OPENAI_LS_KEY = "exam-gen-openai-key-v1";
+export const DEEPSEEK_LS_KEY = "exam-gen-deepseek-key-v1";
 export const PROVIDER_LS_KEY = "exam-gen-provider-v1";
 
 const LS_KEY: Record<AiProvider, string> = {
   gemini: GEMINI_LS_KEY,
   openai: OPENAI_LS_KEY,
+  deepseek: DEEPSEEK_LS_KEY,
 };
 
 const META: Record<
@@ -31,11 +33,18 @@ const META: Record<
     link: "https://platform.openai.com/api-keys",
     linkLabel: "Get a key from the OpenAI dashboard",
   },
+  deepseek: {
+    label: "DeepSeek",
+    placeholder: "sk-...",
+    link: "https://platform.deepseek.com/api_keys",
+    linkLabel: "Get a key from the DeepSeek platform",
+  },
 };
 
 export function readProvider(): AiProvider {
   try {
-    return localStorage.getItem(PROVIDER_LS_KEY) === "openai" ? "openai" : "gemini";
+    const p = localStorage.getItem(PROVIDER_LS_KEY);
+    return p === "openai" || p === "deepseek" ? p : "gemini";
   } catch {
     return "gemini";
   }
@@ -67,13 +76,15 @@ async function validateKey(provider: AiProvider, key: string) {
     }
     return;
   }
-  const res = await fetch("https://api.openai.com/v1/models", {
+  const base =
+    provider === "deepseek" ? "https://api.deepseek.com" : "https://api.openai.com/v1";
+  const res = await fetch(`${base}/models`, {
     headers: { Authorization: `Bearer ${key}` },
   });
   if (!res.ok) {
     throw new Error(
       res.status === 401 || res.status === 403
-        ? "That key was rejected by OpenAI. Check it and try again."
+        ? `That key was rejected by ${META[provider].label}. Check it and try again.`
         : "Couldn't verify the key right now. Try again in a moment.",
     );
   }
@@ -158,8 +169,8 @@ export function ApiKeyPanel({
 
   return (
     <div className="space-y-3 rounded-2xl border border-border bg-card/70 p-4">
-      <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1">
-        {(["gemini", "openai"] as AiProvider[]).map((p) => (
+      <div className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
+        {(["gemini", "openai", "deepseek"] as AiProvider[]).map((p) => (
           <button
             key={p}
             type="button"
@@ -170,7 +181,7 @@ export function ApiKeyPanel({
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            {p === "gemini" ? "Gemini" : "ChatGPT"}
+            {p === "gemini" ? "Gemini" : p === "openai" ? "ChatGPT" : "DeepSeek"}
           </button>
         ))}
       </div>
