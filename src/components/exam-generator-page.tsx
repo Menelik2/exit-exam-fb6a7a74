@@ -26,6 +26,8 @@ import {
   X,
   Download,
   Info,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ApiKeyPanel, type AiProvider } from "@/components/api-key-panel";
@@ -46,6 +48,7 @@ export function ExamGeneratorPage() {
   const [docText, setDocText] = useState("");
   const [docExtracting, setDocExtracting] = useState(false);
   const [docError, setDocError] = useState<string | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   const docMode = docText.length > 0;
   const generateFn = useServerFn(generateExam);
@@ -80,10 +83,22 @@ export function ExamGeneratorPage() {
     onSuccess: () => {
       setAnswers({});
       setRevealed({});
+      setCurrentIndex(0);
     },
   });
 
   const questions: ExamQuestion[] = mutation.data?.questions ?? [];
+
+  // Keep index in bounds if questions change
+  useEffect(() => {
+    if (questions.length === 0) {
+      setCurrentIndex(0);
+      return;
+    }
+    if (currentIndex >= questions.length) {
+      setCurrentIndex(questions.length - 1);
+    }
+  }, [questions.length, currentIndex]);
 
   const run = useCallback(() => {
     if (!docMode && !topic.trim()) return;
@@ -126,6 +141,10 @@ export function ExamGeneratorPage() {
       ).length,
     [questions, revealed, answers],
   );
+
+  const currentQuestion = questions[currentIndex];
+  const isFirst = currentIndex <= 0;
+  const isLast = currentIndex >= questions.length - 1;
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground p-3 sm:p-6 lg:p-8">
@@ -334,82 +353,138 @@ export function ExamGeneratorPage() {
             </div>
           )}
 
-          {!mutation.isPending &&
-            questions.map((q) => {
-              const selected = answers[q.question_number];
-              const isRevealed = revealed[q.question_number];
-              const isCorrect = selected === q.correct_answer;
-              return (
-                <div
-                  key={q.question_number}
-                  className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6"
-                >
-                  <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                    Question {q.question_number}
-                  </p>
-                  <p className="mb-4 text-base leading-relaxed">{q.question}</p>
-                  <div className="space-y-2">
-                    {q.options.map((opt, i) => {
-                      const letter = String.fromCharCode(65 + i);
-                      const isSelected = selected === opt;
-                      const isAnswer = opt === q.correct_answer;
-                      return (
-                        <button
-                          key={i}
-                          type="button"
-                          disabled={isRevealed}
-                          onClick={() => {
-                            setAnswers((a) => ({ ...a, [q.question_number]: opt }));
-                            setRevealed((r) => ({ ...r, [q.question_number]: true }));
-                          }}
+          {!mutation.isPending && currentQuestion && (
+            <>
+              {/* Progress indicator */}
+              <div className="flex items-center justify-between px-1">
+                <p className="text-sm font-medium text-muted-foreground">
+                  Question {currentIndex + 1} of {questions.length}
+                </p>
+                <div className="flex h-2 flex-1 mx-4 max-w-[200px] overflow-hidden rounded-full bg-secondary">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-300"
+                    style={{
+                      width: `${((currentIndex + 1) / questions.length) * 100}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Single question card */}
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-6">
+                <p className="mb-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Question {currentQuestion.question_number}
+                </p>
+                <p className="mb-4 text-base leading-relaxed">{currentQuestion.question}</p>
+                <div className="space-y-2">
+                  {currentQuestion.options.map((opt, i) => {
+                    const letter = String.fromCharCode(65 + i);
+                    const selected = answers[currentQuestion.question_number];
+                    const isRevealed = revealed[currentQuestion.question_number];
+                    const isSelected = selected === opt;
+                    const isAnswer = opt === currentQuestion.correct_answer;
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        disabled={isRevealed}
+                        onClick={() => {
+                          setAnswers((a) => ({
+                            ...a,
+                            [currentQuestion.question_number]: opt,
+                          }));
+                          setRevealed((r) => ({
+                            ...r,
+                            [currentQuestion.question_number]: true,
+                          }));
+                        }}
+                        className={cn(
+                          "flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left transition-colors",
+                          "border-border hover:border-foreground",
+                          isSelected && !isRevealed && "border-foreground bg-secondary",
+                          isRevealed && isAnswer && "border-emerald-600 bg-emerald-50",
+                          isRevealed && isSelected && !isAnswer && "border-destructive bg-red-50",
+                        )}
+                      >
+                        <span
                           className={cn(
-                            "flex w-full items-start gap-3 rounded-xl border px-4 py-3 text-left transition-colors",
-                            "border-border hover:border-foreground",
-                            isSelected && !isRevealed && "border-foreground bg-secondary",
-                            isRevealed && isAnswer && "border-emerald-600 bg-emerald-50",
-                            isRevealed && isSelected && !isAnswer && "border-destructive bg-red-50",
+                            "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-bold",
+                            isRevealed &&
+                              isAnswer &&
+                              "border-emerald-700 bg-emerald-700 text-white",
+                            isRevealed &&
+                              isSelected &&
+                              !isAnswer &&
+                              "border-destructive bg-destructive text-white",
                           )}
                         >
-                          <span
-                            className={cn(
-                              "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-bold",
-                              isRevealed && isAnswer && "border-emerald-700 bg-emerald-700 text-white",
-                              isRevealed &&
-                                isSelected &&
-                                !isAnswer &&
-                                "border-destructive bg-destructive text-white",
-                            )}
-                          >
-                            {letter}
-                          </span>
-                          <span className="flex-1 pt-0.5 text-sm">{opt}</span>
-                          {isRevealed && isAnswer && (
-                            <CheckCircle2 className="h-5 w-5 text-emerald-700" />
-                          )}
-                          {isRevealed && isSelected && !isAnswer && (
-                            <XCircle className="h-5 w-5 text-destructive" />
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {isRevealed && (
-                    <div
-                      className={cn(
-                        "mt-4 rounded-xl border-l-4 bg-secondary/60 p-4",
-                        isCorrect ? "border-emerald-700" : "border-amber-600",
-                      )}
-                    >
-                      <div className="mb-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
-                        <Info className="h-3.5 w-3.5" />
-                        {isCorrect ? "Correct" : `Answer: ${q.correct_answer}`}
-                      </div>
-                      <p className="text-sm leading-relaxed">{q.explanation}</p>
-                    </div>
-                  )}
+                          {letter}
+                        </span>
+                        <span className="flex-1 pt-0.5 text-sm">{opt}</span>
+                        {isRevealed && isAnswer && (
+                          <CheckCircle2 className="h-5 w-5 text-emerald-700" />
+                        )}
+                        {isRevealed && isSelected && !isAnswer && (
+                          <XCircle className="h-5 w-5 text-destructive" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
-              );
-            })}
+                {revealed[currentQuestion.question_number] && (
+                  <div
+                    className={cn(
+                      "mt-4 rounded-xl border-l-4 bg-secondary/60 p-4",
+                      answers[currentQuestion.question_number] ===
+                        currentQuestion.correct_answer
+                        ? "border-emerald-700"
+                        : "border-amber-600",
+                    )}
+                  >
+                    <div className="mb-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
+                      <Info className="h-3.5 w-3.5" />
+                      {answers[currentQuestion.question_number] ===
+                      currentQuestion.correct_answer
+                        ? "Correct"
+                        : `Answer: ${currentQuestion.correct_answer}`}
+                    </div>
+                    <p className="text-sm leading-relaxed">{currentQuestion.explanation}</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Previous / Next navigation */}
+              <div className="flex items-center justify-between gap-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 rounded-xl px-5"
+                  disabled={isFirst}
+                  onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+                >
+                  <ChevronLeft className="mr-1.5 h-4 w-4" />
+                  Previous
+                </Button>
+
+                <span className="text-xs text-muted-foreground tabular-nums">
+                  {currentIndex + 1} / {questions.length}
+                </span>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 rounded-xl px-5"
+                  disabled={isLast}
+                  onClick={() =>
+                    setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))
+                  }
+                >
+                  Next
+                  <ChevronRight className="ml-1.5 h-4 w-4" />
+                </Button>
+              </div>
+            </>
+          )}
         </main>
       </div>
     </div>
