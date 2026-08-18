@@ -9,7 +9,6 @@ const BlueprintItemSchema = z.object({
 });
 
 const InputSchema = z.object({
-  // Optional when server has GEMINI_API_KEY
   apiKey: z.string().max(200).optional().default(""),
   provider: z.enum(["gemini"]).optional().default("gemini"),
   topic: z.string().min(1).max(400),
@@ -53,9 +52,9 @@ const RESPONSE_SCHEMA = {
 
 const MODEL_FALLBACKS = [
   GEMINI_MODEL,
-  "gemini-flash-latest",
   "gemini-2.0-flash",
-  "gemini-flash-lite-latest",
+  "gemini-flash-latest",
+  "gemini-1.5-flash",
 ];
 
 export type AiProvider = "gemini";
@@ -63,7 +62,22 @@ export type AiProvider = "gemini";
 function resolveApiKey(clientKey: string): string {
   const trimmed = (clientKey ?? "").trim();
   if (trimmed) return trimmed;
-  return (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || "").trim();
+  return (
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+    ""
+  ).trim();
+}
+
+function parseQuestionsJson(text: string): ExamQuestion[] {
+  const cleaned = text
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+  const parsed = JSON.parse(cleaned) as { questions?: ExamQuestion[] } | ExamQuestion[];
+  if (Array.isArray(parsed)) return parsed;
+  return parsed.questions ?? [];
 }
 
 async function callGemini(
@@ -73,7 +87,7 @@ async function callGemini(
 ): Promise<ExamQuestion[]> {
   if (!apiKey) {
     throw new Error(
-      "Gemini API key missing. Set GEMINI_API_KEY on the server (Vercel) or paste a key in the panel.",
+      "Gemini API key missing. Set GEMINI_API_KEY on Vercel (Environment Variables) and redeploy, or paste a key in the panel.",
     );
   }
 
@@ -90,30 +104,45 @@ async function callGemini(
   let lastErr = "";
   for (const model of MODEL_FALLBACKS) {
     for (let attempt = 0; attempt < 3; attempt++) {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      // AQ. (auth) keys require x-goog-api-key header — query ?key= often fails for them
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
       const response = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey,
+        },
         body,
       });
 
       if (response.ok) {
         const json = await response.json();
         const text: string | undefined = json?.candidates?.[0]?.content?.parts?.[0]?.text;
-        if (!text) throw new Error("Gemini did not return content");
-        const parsed = JSON.parse(text) as { questions: ExamQuestion[] };
-        return parsed.questions;
+        if (!text) {
+          const block = json?.candidates?.[0]?.finishReason || json?.promptFeedback;
+          throw new Error(
+            `Gemini returned no content${block ? ` (${JSON.stringify(block)})` : ""}. Try fewer questions or a simpler topic.`,
+          );
+        }
+        try {
+          return parseQuestionsJson(text);
+        } catch {
+          throw new Error("Gemini returned invalid JSON. Please try again.");
+        }
       }
 
-      const text = await response.text();
-      lastErr = `${response.status} ${text}`;
+      const errBody = await response.text();
+      lastErr = `${response.status} ${errBody.slice(0, 400)}`;
 
       if (response.status === 429) {
         throw new Error("Gemini is rate limited. Please try again in a moment.");
       }
       if (response.status === 401 || response.status === 403) {
-        throw new Error("Your Gemini API key was rejected. Check the key and try again.");
+        throw new Error(
+          "Gemini API key was rejected. Create a key at https://aistudio.google.com/apikey, set GEMINI_API_KEY on Vercel, and redeploy.",
+        );
       }
+      // 400/404 often = model not available — try next model
       if (response.status === 404 || response.status === 400) break;
       if (response.status === 503 || response.status === 500 || response.status === 502) {
         await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
@@ -125,7 +154,7 @@ async function callGemini(
   throw new Error(`Gemini request failed: ${lastErr || "no available model"}`);
 }
 
-const BATCH_SIZE = 25;
+const BATCH_SIZE = 15;
 
 function normalizeKey(q: string) {
   return q
@@ -171,6 +200,10 @@ async function generateExactly(
       seen.add(key);
       collected.push(q);
     }
+  }
+
+  if (collected.length === 0) {
+    throw new Error("Gemini returned no usable questions. Try again with a clearer topic.");
   }
 
   return collected.slice(0, target).map((q, i) => ({ ...q, question_number: i + 1 }));
