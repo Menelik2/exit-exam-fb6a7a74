@@ -27,8 +27,6 @@ export type ExamQuestion = {
   explanation: string;
 };
 
-const GEMINI_MODEL = "gemini-2.5-flash";
-
 const RESPONSE_SCHEMA = {
   type: "OBJECT",
   properties: {
@@ -50,12 +48,15 @@ const RESPONSE_SCHEMA = {
   required: ["questions"],
 } as const;
 
-// Prefer fast flash models first for lower latency
+// Current Gemini models (as of 2026). Avoid retired IDs (1.5-flash, 2.0-flash).
+const GEMINI_MODEL = "gemini-2.5-flash";
 const MODEL_FALLBACKS = [
-  "gemini-2.0-flash",
-  "gemini-flash-latest",
-  GEMINI_MODEL, // gemini-2.5-flash — stronger but slower
-  "gemini-1.5-flash",
+  "gemini-2.5-flash-lite", // fastest / cheapest
+  "gemini-2.5-flash",
+  "gemini-3.1-flash-lite",
+  "gemini-3.5-flash-lite",
+  "gemini-3.5-flash",
+  "gemini-flash-latest", // alias if supported
 ];
 
 export type AiProvider = "gemini";
@@ -251,8 +252,10 @@ async function callGemini(
         );
       }
 
-      // Bad request / model missing — try next model
-      if (response.status === 404 || response.status === 400) break;
+      // Model not found / bad request — skip to next model (do not burn retries)
+      if (response.status === 404 || response.status === 400) {
+        break;
+      }
 
       // Rate limit or temporary errors — wait and retry (respect Retry-After, capped)
       if (
@@ -280,8 +283,11 @@ async function callGemini(
       throw new Error(`Gemini request failed: ${lastErr}`);
     }
   }
+  const hint = lastErr.includes("404") || lastErr.includes("NOT_FOUND")
+    ? " No available Gemini model responded. Check that your API key can access gemini-2.5-flash."
+    : " Try again in a few seconds, or use fewer questions.";
   throw new Error(
-    `Could not generate questions after retries. ${lastErr ? `(${lastErr})` : ""} Try again in a few seconds, or use fewer questions.`,
+    `Could not generate questions after retries.${lastErr ? ` (${lastErr.slice(0, 280)})` : ""}${hint}`,
   );
 }
 
@@ -446,17 +452,7 @@ Quality bar: questions a graduating student would see on a real exit exam.`;
           apiKey,
           systemPrompt,
           (need, extra) =>
-            [
-              `Task: Generate EXACTLY ${need} new MCQs for subject: ${b.subject}.`,
-              `Course: ${data.topic}`,
-              b.objectives ? `Objectives: ${b.objectives}` : "",
-              `Difficulty: ${data.difficulty}`,
-              `Seed: ${seed}`,
-              `Requirements: 4 options; correct_answer = full option text; number 1..${need}.`,
-              avoidText([...all.map((q) => q.question), ...extra]).trim(),
-            ]
-              .filter(Boolean)
-              .join("\n"),
+            `Topic / Course: ${data.topic}\nSubject area: ${b.subject}${b.objectives ? `\nLearning objectives to cover: ${b.objectives}` : ""}\nDifficulty: ${data.difficulty}\nNumber of Questions: ${need}\nVariation seed: ${seed}\n\nGenerate EXACTLY ${need} NEW multiple-choice questions for the subject area above. Number them 1..${need}.${avoidText([...all.map((q) => q.question), ...extra])}`,
           b.count,
           [...avoidList, ...all.map((q) => q.question)],
         );
