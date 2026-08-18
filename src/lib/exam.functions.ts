@@ -158,7 +158,53 @@ function normalizeKey(q: string) {
   return q
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
-    .trim();
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+/** Word tokens (length > 2) for fuzzy comparison */
+function questionTokens(q: string): Set<string> {
+  const norm = normalizeKey(q);
+  const parts = norm.split(" ").filter((w) => w.length > 2);
+  return new Set(parts);
+}
+
+function jaccardSimilarity(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 && b.size === 0) return 1;
+  let inter = 0;
+  for (const x of a) {
+    if (b.has(x)) inter++;
+  }
+  const union = a.size + b.size - inter;
+  return union === 0 ? 0 : inter / union;
+}
+
+/**
+ * Fuzzy match: true if questions are exact, near-substring, or share enough content words.
+ * threshold ~0.72 catches rephrases while allowing genuinely different questions.
+ */
+function isSimilarQuestion(a: string, b: string, threshold = 0.72): boolean {
+  const na = normalizeKey(a);
+  const nb = normalizeKey(b);
+  if (!na || !nb) return false;
+  if (na === nb) return true;
+
+  // One stem largely contains the other (reworded with extra clause)
+  const shorter = na.length <= nb.length ? na : nb;
+  const longer = na.length <= nb.length ? nb : na;
+  if (longer.includes(shorter) && shorter.length / longer.length >= 0.65) {
+    return true;
+  }
+
+  const sim = jaccardSimilarity(questionTokens(na), questionTokens(nb));
+  return sim >= threshold;
+}
+
+function isSimilarToAny(q: string, list: string[], threshold = 0.72): boolean {
+  for (const item of list) {
+    if (isSimilarQuestion(q, item, threshold)) return true;
+  }
+  return false;
 }
 
 async function generateExactly(
@@ -170,7 +216,9 @@ async function generateExactly(
   priorAvoid: string[] = [],
 ): Promise<ExamQuestion[]> {
   const collected: ExamQuestion[] = [];
-  const seen = new Set<string>(priorAvoid.map(normalizeKey).filter(Boolean));
+  // Keep raw texts for fuzzy checks (exact keys alone miss paraphrases)
+  const seenTexts: string[] = priorAvoid.filter((t) => t.trim().length > 0);
+  const seenExact = new Set<string>(seenTexts.map(normalizeKey).filter(Boolean));
   let attempts = 0;
   const maxAttempts = Math.ceil(target / BATCH_SIZE) + 8;
 
@@ -196,8 +244,11 @@ async function generateExactly(
       if (collected.length >= target) break;
       if (!q?.question || !Array.isArray(q.options) || q.options.length < 2) continue;
       const key = normalizeKey(q.question);
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
+      if (!key) continue;
+      // Exact or fuzzy match against prior + already collected this run
+      if (seenExact.has(key) || isSimilarToAny(q.question, seenTexts)) continue;
+      seenExact.add(key);
+      seenTexts.push(q.question);
       collected.push(q);
     }
   }
