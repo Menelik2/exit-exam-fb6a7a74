@@ -80,6 +80,98 @@ function parseQuestionsJson(text: string): ExamQuestion[] {
   return parsed.questions ?? [];
 }
 
+/** Strip leading "A.", "A)", "(A)", "A -" etc. from option text */
+function stripOptionPrefix(opt: string): string {
+  return opt.replace(/^\s*([A-Da-d]|[1-4])\s*[.):\-–]\s*/u, "").trim();
+}
+
+/**
+ * Normalize a raw model question so options/correct_answer always line up.
+ * Gemini often returns correct_answer as "A" / "B" instead of full option text.
+ */
+function normalizeQuestion(raw: ExamQuestion, index: number): ExamQuestion | null {
+  const question = (raw.question ?? "").trim();
+  if (!question) return null;
+
+  let options = (Array.isArray(raw.options) ? raw.options : [])
+    .map((o) => String(o ?? "").trim())
+    .filter(Boolean);
+
+  // Deduplicate options (case-insensitive)
+  const seenOpts = new Set<string>();
+  options = options.filter((o) => {
+    const k = o.toLowerCase();
+    if (seenOpts.has(k)) return false;
+    seenOpts.add(k);
+    return true;
+  });
+
+  if (options.length < 2) return null;
+
+  // Keep at most 4 options
+  options = options.slice(0, 4);
+
+  let correct = String(raw.correct_answer ?? "").trim();
+
+  // Map letter / index answers to option text
+  const letterMatch = correct.match(/^\s*([A-Da-d])\s*[.):]?\s*$/);
+  const numMatch = correct.match(/^\s*([1-4])\s*$/);
+  if (letterMatch) {
+    const idx = letterMatch[1].toUpperCase().charCodeAt(0) - 65;
+    if (idx >= 0 && idx < options.length) correct = options[idx];
+  } else if (numMatch) {
+    const idx = parseInt(numMatch[1], 10) - 1;
+    if (idx >= 0 && idx < options.length) correct = options[idx];
+  } else {
+    // Try exact match
+    let found = options.find((o) => o === correct);
+    if (!found) {
+      // Case-insensitive match
+      found = options.find((o) => o.toLowerCase() === correct.toLowerCase());
+    }
+    if (!found) {
+      // Match after stripping prefixes from both sides
+      const cNorm = stripOptionPrefix(correct).toLowerCase();
+      found = options.find(
+        (o) =>
+          stripOptionPrefix(o).toLowerCase() === cNorm ||
+          o.toLowerCase().includes(cNorm) ||
+          cNorm.includes(stripOptionPrefix(o).toLowerCase()),
+      );
+    }
+    if (found) correct = found;
+    else {
+      // Last resort: first option (better than a non-matching string that breaks UI)
+      correct = options[0];
+    }
+  }
+
+  // Ensure correct_answer is exactly one of the options
+  if (!options.includes(correct)) {
+    const ci = options.find((o) => o.toLowerCase() === correct.toLowerCase());
+    correct = ci ?? options[0];
+  }
+
+  const explanation = String(raw.explanation ?? "").trim() || "No explanation provided.";
+
+  return {
+    question_number: index + 1,
+    question,
+    options,
+    correct_answer: correct,
+    explanation,
+  };
+}
+
+function normalizeQuestions(list: ExamQuestion[]): ExamQuestion[] {
+  const out: ExamQuestion[] = [];
+  for (const raw of list) {
+    const n = normalizeQuestion(raw, out.length);
+    if (n) out.push(n);
+  }
+  return out.map((q, i) => ({ ...q, question_number: i + 1 }));
+}
+
 async function callGemini(
   apiKey: string,
   systemPrompt: string,
@@ -102,40 +194,56 @@ async function callGemini(
   });
 
   let lastErr = "";
-  // Retry across models; on 429 wait and retry instead of failing immediately
-  const maxAttemptsPerModel = 6;
+  // Bounded retries so serverless functions do not time out (Vercel ~60s)
+  const maxAttemptsPerModel = 4;
   for (const model of MODEL_FALLBACKS) {
     for (let attempt = 0; attempt < maxAttemptsPerModel; attempt++) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
-      const response = await fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
-        },
-        body,
-      });
+      let response: Response;
+      try {
+        response = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
+          },
+          body,
+        });
+      } catch (netErr) {
+        lastErr = `network ${(netErr as Error).message || netErr}`;
+        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+        continue;
+      }
 
       if (response.ok) {
         const json = await response.json();
         const text: string | undefined = json?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!text) {
           const block = json?.candidates?.[0]?.finishReason || json?.promptFeedback;
-          throw new Error(
-            `Gemini returned no content${block ? ` (${JSON.stringify(block)})` : ""}. Try fewer questions or a simpler topic.`,
-          );
+          // Empty content — retry same model
+          lastErr = `empty content ${block ? JSON.stringify(block) : ""}`;
+          await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+          continue;
         }
         try {
-          return parseQuestionsJson(text);
+          const raw = parseQuestionsJson(text);
+          const normalized = normalizeQuestions(raw);
+          if (normalized.length === 0) {
+            lastErr = "parsed zero valid questions";
+            await new Promise((r) => setTimeout(r, 500));
+            continue;
+          }
+          return normalized;
         } catch {
-          throw new Error("Gemini returned invalid JSON. Please try again.");
+          lastErr = "invalid JSON from model";
+          await new Promise((r) => setTimeout(r, 500));
+          continue;
         }
       }
 
       const errBody = await response.text();
       lastErr = `${response.status} ${errBody.slice(0, 400)}`;
 
-      // Auth errors — no point retrying
       if (response.status === 401 || response.status === 403) {
         throw new Error(
           "Gemini API key was rejected. Create a key at https://aistudio.google.com/apikey, set GEMINI_API_KEY on Vercel, and redeploy.",
@@ -145,7 +253,7 @@ async function callGemini(
       // Bad request / model missing — try next model
       if (response.status === 404 || response.status === 400) break;
 
-      // Rate limit or temporary server errors — wait and retry (do NOT give up immediately)
+      // Rate limit or temporary errors — wait and retry (respect Retry-After, capped)
       if (
         response.status === 429 ||
         response.status === 503 ||
@@ -158,9 +266,11 @@ async function callGemini(
           const sec = Number(retryAfterHeader);
           waitMs = Number.isFinite(sec) && sec > 0 ? sec * 1000 : 0;
         }
-        // Exponential backoff: 2s, 4s, 8s, 16s, 32s, 60s (cap)
+        // Cap at 12s so total retries stay within serverless limits
         if (waitMs <= 0) {
-          waitMs = Math.min(60_000, 2000 * Math.pow(2, attempt));
+          waitMs = Math.min(12_000, 1500 * Math.pow(2, attempt));
+        } else {
+          waitMs = Math.min(12_000, waitMs);
         }
         await new Promise((r) => setTimeout(r, waitMs));
         continue;
@@ -170,7 +280,7 @@ async function callGemini(
     }
   }
   throw new Error(
-    `Gemini is busy after several retries. Please wait a few seconds and try again. (${lastErr || "no available model"})`,
+    `Could not generate questions after retries. ${lastErr ? `(${lastErr})` : ""} Try again in a few seconds, or use fewer questions.`,
   );
 }
 
@@ -262,22 +372,31 @@ async function generateExactly(
       break;
     }
 
+    let added = 0;
     for (const q of batch) {
       if (collected.length >= target) break;
       if (!q?.question || !Array.isArray(q.options) || q.options.length < 2) continue;
-      const key = normalizeKey(q.question);
+      // Re-normalize in case anything slipped through
+      const fixed = normalizeQuestion(q, collected.length);
+      if (!fixed) continue;
+      const key = normalizeKey(fixed.question);
       if (!key) continue;
-      // Exact or fuzzy match against prior + already collected this run
-      if (seenExact.has(key) || isSimilarToAny(q.question, seenTexts)) continue;
+      if (seenExact.has(key) || isSimilarToAny(fixed.question, seenTexts)) continue;
       seenExact.add(key);
-      seenTexts.push(q.question);
-      collected.push(q);
+      seenTexts.push(fixed.question);
+      collected.push(fixed);
+      added++;
+    }
+    // If model only returned duplicates, still count as an attempt (loop continues)
+    if (added === 0 && batch.length > 0) {
+      // small pause before next batch request
+      await new Promise((r) => setTimeout(r, 400));
     }
   }
 
   if (collected.length === 0) {
     throw new Error(
-      "Could not generate new questions without repeating old ones. Try a broader topic or clear question history.",
+      "Could not generate new questions without repeating old ones. Clear question history or try a broader topic.",
     );
   }
 
