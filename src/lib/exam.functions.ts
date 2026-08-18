@@ -408,7 +408,21 @@ export const generateExam = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }): Promise<{ questions: ExamQuestion[] }> => {
     const apiKey = resolveApiKey(data.apiKey ?? "");
-    const systemPrompt = `You are a senior Ethiopian university professor and official examiner for the Ethiopian Higher Education Exit Examination (EHEEE). You write rigorous, exam-grade multiple-choice questions that match the style, depth, and cognitive level of the real Ethiopian Exit Exam administered by the Ministry of Education.\n\nFollow these standards strictly:\n- Align with the Ethiopian Exit Exam blueprint for the given topic/course (Bloom's levels: Understanding, Applying, Analyzing, Evaluating — minimize pure recall).\n- Use precise academic language. Questions must be unambiguous, self-contained, and free of trick wording.\n- Keep each question stem concise — ideally under 35 words and never over 60 words. Avoid long paragraphs or multi-sentence stems.\n- Each item must have exactly 4 plausible options (A–D style) with strong, realistic distractors based on common student misconceptions in Ethiopian universities.\n- Exactly one option must be unambiguously correct; \"correct_answer\" must match one option verbatim.\n- Vary subtopics, scenarios, and which option is correct across the set. Avoid pattern bias.\n- Explanations must be detailed, pedagogical, and explain WHY the correct answer is right AND why each distractor is wrong.\n- Where relevant, use Ethiopian context (local examples, units, case studies) without making questions region-locked.\n\nRespond ONLY with valid JSON matching the schema. No prose, no markdown.`;
+    const systemPrompt = `Role: Ethiopian Higher Education Exit Exam (EHEEE) examiner. Write rigorous MCQs at university exit-exam level.
+
+Output: JSON only (schema enforced). No markdown, no extra text.
+
+Rules:
+1. Exactly the requested number of questions; never fewer if the topic supports it.
+2. Each stem: clear, self-contained, ≤40 words; no trick wording.
+3. Exactly 4 options; one correct; three plausible distractors (common student errors).
+4. "correct_answer" MUST be the FULL TEXT of the correct option (copy verbatim from options[]) — never only "A"/"B"/"C"/"D".
+5. Cognitive level: prefer Apply / Analyze / Evaluate over pure recall.
+6. Vary subtopics and which option is correct; no repeating patterns.
+7. explanation: 2–4 sentences — why correct is right and why the main distractors fail.
+8. Academic tone; Ethiopian context only when it helps (not required).
+
+Quality bar: questions a graduating student would see on a real exit exam.`;
 
     const avoidList = (data.avoid ?? []).slice(-80);
     const avoidText = (extra: string[]) => {
@@ -417,7 +431,7 @@ export const generateExam = createServerFn({ method: "POST" })
         .filter(Boolean)
         .slice(-40);
       return all.length > 0
-        ? `\n\nDo NOT repeat or closely rephrase these (pick different angles):\n${all.map((q, i) => `${i + 1}. ${q}`).join("\n")}`
+        ? `Avoid (do not repeat or paraphrase):\n${all.map((q, i) => `${i + 1}. ${q}`).join("\n")}`
         : "";
     };
 
@@ -432,7 +446,17 @@ export const generateExam = createServerFn({ method: "POST" })
           apiKey,
           systemPrompt,
           (need, extra) =>
-            `Topic / Course: ${data.topic}\nSubject area: ${b.subject}${b.objectives ? `\nLearning objectives to cover: ${b.objectives}` : ""}\nDifficulty: ${data.difficulty}\nNumber of Questions: ${need}\nVariation seed: ${seed}\n\nGenerate EXACTLY ${need} NEW multiple-choice questions for the subject area above. Number them 1..${need}.${avoidText([...all.map((q) => q.question), ...extra])}`,
+            [
+              `Task: Generate EXACTLY ${need} new MCQs for subject: ${b.subject}.`,
+              `Course: ${data.topic}`,
+              b.objectives ? `Objectives: ${b.objectives}` : "",
+              `Difficulty: ${data.difficulty}`,
+              `Seed: ${seed}`,
+              `Requirements: 4 options; correct_answer = full option text; number 1..${need}.`,
+              avoidText([...all.map((q) => q.question), ...extra]).trim(),
+            ]
+              .filter(Boolean)
+              .join("\n"),
           b.count,
           [...avoidList, ...all.map((q) => q.question)],
         );
@@ -449,7 +473,16 @@ export const generateExam = createServerFn({ method: "POST" })
       apiKey,
       systemPrompt,
       (need, extra) =>
-        `Topic / Course: ${data.topic}\nDifficulty: ${data.difficulty}\nNumber of Questions: ${need}\nVariation seed: ${seed} — generate a fresh, distinct set of questions different from any prior generation. Vary subtopics, phrasing, and which option is correct.\n\nGenerate EXACTLY ${need} NEW multiple-choice questions. Number them 1..${need}. Never return fewer than ${need}. Never repeat old questions.${avoidText(extra)}`,
+        [
+          `Task: Generate EXACTLY ${need} new multiple-choice questions.`,
+          `Topic/Course: ${data.topic}`,
+          `Difficulty: ${data.difficulty}`,
+          `Seed: ${seed} (vary angles; do not reuse prior items).`,
+          `Requirements: 4 options each; correct_answer = full option text; numbered 1..${need}.`,
+          avoidText(extra).trim(),
+        ]
+          .filter(Boolean)
+          .join("\n"),
       data.numQuestions,
       avoidList,
     );
@@ -471,7 +504,18 @@ export const generateExamFromDocument = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => DocInputSchema.parse(input))
   .handler(async ({ data }): Promise<{ questions: ExamQuestion[] }> => {
     const apiKey = resolveApiKey(data.apiKey ?? "");
-    const systemPrompt = `You are a senior university professor writing rigorous multiple-choice exam questions STRICTLY from a provided source document.\n\nABSOLUTE RULES:\n- Generate questions ONLY from facts, concepts, definitions, and examples explicitly present in the provided document. Do NOT introduce outside knowledge, opinions, or facts not in the document.\n- If the document does not contain enough material for the requested number, generate as many as the document supports — never fabricate.\n- Each question stem must be answerable from the document alone.\n- Keep each question stem concise (under 35 words, never over 60). No long paragraphs.\n- 4 plausible options, exactly one unambiguously correct; \"correct_answer\" must match an option verbatim.\n- Distractors must be plausible misreadings of the document, not random.\n- Vary subtopics across the whole document; avoid clustering only on the first pages.\n- Explanations MUST cite the relevant idea from the document and explain why each distractor is wrong.\n\nRespond ONLY with valid JSON matching the schema. No prose, no markdown.`;
+    const systemPrompt = `Role: Exam writer. Create MCQs STRICTLY from the source document only.
+
+Output: JSON only. No markdown, no extra text.
+
+Rules:
+1. Use ONLY facts, definitions, and examples present in the document. Never invent outside knowledge.
+2. If material is thin, return as many solid items as the document supports — do not pad with fabrication.
+3. Stem ≤40 words; answerable from the document alone.
+4. Exactly 4 options; one correct; distractors = plausible misreadings of the text.
+5. "correct_answer" MUST be the FULL TEXT of the correct option (verbatim from options[]) — never only a letter.
+6. Cover different parts of the document; do not cluster on the opening paragraphs only.
+7. explanation: briefly ground the answer in the document and note why key distractors fail.`;
 
     const avoidList = (data.avoid ?? []).slice(-80);
     const seed = data.nonce ?? String(Date.now());
@@ -490,9 +534,21 @@ export const generateExamFromDocument = createServerFn({ method: "POST" })
           .slice(-40);
         const avoidBlock =
           all.length > 0
-            ? `\n\nDo NOT repeat these:\n${all.map((q, i) => `${i + 1}. ${q}`).join("\n")}`
+            ? `Avoid (do not repeat or paraphrase):\n${all.map((q, i) => `${i + 1}. ${q}`).join("\n")}`
             : "";
-        return `Source Document: \"${data.documentName}\"\nDifficulty: ${data.difficulty}\nNumber of Questions: ${need}\nVariation seed: ${seed}\n\n=== DOCUMENT CONTENT START ===\n${docBody}\n=== DOCUMENT CONTENT END ===\n\nGenerate EXACTLY ${need} NEW multiple-choice questions based STRICTLY on the document above. Number them 1..${need}.${avoidBlock}`;
+        return [
+          `Task: Generate EXACTLY ${need} MCQs from the document only.`,
+          `Document: ${data.documentName}`,
+          `Difficulty: ${data.difficulty}`,
+          `Seed: ${seed}`,
+          `Requirements: 4 options; correct_answer = full option text; number 1..${need}.`,
+          avoidBlock.trim(),
+          `=== DOCUMENT ===`,
+          docBody,
+          `=== END DOCUMENT ===`,
+        ]
+          .filter(Boolean)
+          .join("\n");
       },
       data.numQuestions,
       avoidList,
