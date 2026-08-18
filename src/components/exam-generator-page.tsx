@@ -201,7 +201,7 @@ export function ExamGeneratorPage() {
               )}
               <p className="text-[11px] leading-relaxed text-muted-foreground">
                 Works best with text-based PDFs, DOCX, or TXT (lecture notes, past papers).
-                Scanned images and password-protected files aren&apos;t supported.
+                Scanned images and password-protected files aren't supported.
               </p>
               {docError && <p className="text-xs text-destructive">{docError}</p>}
             </div>
@@ -326,9 +326,10 @@ export function ExamGeneratorPage() {
           {!mutation.isPending && questions.length === 0 && !mutation.isError && (
             <div className="flex flex-col items-center justify-center gap-3 rounded-[28px] border border-dashed border-border bg-card py-24 text-center text-muted-foreground">
               <Sparkles className="h-5 w-5 text-primary" />
-              <p className="text-sm">Set a topic and click Generate exam.</p>
-              <p className="max-w-sm text-xs">
-                Save your Gemini, ChatGPT, or DeepSeek key in the panel above to generate.
+              <p className="text-sm">
+                {docMode
+                  ? "Click Generate exam to create questions from your document."
+                  : "Set a topic and click Generate exam."}
               </p>
             </div>
           )}
