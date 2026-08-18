@@ -4,14 +4,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { KeyRound, CheckCircle2, ExternalLink, Loader2 } from "lucide-react";
 
-export type AiProvider = "gemini" | "openai" | "deepseek";
+export type AiProvider = "openrouter" | "gemini" | "openai" | "deepseek";
 
+export const OPENROUTER_LS_KEY = "exam-gen-openrouter-key-v1";
 export const GEMINI_LS_KEY = "exam-gen-gemini-key-v1";
 export const OPENAI_LS_KEY = "exam-gen-openai-key-v1";
 export const DEEPSEEK_LS_KEY = "exam-gen-deepseek-key-v1";
 export const PROVIDER_LS_KEY = "exam-gen-provider-v1";
 
 const LS_KEY: Record<AiProvider, string> = {
+  openrouter: OPENROUTER_LS_KEY,
   gemini: GEMINI_LS_KEY,
   openai: OPENAI_LS_KEY,
   deepseek: DEEPSEEK_LS_KEY,
@@ -21,6 +23,12 @@ const META: Record<
   AiProvider,
   { label: string; placeholder: string; link: string; linkLabel: string }
 > = {
+  openrouter: {
+    label: "OpenRouter",
+    placeholder: "sk-or-v1-...",
+    link: "https://openrouter.ai/keys",
+    linkLabel: "Get a key from OpenRouter",
+  },
   gemini: {
     label: "Google Gemini",
     placeholder: "AIza...",
@@ -44,9 +52,10 @@ const META: Record<
 export function readProvider(): AiProvider {
   try {
     const p = localStorage.getItem(PROVIDER_LS_KEY);
-    return p === "openai" || p === "deepseek" ? p : "gemini";
+    if (p === "openrouter" || p === "openai" || p === "deepseek" || p === "gemini") return p;
+    return "openrouter";
   } catch {
-    return "gemini";
+    return "openrouter";
   }
 }
 
@@ -76,6 +85,21 @@ async function validateKey(provider: AiProvider, key: string) {
     }
     return;
   }
+
+  if (provider === "openrouter") {
+    const res = await fetch("https://openrouter.ai/api/v1/models", {
+      headers: { Authorization: `Bearer ${key}` },
+    });
+    if (!res.ok) {
+      throw new Error(
+        res.status === 401 || res.status === 403
+          ? "That key was rejected by OpenRouter. Check it and try again."
+          : "Couldn't verify the key right now. Try again in a moment.",
+      );
+    }
+    return;
+  }
+
   const base =
     provider === "deepseek" ? "https://api.deepseek.com" : "https://api.openai.com/v1";
   const res = await fetch(`${base}/models`, {
@@ -95,7 +119,7 @@ export function ApiKeyPanel({
 }: {
   onKeyChange?: (key: string, provider: AiProvider) => void;
 }) {
-  const [provider, setProvider] = useState<AiProvider>("gemini");
+  const [provider, setProvider] = useState<AiProvider>("openrouter");
   const [saved, setSaved] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState("");
   const [editing, setEditing] = useState(false);
@@ -166,11 +190,12 @@ export function ApiKeyPanel({
 
   const showForm = editing || !saved;
   const meta = META[provider];
+  const providers: AiProvider[] = ["openrouter", "gemini", "openai", "deepseek"];
 
   return (
     <div className="space-y-3 rounded-2xl border border-border bg-card/70 p-4">
-      <div className="grid grid-cols-3 gap-1 rounded-xl bg-muted p-1">
-        {(["gemini", "openai", "deepseek"] as AiProvider[]).map((p) => (
+      <div className="grid grid-cols-2 gap-1 rounded-xl bg-muted p-1 sm:grid-cols-4">
+        {providers.map((p) => (
           <button
             key={p}
             type="button"
@@ -181,7 +206,13 @@ export function ApiKeyPanel({
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            {p === "gemini" ? "Gemini" : p === "openai" ? "ChatGPT" : "DeepSeek"}
+            {p === "openrouter"
+              ? "OpenRouter"
+              : p === "gemini"
+                ? "Gemini"
+                : p === "openai"
+                  ? "ChatGPT"
+                  : "DeepSeek"}
           </button>
         ))}
       </div>
