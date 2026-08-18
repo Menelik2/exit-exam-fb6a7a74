@@ -30,6 +30,7 @@ import {
   ChevronRight,
   BookOpen,
   Trash2,
+  RotateCcw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ApiKeyPanel, type AiProvider } from "@/components/api-key-panel";
@@ -79,6 +80,7 @@ export function ExamGeneratorPage() {
   const [wrongQuestions, setWrongQuestions] = useState<ExamQuestion[]>([]);
   const [reviewMode, setReviewMode] = useState(false);
   const [reviewQuestions, setReviewQuestions] = useState<ExamQuestion[]>([]);
+  const [examFinished, setExamFinished] = useState(false);
 
   // Load saved wrong questions on mount
   useEffect(() => {
@@ -126,6 +128,7 @@ export function ExamGeneratorPage() {
       setCurrentIndex(0);
       setReviewMode(false);
       setReviewQuestions([]);
+      setExamFinished(false);
     },
   });
 
@@ -182,19 +185,23 @@ export function ExamGeneratorPage() {
     }
   };
 
-  const startReview = () => {
-    if (wrongQuestions.length === 0) return;
-    // Renumber for display
-    const renumbered = wrongQuestions.map((q, i) => ({
-      ...q,
-      question_number: i + 1,
-    }));
-    setReviewQuestions(renumbered);
-    setReviewMode(true);
-    setAnswers({});
-    setRevealed({});
-    setCurrentIndex(0);
-  };
+  const startReview = useCallback(
+    (source?: ExamQuestion[]) => {
+      const list = source ?? wrongQuestions;
+      if (list.length === 0) return;
+      const renumbered = list.map((q, i) => ({
+        ...q,
+        question_number: i + 1,
+      }));
+      setReviewQuestions(renumbered);
+      setReviewMode(true);
+      setExamFinished(false);
+      setAnswers({});
+      setRevealed({});
+      setCurrentIndex(0);
+    },
+    [wrongQuestions],
+  );
 
   const clearAllWrong = () => {
     persistWrong([]);
@@ -205,7 +212,56 @@ export function ExamGeneratorPage() {
       setRevealed({});
       setCurrentIndex(0);
     }
+    setExamFinished(false);
   };
+
+  // When all questions in a normal exam are answered → finish + prepare re-exam
+  const allAnswered =
+    !reviewMode &&
+    questions.length > 0 &&
+    questions.every((q) => revealed[q.question_number]);
+
+  useEffect(() => {
+    if (!allAnswered || examFinished || reviewMode) return;
+
+    // Collect wrong answers from this session and merge into localStorage
+    const sessionWrong: ExamQuestion[] = [];
+    for (const q of questions) {
+      const selected = answers[q.question_number];
+      if (selected && selected !== q.correct_answer) {
+        sessionWrong.push(q);
+      }
+    }
+
+    if (sessionWrong.length > 0) {
+      // Merge with existing stored wrongs (dedupe by question text)
+      const existingKeys = new Set(wrongQuestions.map(questionKey));
+      const merged = [...wrongQuestions];
+      for (const q of sessionWrong) {
+        if (!existingKeys.has(questionKey(q))) {
+          merged.push(q);
+          existingKeys.add(questionKey(q));
+        }
+      }
+      const renumbered = merged.map((q, i) => ({ ...q, question_number: i + 1 }));
+      persistWrong(renumbered);
+      setExamFinished(true);
+    } else {
+      // Perfect score — nothing to re-exam
+      setExamFinished(true);
+    }
+  }, [allAnswered, examFinished, reviewMode, questions, answers, wrongQuestions, persistWrong]);
+
+  // Auto-start re-exam of wrong questions after finishing (short delay so user sees score)
+  useEffect(() => {
+    if (!examFinished || reviewMode) return;
+    if (wrongQuestions.length === 0) return;
+
+    const t = setTimeout(() => {
+      startReview(wrongQuestions);
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [examFinished, reviewMode, wrongQuestions, startReview]);
 
   const handleAnswer = (q: ExamQuestion, opt: string) => {
     const qNum = q.question_number;
@@ -216,10 +272,13 @@ export function ExamGeneratorPage() {
     const key = questionKey(q);
 
     if (!isCorrect) {
-      // Save wrong question (avoid duplicates by question text)
+      // Save wrong question immediately to localStorage (avoid duplicates)
       const already = wrongQuestions.some((w) => questionKey(w) === key);
       if (!already) {
-        persistWrong([...wrongQuestions, { ...q, question_number: wrongQuestions.length + 1 }]);
+        persistWrong([
+          ...wrongQuestions,
+          { ...q, question_number: wrongQuestions.length + 1 },
+        ]);
       }
     } else {
       // Answered correctly → remove from wrong list
@@ -232,25 +291,22 @@ export function ExamGeneratorPage() {
       if (reviewMode) {
         setReviewQuestions((prev) => {
           const next = prev.filter((w) => questionKey(w) !== key);
-          // Renumber remaining
           const renumbered = next.map((item, i) => ({
             ...item,
             question_number: i + 1,
           }));
-          // Adjust index if needed
           setCurrentIndex((idx) => {
             if (renumbered.length === 0) return 0;
             return Math.min(idx, renumbered.length - 1);
           });
-          // If all reviewed correctly, exit review mode
           if (renumbered.length === 0) {
             setReviewMode(false);
+            setExamFinished(false);
             setAnswers({});
             setRevealed({});
           }
           return renumbered;
         });
-        // Clear answer state for removed question numbers is handled by renumbering
         setAnswers({});
         setRevealed({});
       }
@@ -270,6 +326,10 @@ export function ExamGeneratorPage() {
   const isLast = currentIndex >= questions.length - 1;
   const hasWrongPending = wrongQuestions.length > 0;
   const canGenerateNew = !hasWrongPending;
+
+  // Show finish summary (briefly) before auto re-exam
+  const showFinishSummary =
+    examFinished && !reviewMode && questions.length > 0 && allAnswered;
 
   return (
     <div className="min-h-screen w-full bg-background text-foreground p-3 sm:p-6 lg:p-8">
@@ -300,10 +360,12 @@ export function ExamGeneratorPage() {
                   <BookOpen className="h-4 w-4 text-amber-700 dark:text-amber-400 mt-0.5 shrink-0" />
                   <div>
                     <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">
-                      {wrongQuestions.length} wrong question{wrongQuestions.length !== 1 ? "s" : ""} saved
+                      {wrongQuestions.length} wrong question
+                      {wrongQuestions.length !== 1 ? "s" : ""} in localStorage
                     </p>
                     <p className="text-[11px] leading-relaxed text-amber-800/80 dark:text-amber-200/70 mt-0.5">
-                      Review and answer them correctly to unlock generating new questions.
+                      Saved on this device. After you finish an exam, wrong ones are re-asked
+                      automatically.
                     </p>
                   </div>
                 </div>
@@ -312,11 +374,11 @@ export function ExamGeneratorPage() {
                     type="button"
                     size="sm"
                     className="flex-1 h-9 rounded-xl text-xs font-semibold"
-                    onClick={startReview}
+                    onClick={() => startReview()}
                     disabled={reviewMode && reviewQuestions.length > 0}
                   >
                     <BookOpen className="mr-1.5 h-3.5 w-3.5" />
-                    {reviewMode ? "Reviewing…" : "Review mistakes"}
+                    {reviewMode ? "Reviewing…" : "Review now"}
                   </Button>
                   <Button
                     type="button"
@@ -525,47 +587,85 @@ export function ExamGeneratorPage() {
             </div>
           )}
 
-          {!mutation.isPending && questions.length === 0 && !mutation.isError && (
-            <div className="flex flex-col items-center justify-center gap-3 rounded-[28px] border border-dashed border-border bg-card py-24 text-center text-muted-foreground">
-              {hasWrongPending ? (
+          {/* Finish summary → auto re-exam wrong questions */}
+          {showFinishSummary && (
+            <div className="flex flex-col items-center justify-center gap-4 rounded-[28px] border border-border bg-card py-16 text-center px-6">
+              <CheckCircle2 className="h-10 w-10 text-primary" />
+              <div>
+                <p className="text-lg font-semibold">Exam finished</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Score: {correctCount}/{questions.length}
+                </p>
+              </div>
+              {wrongQuestions.length > 0 ? (
                 <>
-                  <BookOpen className="h-5 w-5 text-amber-600" />
-                  <p className="text-sm max-w-sm">
-                    You have {wrongQuestions.length} saved wrong question
-                    {wrongQuestions.length !== 1 ? "s" : ""}. Review and answer them correctly to
-                    unlock generating new questions.
+                  <p className="text-sm text-amber-800 dark:text-amber-200 max-w-sm">
+                    {wrongQuestions.length} wrong question
+                    {wrongQuestions.length !== 1 ? "s" : ""} saved to localStorage.
+                    Starting re-exam automatically…
                   </p>
-                  <Button type="button" className="mt-2 rounded-xl" onClick={startReview}>
-                    <BookOpen className="mr-2 h-4 w-4" /> Review mistakes
+                  <Button
+                    type="button"
+                    className="rounded-xl"
+                    onClick={() => startReview()}
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    Re-exam wrong questions now
                   </Button>
                 </>
               ) : (
-                <>
-                  <Sparkles className="h-5 w-5 text-primary" />
-                  <p className="text-sm">
-                    {docMode
-                      ? "Click Generate exam to create questions from your document."
-                      : "Set a topic and click Generate exam."}
-                  </p>
-                </>
+                <p className="text-sm text-muted-foreground">
+                  Perfect score — no wrong questions to re-exam. You can generate new questions.
+                </p>
               )}
             </div>
           )}
 
-          {!mutation.isPending && currentQuestion && (
+          {!mutation.isPending &&
+            questions.length === 0 &&
+            !mutation.isError &&
+            !showFinishSummary && (
+              <div className="flex flex-col items-center justify-center gap-3 rounded-[28px] border border-dashed border-border bg-card py-24 text-center text-muted-foreground">
+                {hasWrongPending ? (
+                  <>
+                    <BookOpen className="h-5 w-5 text-amber-600" />
+                    <p className="text-sm max-w-sm">
+                      You have {wrongQuestions.length} saved wrong question
+                      {wrongQuestions.length !== 1 ? "s" : ""} in localStorage. Review and answer
+                      them correctly to unlock generating new questions.
+                    </p>
+                    <Button type="button" className="mt-2 rounded-xl" onClick={() => startReview()}>
+                      <BookOpen className="mr-2 h-4 w-4" /> Review mistakes
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    <p className="text-sm">
+                      {docMode
+                        ? "Click Generate exam to create questions from your document."
+                        : "Set a topic and click Generate exam."}
+                    </p>
+                  </>
+                )}
+              </div>
+            )}
+
+          {!mutation.isPending && currentQuestion && !showFinishSummary && (
             <>
               {/* Mode badge */}
               {reviewMode && (
                 <div className="rounded-xl border border-amber-500/30 bg-amber-50/60 dark:bg-amber-950/20 px-4 py-2.5 text-sm text-amber-900 dark:text-amber-100">
-                  <span className="font-semibold">Review mode</span> — answer correctly to remove
-                  from your mistake list. Once all are correct, you can generate new questions.
+                  <span className="font-semibold">Re-exam mode</span> — these are questions you
+                  got wrong (saved in localStorage). Answer correctly to remove them. When all are
+                  correct, you can generate new questions.
                 </div>
               )}
 
               {/* Progress indicator */}
               <div className="flex items-center justify-between px-1">
                 <p className="text-sm font-medium text-muted-foreground">
-                  {reviewMode ? "Review" : "Question"} {currentIndex + 1} of {questions.length}
+                  {reviewMode ? "Re-exam" : "Question"} {currentIndex + 1} of {questions.length}
                 </p>
                 <div className="flex h-2 flex-1 mx-4 max-w-[200px] overflow-hidden rounded-full bg-secondary">
                   <div
