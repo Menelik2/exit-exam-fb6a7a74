@@ -39,7 +39,7 @@ export function ExamGeneratorPage() {
   const [numQuestions, setNumQuestions] = useState(5);
   const [autoGenerate, setAutoGenerate] = useState(false);
   const [apiKey, setApiKey] = useState("");
-  const [aiProvider, setAiProvider] = useState<AiProvider>("openrouter");
+  const [aiProvider, setAiProvider] = useState<AiProvider>("gemini");
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [revealed, setRevealed] = useState<Record<number, boolean>>({});
   const [docName, setDocName] = useState("");
@@ -57,7 +57,7 @@ export function ExamGeneratorPage() {
         return generateDocFn({
           data: {
             apiKey,
-            provider: aiProvider,
+            provider: "gemini",
             documentName: docName || "Uploaded document",
             documentText: docText,
             difficulty,
@@ -69,7 +69,7 @@ export function ExamGeneratorPage() {
       return generateFn({
         data: {
           apiKey,
-          provider: aiProvider,
+          provider: "gemini",
           topic: topic.trim(),
           difficulty,
           numQuestions,
@@ -94,8 +94,7 @@ export function ExamGeneratorPage() {
   useEffect(() => {
     if (!autoGenerate) return;
     if (!docMode && !topic.trim()) return;
-    // OpenRouter can use server env key; other providers need a browser key
-    if (!apiKey && aiProvider !== "openrouter") return;
+    // Gemini uses server GEMINI_API_KEY by default; browser key is optional
     const t = setTimeout(() => run(), 800);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -139,7 +138,7 @@ export function ExamGeneratorPage() {
             </div>
             <div>
               <h1 className="font-display text-lg font-bold tracking-tight">Exam Generator</h1>
-              <p className="text-xs text-muted-foreground">OpenRouter · AI MCQ drafting</p>
+              <p className="text-xs text-muted-foreground">Gemini · AI MCQ drafting</p>
             </div>
           </div>
 
@@ -306,7 +305,7 @@ export function ExamGeneratorPage() {
           {mutation.isPending && (
             <div className="flex flex-col items-center justify-center gap-3 rounded-[28px] border border-dashed border-border bg-card py-24 text-muted-foreground">
               <Loader2 className="h-7 w-7 animate-spin text-primary" />
-              <p className="text-sm">Drafting your exam via OpenRouter…</p>
+              <p className="text-sm">Drafting your exam via Gemini…</p>
             </div>
           )}
 
@@ -315,8 +314,7 @@ export function ExamGeneratorPage() {
               <Sparkles className="h-5 w-5 text-primary" />
               <p className="text-sm">Set a topic and click Generate exam.</p>
               <p className="max-w-sm text-xs">
-                Provider defaults to <strong>OpenRouter</strong>. Paste a key in the panel, or set{" "}
-                <code className="rounded bg-muted px-1">OPENROUTER_API_KEY</code> on the server.
+                Provider is <strong>Google Gemini</strong>. A server key is used by default. Optionally paste your own key in the panel.
               </p>
             </div>
           )}
