@@ -50,10 +50,11 @@ const RESPONSE_SCHEMA = {
   required: ["questions"],
 } as const;
 
+// Prefer fast flash models first for lower latency
 const MODEL_FALLBACKS = [
-  GEMINI_MODEL,
   "gemini-2.0-flash",
   "gemini-flash-latest",
+  GEMINI_MODEL, // gemini-2.5-flash — stronger but slower
   "gemini-1.5-flash",
 ];
 
@@ -189,13 +190,13 @@ async function callGemini(
     generationConfig: {
       responseMimeType: "application/json",
       responseSchema: RESPONSE_SCHEMA,
-      temperature: 0.95,
+      temperature: 0.85,
     },
   });
 
   let lastErr = "";
   // Bounded retries so serverless functions do not time out (Vercel ~60s)
-  const maxAttemptsPerModel = 4;
+  const maxAttemptsPerModel = 3;
   for (const model of MODEL_FALLBACKS) {
     for (let attempt = 0; attempt < maxAttemptsPerModel; attempt++) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
@@ -211,7 +212,7 @@ async function callGemini(
         });
       } catch (netErr) {
         lastErr = `network ${(netErr as Error).message || netErr}`;
-        await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+        await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
         continue;
       }
 
@@ -266,11 +267,11 @@ async function callGemini(
           const sec = Number(retryAfterHeader);
           waitMs = Number.isFinite(sec) && sec > 0 ? sec * 1000 : 0;
         }
-        // Cap at 12s so total retries stay within serverless limits
+        // Keep waits short so generation stays responsive
         if (waitMs <= 0) {
-          waitMs = Math.min(12_000, 1500 * Math.pow(2, attempt));
+          waitMs = Math.min(6_000, 1000 * Math.pow(2, attempt)); // 1s, 2s, 4s
         } else {
-          waitMs = Math.min(12_000, waitMs);
+          waitMs = Math.min(6_000, waitMs);
         }
         await new Promise((r) => setTimeout(r, waitMs));
         continue;
@@ -284,7 +285,7 @@ async function callGemini(
   );
 }
 
-const BATCH_SIZE = 10;
+const BATCH_SIZE = 25;
 
 function normalizeKey(q: string) {
   return q
@@ -352,7 +353,7 @@ async function generateExactly(
   const seenTexts: string[] = priorAvoid.filter((t) => t.trim().length > 0);
   const seenExact = new Set<string>(seenTexts.map(normalizeKey).filter(Boolean));
   let attempts = 0;
-  const maxAttempts = Math.ceil(target / BATCH_SIZE) + 8;
+  const maxAttempts = Math.min(4, Math.ceil(target / BATCH_SIZE) + 2);
 
   while (collected.length < target && attempts < maxAttempts) {
     attempts++;
@@ -409,11 +410,14 @@ export const generateExam = createServerFn({ method: "POST" })
     const apiKey = resolveApiKey(data.apiKey ?? "");
     const systemPrompt = `You are a senior Ethiopian university professor and official examiner for the Ethiopian Higher Education Exit Examination (EHEEE). You write rigorous, exam-grade multiple-choice questions that match the style, depth, and cognitive level of the real Ethiopian Exit Exam administered by the Ministry of Education.\n\nFollow these standards strictly:\n- Align with the Ethiopian Exit Exam blueprint for the given topic/course (Bloom's levels: Understanding, Applying, Analyzing, Evaluating — minimize pure recall).\n- Use precise academic language. Questions must be unambiguous, self-contained, and free of trick wording.\n- Keep each question stem concise — ideally under 35 words and never over 60 words. Avoid long paragraphs or multi-sentence stems.\n- Each item must have exactly 4 plausible options (A–D style) with strong, realistic distractors based on common student misconceptions in Ethiopian universities.\n- Exactly one option must be unambiguously correct; \"correct_answer\" must match one option verbatim.\n- Vary subtopics, scenarios, and which option is correct across the set. Avoid pattern bias.\n- Explanations must be detailed, pedagogical, and explain WHY the correct answer is right AND why each distractor is wrong.\n- Where relevant, use Ethiopian context (local examples, units, case studies) without making questions region-locked.\n\nRespond ONLY with valid JSON matching the schema. No prose, no markdown.`;
 
-    const avoidList = (data.avoid ?? []).slice(-300);
+    const avoidList = (data.avoid ?? []).slice(-80);
     const avoidText = (extra: string[]) => {
-      const all = [...avoidList, ...extra].slice(-400);
+      const all = [...avoidList, ...extra]
+        .map((q) => q.trim().slice(0, 140))
+        .filter(Boolean)
+        .slice(-40);
       return all.length > 0
-        ? `\n\nSTRICT NO-REPEAT RULE: Do NOT repeat, rephrase, or produce semantically equivalent versions of any of these questions. Pick entirely different subtopics, angles, scenarios, and wording. Already used questions (one per line):\n${all.map((q, i) => `${i + 1}. ${q}`).join("\n")}`
+        ? `\n\nDo NOT repeat or closely rephrase these (pick different angles):\n${all.map((q, i) => `${i + 1}. ${q}`).join("\n")}`
         : "";
     };
 
@@ -469,19 +473,26 @@ export const generateExamFromDocument = createServerFn({ method: "POST" })
     const apiKey = resolveApiKey(data.apiKey ?? "");
     const systemPrompt = `You are a senior university professor writing rigorous multiple-choice exam questions STRICTLY from a provided source document.\n\nABSOLUTE RULES:\n- Generate questions ONLY from facts, concepts, definitions, and examples explicitly present in the provided document. Do NOT introduce outside knowledge, opinions, or facts not in the document.\n- If the document does not contain enough material for the requested number, generate as many as the document supports — never fabricate.\n- Each question stem must be answerable from the document alone.\n- Keep each question stem concise (under 35 words, never over 60). No long paragraphs.\n- 4 plausible options, exactly one unambiguously correct; \"correct_answer\" must match an option verbatim.\n- Distractors must be plausible misreadings of the document, not random.\n- Vary subtopics across the whole document; avoid clustering only on the first pages.\n- Explanations MUST cite the relevant idea from the document and explain why each distractor is wrong.\n\nRespond ONLY with valid JSON matching the schema. No prose, no markdown.`;
 
-    const avoidList = (data.avoid ?? []).slice(-300);
+    const avoidList = (data.avoid ?? []).slice(-80);
     const seed = data.nonce ?? String(Date.now());
+    const docBody =
+      data.documentText.length > 60000
+        ? data.documentText.slice(0, 60000) + "\n\n[Document truncated for speed]"
+        : data.documentText;
 
     const questions = await generateExactly(
       apiKey,
       systemPrompt,
       (need, extra) => {
-        const all = [...avoidList, ...extra].slice(-400);
+        const all = [...avoidList, ...extra]
+          .map((q) => q.trim().slice(0, 140))
+          .filter(Boolean)
+          .slice(-40);
         const avoidBlock =
           all.length > 0
-            ? `\n\nSTRICT NO-REPEAT: Do NOT repeat or rephrase these already generated questions:\n${all.map((q, i) => `${i + 1}. ${q}`).join("\n")}`
+            ? `\n\nDo NOT repeat these:\n${all.map((q, i) => `${i + 1}. ${q}`).join("\n")}`
             : "";
-        return `Source Document: \"${data.documentName}\"\nDifficulty: ${data.difficulty}\nNumber of Questions: ${need}\nVariation seed: ${seed}\n\n=== DOCUMENT CONTENT START ===\n${data.documentText}\n=== DOCUMENT CONTENT END ===\n\nGenerate EXACTLY ${need} NEW multiple-choice questions based STRICTLY on the document above. Number them 1..${need}.${avoidBlock}`;
+        return `Source Document: \"${data.documentName}\"\nDifficulty: ${data.difficulty}\nNumber of Questions: ${need}\nVariation seed: ${seed}\n\n=== DOCUMENT CONTENT START ===\n${docBody}\n=== DOCUMENT CONTENT END ===\n\nGenerate EXACTLY ${need} NEW multiple-choice questions based STRICTLY on the document above. Number them 1..${need}.${avoidBlock}`;
       },
       data.numQuestions,
       avoidList,
