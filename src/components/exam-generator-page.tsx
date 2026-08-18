@@ -421,11 +421,11 @@ export function ExamGeneratorPage() {
   return (
     <div className="min-h-screen w-full bg-[#f4f6f8] text-[#1d2125]">
       <header className="sticky top-0 z-50 border-b border-[#d0d5dd] bg-[#0f6cbf] text-white shadow-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-3 py-2.5 sm:px-5">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-3 py-2.5 sm:px-5 lg:px-8 lg:py-3">
           <div className="flex min-w-0 items-center gap-2.5">
             <ListChecks className="h-5 w-5 shrink-0 opacity-90" />
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold sm:text-base">
+              <p className="truncate text-sm font-semibold sm:text-base lg:text-[17px]">
                 {hasActiveExam || showFinishSummary ? quizTitle : "Exit Exam Practice"}
               </p>
               <p className="truncate text-[11px] text-white/75">
@@ -439,9 +439,14 @@ export function ExamGeneratorPage() {
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {hasActiveExam && (
-              <span className="hidden rounded bg-white/15 px-2.5 py-1 text-xs font-medium sm:inline">
-                Answered {answeredCount}/{questions.length}
-              </span>
+              <div className="hidden items-center gap-2 sm:flex">
+                <span className="rounded bg-white/15 px-2.5 py-1 text-xs font-medium">
+                  Answered {answeredCount}/{questions.length}
+                </span>
+                <span className="hidden rounded bg-white/15 px-2.5 py-1 text-xs font-medium lg:inline">
+                  Score {correctCount}/{questions.length}
+                </span>
+              </div>
             )}
             <button type="button" className="inline-flex h-9 items-center gap-1.5 rounded-md bg-white/15 px-2.5 text-xs font-medium hover:bg-white/25" onClick={() => setSettingsOpen((o) => !o)}>
               <Settings2 className="h-3.5 w-3.5" />
@@ -451,13 +456,13 @@ export function ExamGeneratorPage() {
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-6xl px-3 py-4 sm:px-5 sm:py-6">
+      <div className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-5 sm:py-6 lg:px-8 lg:py-8">
         {settingsOpen && (
-          <section className="mb-4 rounded border border-[#d0d5dd] bg-white shadow-sm">
-            <div className="border-b border-[#e8eaed] bg-[#f8f9fa] px-4 py-2.5">
-              <h2 className="text-sm font-semibold text-[#0f6cbf]">Quiz setup</h2>
+          <section className="mb-4 rounded border border-[#d0d5dd] bg-white shadow-sm lg:mb-6">
+            <div className="border-b border-[#e8eaed] bg-[#f8f9fa] px-4 py-2.5 lg:px-6 lg:py-3">
+              <h2 className="text-sm font-semibold text-[#0f6cbf] lg:text-base">Quiz setup</h2>
             </div>
-            <div className="grid gap-4 p-4 lg:grid-cols-2">
+            <div className="grid gap-4 p-4 lg:grid-cols-2 lg:gap-8 lg:p-6">
               <div className="space-y-3">
                 <ApiKeyPanel onKeyChange={(key, provider) => { setApiKey(key); setAiProvider(provider); }} />
                 {hasWrongPending && (
@@ -493,14 +498,14 @@ export function ExamGeneratorPage() {
                 {!docMode && (
                   <div className="space-y-1.5">
                     <Label htmlFor="topic" className="text-xs font-semibold text-[#5b636b]">Topic / course</Label>
-                    <Input id="topic" placeholder="e.g. Data Structures" value={topic} onChange={(e) => setTopic(e.target.value)} className="h-10 rounded-md border-[#cfd5dc]" disabled={hasWrongPending} />
+                    <Input id="topic" placeholder="e.g. Data Structures" value={topic} onChange={(e) => setTopic(e.target.value)} className="h-10 rounded-md border-[#cfd5dc] lg:h-11" disabled={hasWrongPending} />
                   </div>
                 )}
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label className="text-xs font-semibold text-[#5b636b]">Difficulty</Label>
                     <Select value={difficulty} onValueChange={(v) => setDifficulty(v as Difficulty)} disabled={hasWrongPending}>
-                      <SelectTrigger className="h-10 rounded-md border-[#cfd5dc]"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-10 rounded-md border-[#cfd5dc] lg:h-11"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Beginner">Beginner</SelectItem>
                         <SelectItem value="Intermediate">Intermediate</SelectItem>
@@ -510,14 +515,14 @@ export function ExamGeneratorPage() {
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs font-semibold text-[#5b636b]">Questions</Label>
-                    <Input type="number" min={1} max={200} inputMode="numeric" value={numQuestions} onChange={(e) => setNumQuestions(Math.min(200, Math.max(1, parseInt(e.target.value, 10) || 1)))} className="h-10 rounded-md border-[#cfd5dc]" disabled={hasWrongPending} />
+                    <Input type="number" min={1} max={200} inputMode="numeric" value={numQuestions} onChange={(e) => setNumQuestions(Math.min(200, Math.max(1, parseInt(e.target.value, 10) || 1)))} className="h-10 rounded-md border-[#cfd5dc] lg:h-11" disabled={hasWrongPending} />
                   </div>
                 </div>
                 <label className="flex items-center justify-between rounded border border-[#e8eaed] bg-[#fafbfc] px-3 py-2.5">
                   <span className="flex items-center gap-2 text-sm"><Sparkles className="h-3.5 w-3.5 text-[#0f6cbf]" /> Auto-generate</span>
                   <Switch checked={autoGenerate} onCheckedChange={setAutoGenerate} disabled={hasWrongPending} />
                 </label>
-                <Button type="button" onClick={run} disabled={mutation.isPending || docExtracting || (!docMode && !topic.trim()) || !canGenerateNew} className="h-10 w-full rounded-md bg-[#0f6cbf] font-semibold hover:bg-[#0c5aa3]">
+                <Button type="button" onClick={run} disabled={mutation.isPending || docExtracting || (!docMode && !topic.trim()) || !canGenerateNew} className="h-10 w-full rounded-md bg-[#0f6cbf] font-semibold hover:bg-[#0c5aa3] lg:h-11 lg:text-[15px]">
                   {mutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating…</> : !canGenerateNew ? <><BookOpen className="mr-2 h-4 w-4" /> Finish review first</> : questions.length > 0 && !reviewMode ? <><RefreshCw className="mr-2 h-4 w-4" /> Regenerate quiz</> : <><Sparkles className="mr-2 h-4 w-4" /> Start attempt</>}
                 </Button>
                 {questions.length > 0 && !reviewMode && (
@@ -548,7 +553,7 @@ export function ExamGeneratorPage() {
         )}
 
         {showFinishSummary && (
-          <div className="rounded border border-[#d0d5dd] bg-white p-8 text-center shadow-sm">
+          <div className="rounded border border-[#d0d5dd] bg-white p-8 text-center shadow-sm lg:mx-auto lg:max-w-2xl lg:p-12">
             <CheckCircle2 className="mx-auto h-12 w-12 text-[#0f6cbf]" />
             <h2 className="mt-3 text-xl font-semibold">Attempt finished</h2>
             <p className="mt-1 text-sm text-[#5b636b]">Score: <strong>{correctCount}/{questions.length}</strong> · {Math.round((correctCount / Math.max(questions.length, 1)) * 100)}%</p>
@@ -582,7 +587,7 @@ export function ExamGeneratorPage() {
         )}
 
         {hasActiveExam && currentQuestion && (
-          <div className="grid gap-4 lg:grid-cols-[1fr_220px]">
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px] lg:gap-6 xl:grid-cols-[minmax(0,1fr)_300px] xl:gap-8">
             <div className="min-w-0 space-y-3 pb-24 lg:pb-0">
               {reviewMode && (
                 <div className="rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
@@ -590,8 +595,8 @@ export function ExamGeneratorPage() {
                 </div>
               )}
               <article className="overflow-hidden rounded border border-[#d0d5dd] bg-white shadow-sm">
-                <div className="flex items-center justify-between gap-2 border-b border-[#e8eaed] bg-[#f8f9fa] px-4 py-2.5">
-                  <p className="text-sm font-semibold text-[#0f6cbf]">
+                <div className="flex items-center justify-between gap-2 border-b border-[#e8eaed] bg-[#f8f9fa] px-4 py-2.5 lg:px-7 lg:py-3.5">
+                  <p className="text-sm font-semibold text-[#0f6cbf] lg:text-base">
                     Question {currentIndex + 1}<span className="font-normal text-[#5b636b]"> of {questions.length}</span>
                   </p>
                   <button
@@ -603,9 +608,9 @@ export function ExamGeneratorPage() {
                     {flagged[currentQuestion.question_number] ? "Flagged" : "Flag"}
                   </button>
                 </div>
-                <div className="p-4 sm:p-5">
-                  <p className="text-[15px] leading-relaxed sm:text-base">{currentQuestion.question}</p>
-                  <div className="mt-4 space-y-2">
+                <div className="p-4 sm:p-5 lg:p-7 xl:p-8">
+                  <p className="text-[15px] leading-relaxed sm:text-base lg:text-lg lg:leading-relaxed">{currentQuestion.question}</p>
+                  <div className="mt-4 space-y-2 lg:space-y-2.5">
                     {currentQuestion.options.map((opt, i) => {
                       const letter = String.fromCharCode(65 + i);
                       const selected = answers[currentQuestion.question_number];
@@ -619,7 +624,7 @@ export function ExamGeneratorPage() {
                           disabled={isRevealed}
                           onClick={() => handleAnswer(currentQuestion, opt)}
                           className={cn(
-                            "flex w-full items-start gap-3 rounded border px-3 py-3 text-left text-sm transition-colors",
+                            "flex w-full items-start gap-3 rounded border px-3 py-3 text-left text-sm transition-colors lg:gap-4 lg:px-4 lg:py-3.5 lg:text-[15px] hover:shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0f6cbf]/40",
                             !isRevealed && "border-[#cfd5dc] hover:border-[#0f6cbf] hover:bg-[#f5f9fc]",
                             isSelected && !isRevealed && "border-[#0f6cbf] bg-[#e8f2fb]",
                             isRevealed && isAnswer && "border-emerald-600 bg-emerald-50",
@@ -628,7 +633,7 @@ export function ExamGeneratorPage() {
                           )}
                         >
                           <span className={cn(
-                            "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 text-[9px]",
+                            "mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 text-[9px] lg:h-6 lg:w-6",
                             isSelected && !isRevealed && "border-[#0f6cbf] bg-[#0f6cbf] text-white",
                             !isSelected && !isRevealed && "border-[#9aa3ad]",
                             isRevealed && isAnswer && "border-emerald-600 bg-emerald-600 text-white",
@@ -646,7 +651,7 @@ export function ExamGeneratorPage() {
                   </div>
                   {revealed[currentQuestion.question_number] && (
                     <div className={cn(
-                      "mt-4 rounded border-l-4 px-3 py-3 text-sm",
+                      "mt-4 rounded border-l-4 px-3 py-3 text-sm lg:mt-5 lg:px-4 lg:py-4",
                       answers[currentQuestion.question_number] != null && isOptionCorrect(currentQuestion, answers[currentQuestion.question_number])
                         ? "border-l-emerald-600 bg-emerald-50"
                         : "border-l-amber-500 bg-amber-50",
@@ -656,10 +661,10 @@ export function ExamGeneratorPage() {
                           ? (reviewMode ? "Correct — removed from review" : "Correct")
                           : (reviewMode ? "Incorrect — try again" : `Correct answer: ${currentQuestion.correct_answer}`)}
                       </p>
-                      {!(reviewMode && needsRetry) && <p className="mt-1.5 text-[13px] leading-relaxed">{currentQuestion.explanation}</p>}
+                      {!(reviewMode && needsRetry) && <p className="mt-1.5 text-[13px] leading-relaxed lg:text-sm">{currentQuestion.explanation}</p>}
                       {reviewMode && needsRetry && (
                         <div className="mt-2 space-y-2">
-                          <p className="text-[13px] leading-relaxed">{currentQuestion.explanation}</p>
+                          <p className="text-[13px] leading-relaxed lg:text-sm">{currentQuestion.explanation}</p>
                           <Button type="button" size="sm" className="h-9 rounded-md bg-[#0f6cbf] hover:bg-[#0c5aa3]" onClick={retryCurrentQuestion}>
                             <RotateCcw className="mr-1.5 h-3.5 w-3.5" /> Try again
                           </Button>
@@ -669,25 +674,30 @@ export function ExamGeneratorPage() {
                   )}
                 </div>
               </article>
-              <div className="hidden items-center justify-between gap-3 lg:flex">
-                <Button type="button" variant="outline" className="h-10 rounded-md border-[#cfd5dc]" disabled={isFirst || (reviewMode && needsRetry)} onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}>
-                  <ChevronLeft className="mr-1 h-4 w-4" /> Previous page
+              <div className="hidden items-center justify-between gap-4 rounded border border-[#d0d5dd] bg-white px-4 py-3 shadow-sm lg:flex xl:px-5">
+                <Button type="button" variant="outline" className="h-11 min-w-[140px] rounded-md border-[#cfd5dc] px-5" disabled={isFirst || (reviewMode && needsRetry)} onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}>
+                  <ChevronLeft className="mr-1.5 h-4 w-4" /> Previous page
                 </Button>
-                <span className="text-xs text-[#5b636b]">Page {currentIndex + 1} of {questions.length}</span>
-                <Button type="button" variant="outline" className="h-10 rounded-md border-[#cfd5dc]" disabled={isLast || (reviewMode && needsRetry)} onClick={() => setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))}>
-                  Next page <ChevronRight className="ml-1 h-4 w-4" />
+                <div className="flex flex-col items-center gap-1">
+                  <span className="text-sm font-medium text-[#1d2125]">Page {currentIndex + 1} of {questions.length}</span>
+                  <div className="h-1.5 w-40 overflow-hidden rounded-full bg-[#e8eaed] xl:w-56">
+                    <div className="h-full rounded-full bg-[#0f6cbf] transition-all" style={{ width: `${((currentIndex + 1) / Math.max(questions.length, 1)) * 100}%` }} />
+                  </div>
+                </div>
+                <Button type="button" variant="outline" className="h-11 min-w-[140px] rounded-md border-[#cfd5dc] px-5" disabled={isLast || (reviewMode && needsRetry)} onClick={() => setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))}>
+                  Next page <ChevronRight className="ml-1.5 h-4 w-4" />
                 </Button>
               </div>
             </div>
 
-            <aside className="lg:sticky lg:top-16 lg:self-start">
+            <aside className="lg:sticky lg:top-20 lg:self-start">
               <div className="rounded border border-[#d0d5dd] bg-white shadow-sm">
                 <button type="button" className="flex w-full items-center justify-between border-b border-[#e8eaed] bg-[#f8f9fa] px-3 py-2.5 text-left text-sm font-semibold text-[#0f6cbf] lg:cursor-default" onClick={() => setNavOpen((o) => !o)}>
                   Quiz navigation
                   <span className="text-xs font-normal text-[#5b636b] lg:hidden">{navOpen ? "Hide" : "Show"}</span>
                 </button>
-                <div className={cn("p-3", navOpen ? "block" : "hidden lg:block")}>
-                  <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-6 lg:grid-cols-4">
+                <div className={cn("p-3 lg:p-4", navOpen ? "block" : "hidden lg:block")}>
+                  <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-6 lg:grid-cols-5 lg:gap-2">
                     {questions.map((q, idx) => {
                       const st = navStatus(q, idx);
                       return (
@@ -697,7 +707,7 @@ export function ExamGeneratorPage() {
                           disabled={reviewMode && needsRetry && idx !== currentIndex}
                           onClick={() => { if (!(reviewMode && needsRetry)) setCurrentIndex(idx); }}
                           className={cn(
-                            "relative flex h-9 items-center justify-center rounded border text-xs font-semibold",
+                            "relative flex h-9 items-center justify-center rounded border text-xs font-semibold lg:h-10 lg:text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0f6cbf]/40",
                             st === "current" && "border-[#0f6cbf] bg-[#0f6cbf] text-white ring-2 ring-[#0f6cbf]/30",
                             st === "answered" && "border-[#0f6cbf] bg-[#e8f2fb] text-[#0f6cbf]",
                             st === "correct" && "border-emerald-600 bg-emerald-600 text-white",
@@ -712,7 +722,7 @@ export function ExamGeneratorPage() {
                       );
                     })}
                   </div>
-                  <ul className="mt-3 space-y-1 border-t border-[#e8eaed] pt-3 text-[10px] text-[#5b636b]">
+                  <ul className="mt-3 space-y-1.5 border-t border-[#e8eaed] pt-3 text-[10px] text-[#5b636b] lg:text-[11px]">
                     <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded border border-[#0f6cbf] bg-[#0f6cbf]" /> Current</li>
                     <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded border border-[#0f6cbf] bg-[#e8f2fb]" /> Answered</li>
                     <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded border border-[#cfd5dc] bg-white" /> Not yet answered</li>
@@ -720,12 +730,13 @@ export function ExamGeneratorPage() {
                     <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded border border-red-500 bg-red-500" /> Incorrect</li>
                   </ul>
                   <p className="mt-3 text-center text-xs text-[#5b636b]">Score: <strong>{correctCount}/{questions.length}</strong></p>
+                  <p className="mt-2 hidden text-center text-[10px] text-[#9aa3ad] lg:block">Click a number to jump · Flag questions to revisit</p>
                 </div>
               </div>
             </aside>
 
             <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-[#d0d5dd] bg-white/95 px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur lg:hidden">
-              <div className="mx-auto flex max-w-6xl gap-2">
+              <div className="mx-auto flex max-w-7xl gap-2">
                 <Button type="button" variant="outline" className="h-11 flex-1 rounded-md border-[#cfd5dc] text-sm" disabled={isFirst || (reviewMode && needsRetry)} onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}>
                   <ChevronLeft className="mr-1 h-4 w-4" /> Prev
                 </Button>
