@@ -160,6 +160,10 @@ export function ExamGeneratorPage() {
   const generateDocFn = useServerFn(generateExamFromDocument);
 
   const mutation = useMutation({
+    onMutate: () => {
+      setExamFinished(false);
+      setNeedsRetry(false);
+    },
     mutationFn: async () => {
       const avoid = seenQuestions.slice(-200);
       if (docMode) {
@@ -315,12 +319,18 @@ export function ExamGeneratorPage() {
   const allAnswered =
     !reviewMode && questions.length > 0 && questions.every((q) => revealed[q.question_number]);
 
+  const isOptionCorrect = (q: ExamQuestion, opt: string) => {
+    if (opt === q.correct_answer) return true;
+    if (opt.trim().toLowerCase() === (q.correct_answer ?? "").trim().toLowerCase()) return true;
+    return false;
+  };
+
   useEffect(() => {
     if (!allAnswered || examFinished || reviewMode) return;
     const sessionWrong: ExamQuestion[] = [];
     for (const q of questions) {
       const selected = answers[q.question_number];
-      if (selected && selected !== q.correct_answer) sessionWrong.push(q);
+      if (selected && !isOptionCorrect(q, selected)) sessionWrong.push(q);
     }
     if (sessionWrong.length > 0) {
       const merged = [...wrongQuestions];
@@ -343,7 +353,7 @@ export function ExamGeneratorPage() {
     const qNum = q.question_number;
     setAnswers((a) => ({ ...a, [qNum]: opt }));
     setRevealed((r) => ({ ...r, [qNum]: true }));
-    const isCorrect = opt === q.correct_answer;
+    const isCorrect = isOptionCorrect(q, opt);
     const key = questionKey(q);
     if (!isCorrect) {
       if (!wrongQuestions.some((w) => isSimilarQuestion(w.question, q.question))) {
@@ -379,7 +389,10 @@ export function ExamGeneratorPage() {
   const correctCount = useMemo(
     () =>
       questions.filter(
-        (q) => revealed[q.question_number] && answers[q.question_number] === q.correct_answer,
+        (q) =>
+          revealed[q.question_number] &&
+          answers[q.question_number] != null &&
+          isOptionCorrect(q, answers[q.question_number]),
       ).length,
     [questions, revealed, answers],
   );
@@ -544,7 +557,7 @@ export function ExamGeneratorPage() {
                       const selected = answers[currentQuestion.question_number];
                       const isRevealed = revealed[currentQuestion.question_number];
                       const isSelected = selected === opt;
-                      const isAnswer = opt === currentQuestion.correct_answer;
+                      const isAnswer = isOptionCorrect(currentQuestion, opt);
                       return (
                         <button key={i} type="button" disabled={isRevealed} onClick={() => handleAnswer(currentQuestion, opt)} className={cn("flex w-full items-start gap-3 rounded-xl border px-3.5 sm:px-4 py-3.5 sm:py-3 text-left transition-colors touch-manipulation min-h-[52px] sm:min-h-0 border-border hover:border-foreground active:scale-[0.99]", isSelected && !isRevealed && "border-foreground bg-secondary", isRevealed && isAnswer && "border-emerald-600 bg-emerald-50", isRevealed && isSelected && !isAnswer && "border-destructive bg-red-50")}>
                           <span className={cn("flex h-8 w-8 sm:h-7 sm:w-7 shrink-0 items-center justify-center rounded-full border text-xs font-bold", isRevealed && isAnswer && "border-emerald-700 bg-emerald-700 text-white", isRevealed && isSelected && !isAnswer && "border-destructive bg-destructive text-white")}>{letter}</span>
@@ -556,10 +569,10 @@ export function ExamGeneratorPage() {
                     })}
                   </div>
                   {revealed[currentQuestion.question_number] && (
-                    <div className={cn("mt-4 rounded-xl border-l-4 bg-secondary/60 p-3.5 sm:p-4", answers[currentQuestion.question_number] === currentQuestion.correct_answer ? "border-emerald-700" : "border-amber-600")}>
+                    <div className={cn("mt-4 rounded-xl border-l-4 bg-secondary/60 p-3.5 sm:p-4", answers[currentQuestion.question_number] != null && isOptionCorrect(currentQuestion, answers[currentQuestion.question_number]) ? "border-emerald-700" : "border-amber-600")}>
                       <div className="mb-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
                         <Info className="h-3.5 w-3.5" />
-                        {answers[currentQuestion.question_number] === currentQuestion.correct_answer ? (reviewMode ? "Correct — removed from mistakes" : "Correct") : reviewMode ? "Wrong — try again" : `Answer: ${currentQuestion.correct_answer}`}
+                        {answers[currentQuestion.question_number] != null && isOptionCorrect(currentQuestion, answers[currentQuestion.question_number]) ? (reviewMode ? "Correct — removed from mistakes" : "Correct") : reviewMode ? "Wrong — try again" : `Answer: ${currentQuestion.correct_answer}`}
                       </div>
                       {!(reviewMode && needsRetry) && <p className="text-sm leading-relaxed">{currentQuestion.explanation}</p>}
                       {reviewMode && needsRetry && (
