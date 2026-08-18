@@ -102,8 +102,10 @@ async function callGemini(
   });
 
   let lastErr = "";
+  // Retry across models; on 429 wait and retry instead of failing immediately
+  const maxAttemptsPerModel = 6;
   for (const model of MODEL_FALLBACKS) {
-    for (let attempt = 0; attempt < 3; attempt++) {
+    for (let attempt = 0; attempt < maxAttemptsPerModel; attempt++) {
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
       const response = await fetch(url, {
         method: "POST",
@@ -133,26 +135,46 @@ async function callGemini(
       const errBody = await response.text();
       lastErr = `${response.status} ${errBody.slice(0, 400)}`;
 
-      if (response.status === 429) {
-        throw new Error("Gemini is rate limited. Please try again in a moment.");
-      }
+      // Auth errors — no point retrying
       if (response.status === 401 || response.status === 403) {
         throw new Error(
           "Gemini API key was rejected. Create a key at https://aistudio.google.com/apikey, set GEMINI_API_KEY on Vercel, and redeploy.",
         );
       }
+
+      // Bad request / model missing — try next model
       if (response.status === 404 || response.status === 400) break;
-      if (response.status === 503 || response.status === 500 || response.status === 502) {
-        await new Promise((r) => setTimeout(r, 800 * (attempt + 1)));
+
+      // Rate limit or temporary server errors — wait and retry (do NOT give up immediately)
+      if (
+        response.status === 429 ||
+        response.status === 503 ||
+        response.status === 500 ||
+        response.status === 502
+      ) {
+        const retryAfterHeader = response.headers.get("retry-after");
+        let waitMs = 0;
+        if (retryAfterHeader) {
+          const sec = Number(retryAfterHeader);
+          waitMs = Number.isFinite(sec) && sec > 0 ? sec * 1000 : 0;
+        }
+        // Exponential backoff: 2s, 4s, 8s, 16s, 32s, 60s (cap)
+        if (waitMs <= 0) {
+          waitMs = Math.min(60_000, 2000 * Math.pow(2, attempt));
+        }
+        await new Promise((r) => setTimeout(r, waitMs));
         continue;
       }
+
       throw new Error(`Gemini request failed: ${lastErr}`);
     }
   }
-  throw new Error(`Gemini request failed: ${lastErr || "no available model"}`);
+  throw new Error(
+    `Gemini is busy after several retries. Please wait a few seconds and try again. (${lastErr || "no available model"})`,
+  );
 }
 
-const BATCH_SIZE = 15;
+const BATCH_SIZE = 10;
 
 function normalizeKey(q: string) {
   return q
