@@ -1,1 +1,1 @@
-RESTORE_FROM_ARTIFACT
+@file:///tmp/final.tsx
