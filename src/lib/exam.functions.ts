@@ -9,8 +9,12 @@ const BlueprintItemSchema = z.object({
 });
 
 const InputSchema = z.object({
-  apiKey: z.string().min(20).max(200),
-  provider: z.enum(["gemini", "openai", "deepseek"]).optional().default("gemini"),
+  // Optional when server has OPENROUTER_API_KEY and provider is openrouter
+  apiKey: z.string().max(200).optional().default(""),
+  provider: z
+    .enum(["openrouter", "gemini", "openai", "deepseek"])
+    .optional()
+    .default("openrouter"),
   topic: z.string().min(1).max(400),
   difficulty: z.enum(["Beginner", "Intermediate", "Advanced"]),
   numQuestions: z.number().int().min(1).max(200),
@@ -57,10 +61,89 @@ const MODEL_FALLBACKS = [
   "gemini-flash-lite-latest",
 ];
 
-export type AiProvider = "gemini" | "openai" | "deepseek";
+export type AiProvider = "openrouter" | "gemini" | "openai" | "deepseek";
 
 const OPENAI_MODEL = "gpt-4o-mini";
 const DEEPSEEK_MODEL = "deepseek-chat";
+/** Fast, capable default on OpenRouter for MCQ drafting */
+const OPENROUTER_MODEL = "openai/gpt-4o-mini";
+
+function resolveApiKey(provider: AiProvider, clientKey: string): string {
+  const trimmed = (clientKey ?? "").trim();
+  if (trimmed) return trimmed;
+
+  // Server-side env fallback (preferred for OpenRouter)
+  const env =
+    provider === "openrouter"
+      ? process.env.OPENROUTER_API_KEY || process.env.OPENROUTER_KEY
+      : provider === "openai"
+        ? process.env.OPENAI_API_KEY
+        : provider === "deepseek"
+          ? process.env.DEEPSEEK_API_KEY
+          : process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
+
+  return (env ?? "").trim();
+}
+
+async function callOpenRouter(
+  apiKey: string,
+  systemPrompt: string,
+  userPrompt: string,
+): Promise<ExamQuestion[]> {
+  if (!apiKey) {
+    throw new Error(
+      "OpenRouter API key missing. Set OPENROUTER_API_KEY on the server or paste a key in the panel.",
+    );
+  }
+
+  const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      "HTTP-Referer": process.env.OPENROUTER_HTTP_REFERER || "https://exit-exam-fb6a7a74.vercel.app",
+      "X-Title": process.env.OPENROUTER_APP_TITLE || "Exit Exam Generator",
+    },
+    body: JSON.stringify({
+      model: process.env.OPENROUTER_MODEL || OPENROUTER_MODEL,
+      temperature: 0.9,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: systemPrompt },
+        {
+          role: "user",
+          content: `${userPrompt}\n\nReturn a JSON object shaped as {"questions": [{"question_number": number, "question": string, "options": string[4], "correct_answer": string, "explanation": string}]}.`,
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    if (response.status === 401 || response.status === 403) {
+      throw new Error("Your OpenRouter API key was rejected. Check the key and try again.");
+    }
+    if (response.status === 429) {
+      throw new Error("OpenRouter is rate limited. Try again in a moment.");
+    }
+    if (response.status === 402) {
+      throw new Error("OpenRouter account has insufficient credits.");
+    }
+    throw new Error(`OpenRouter request failed: ${response.status} ${text}`);
+  }
+
+  const json = await response.json();
+  const text: string | undefined = json?.choices?.[0]?.message?.content;
+  if (!text) throw new Error("OpenRouter did not return content");
+
+  // Models sometimes wrap JSON in markdown fences
+  const cleaned = text
+    .replace(/^```(?:json)?\s*/i, "")
+    .replace(/\s*```$/i, "")
+    .trim();
+  const parsed = JSON.parse(cleaned) as { questions?: ExamQuestion[] };
+  return parsed.questions ?? [];
+}
 
 async function callOpenAICompatible(
   provider: "openai" | "deepseek",
@@ -123,9 +206,13 @@ function callModel(
   systemPrompt: string,
   userPrompt: string,
 ): Promise<ExamQuestion[]> {
-  return provider === "gemini"
-    ? callGemini(apiKey, systemPrompt, userPrompt)
-    : callOpenAICompatible(provider, apiKey, systemPrompt, userPrompt);
+  if (provider === "openrouter") {
+    return callOpenRouter(apiKey, systemPrompt, userPrompt);
+  }
+  if (provider === "gemini") {
+    return callGemini(apiKey, systemPrompt, userPrompt);
+  }
+  return callOpenAICompatible(provider, apiKey, systemPrompt, userPrompt);
 }
 
 async function callGemini(apiKey: string, systemPrompt: string, userPrompt: string): Promise<ExamQuestion[]> {
@@ -224,8 +311,8 @@ async function generateExactly(
 export const generateExam = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }): Promise<{ questions: ExamQuestion[] }> => {
-    const apiKey = data.apiKey.trim();
-    const provider: AiProvider = data.provider ?? "gemini";
+    const provider: AiProvider = data.provider ?? "openrouter";
+    const apiKey = resolveApiKey(provider, data.apiKey ?? "");
     const systemPrompt = `You are a senior Ethiopian university professor and official examiner for the Ethiopian Higher Education Exit Examination (EHEEE). You write rigorous, exam-grade multiple-choice questions that match the style, depth, and cognitive level of the real Ethiopian Exit Exam administered by the Ministry of Education.
 
 Follow these standards strictly:
@@ -259,13 +346,7 @@ Respond ONLY with valid JSON matching the schema. No prose, no markdown.`;
           provider,
           apiKey,
           systemPrompt,
-          (need, extra) => `Topic / Course: ${data.topic}
-Subject area: ${b.subject}${b.objectives ? `\nLearning objectives to cover: ${b.objectives}` : ""}
-Difficulty: ${data.difficulty}
-Number of Questions: ${need}
-Variation seed: ${seed}
-
-Generate EXACTLY ${need} multiple-choice questions for the subject area above. Number them 1..${need}.${avoidText([...all.map((q) => q.question), ...extra])}`,
+          (need, extra) => `Topic / Course: ${data.topic}\nSubject area: ${b.subject}${b.objectives ? `\nLearning objectives to cover: ${b.objectives}` : ""}\nDifficulty: ${data.difficulty}\nNumber of Questions: ${need}\nVariation seed: ${seed}\n\nGenerate EXACTLY ${need} multiple-choice questions for the subject area above. Number them 1..${need}.${avoidText([...all.map((q) => q.question), ...extra])}`,
           b.count
         );
         all.push(...subjectQs);
@@ -278,12 +359,7 @@ Generate EXACTLY ${need} multiple-choice questions for the subject area above. N
       provider,
       apiKey,
       systemPrompt,
-      (need, extra) => `Topic / Course: ${data.topic}
-Difficulty: ${data.difficulty}
-Number of Questions: ${need}
-Variation seed: ${seed} — generate a fresh, distinct set of questions different from any prior generation. Vary subtopics, phrasing, and which option is correct.
-
-Generate EXACTLY ${need} multiple-choice questions. Number them 1..${need}. Never return fewer than ${need}.${avoidText(extra)}`,
+      (need, extra) => `Topic / Course: ${data.topic}\nDifficulty: ${data.difficulty}\nNumber of Questions: ${need}\nVariation seed: ${seed} — generate a fresh, distinct set of questions different from any prior generation. Vary subtopics, phrasing, and which option is correct.\n\nGenerate EXACTLY ${need} multiple-choice questions. Number them 1..${need}. Never return fewer than ${need}.${avoidText(extra)}`,
       data.numQuestions
     );
     return { questions };
@@ -291,8 +367,11 @@ Generate EXACTLY ${need} multiple-choice questions. Number them 1..${need}. Neve
 
 
 const DocInputSchema = z.object({
-  apiKey: z.string().min(20).max(200),
-  provider: z.enum(["gemini", "openai", "deepseek"]).optional().default("gemini"),
+  apiKey: z.string().max(200).optional().default(""),
+  provider: z
+    .enum(["openrouter", "gemini", "openai", "deepseek"])
+    .optional()
+    .default("openrouter"),
   documentName: z.string().min(1).max(200),
   documentText: z.string().min(20).max(200000),
   difficulty: z.enum(["Beginner", "Intermediate", "Advanced"]),
@@ -304,8 +383,8 @@ const DocInputSchema = z.object({
 export const generateExamFromDocument = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => DocInputSchema.parse(input))
   .handler(async ({ data }): Promise<{ questions: ExamQuestion[] }> => {
-    const apiKey = data.apiKey.trim();
-    const provider: AiProvider = data.provider ?? "gemini";
+    const provider: AiProvider = data.provider ?? "openrouter";
+    const apiKey = resolveApiKey(provider, data.apiKey ?? "");
     const systemPrompt = `You are a senior university professor writing rigorous multiple-choice exam questions STRICTLY from a provided source document.
 
 ABSOLUTE RULES:
@@ -333,19 +412,9 @@ Respond ONLY with valid JSON matching the schema. No prose, no markdown.`;
           all.length > 0
             ? `\n\nDo NOT repeat or rephrase these already generated questions:\n${all.map((q, i) => `${i + 1}. ${q}`).join("\n")}`
             : "";
-        return `Source Document: "${data.documentName}"
-Difficulty: ${data.difficulty}
-Number of Questions: ${need}
-Variation seed: ${seed}
-
-=== DOCUMENT CONTENT START ===
-${data.documentText}
-=== DOCUMENT CONTENT END ===
-
-Generate EXACTLY ${need} multiple-choice questions based STRICTLY on the document above. Number them 1..${need}.${avoidBlock}`;
+        return `Source Document: "${data.documentName}"\nDifficulty: ${data.difficulty}\nNumber of Questions: ${need}\nVariation seed: ${seed}\n\n=== DOCUMENT CONTENT START ===\n${data.documentText}\n=== DOCUMENT CONTENT END ===\n\nGenerate EXACTLY ${need} multiple-choice questions based STRICTLY on the document above. Number them 1..${need}.${avoidBlock}`;
       },
       data.numQuestions
     );
     return { questions };
   });
-
