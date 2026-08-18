@@ -35,7 +35,7 @@ type Difficulty = "Beginner" | "Intermediate" | "Advanced";
 
 export function ExamGeneratorPage() {
   const [topic, setTopic] = useState("");
-  const [difficulty, setDifficulty] = useState<Difficulty>("Intermediate");
+  const [difficulty, setDifficulty] = useState<Difficulty>("Beginner");
   const [numQuestions, setNumQuestions] = useState(5);
   const [autoGenerate, setAutoGenerate] = useState(false);
   const [apiKey, setApiKey] = useState("");
@@ -57,7 +57,7 @@ export function ExamGeneratorPage() {
         return generateDocFn({
           data: {
             apiKey,
-            provider: "gemini",
+            provider: aiProvider,
             documentName: docName || "Uploaded document",
             documentText: docText,
             difficulty,
@@ -69,7 +69,7 @@ export function ExamGeneratorPage() {
       return generateFn({
         data: {
           apiKey,
-          provider: "gemini",
+          provider: aiProvider,
           topic: topic.trim(),
           difficulty,
           numQuestions,
@@ -94,7 +94,6 @@ export function ExamGeneratorPage() {
   useEffect(() => {
     if (!autoGenerate) return;
     if (!docMode && !topic.trim()) return;
-    // Gemini uses server GEMINI_API_KEY by default; browser key is optional
     const t = setTimeout(() => run(), 800);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -138,7 +137,7 @@ export function ExamGeneratorPage() {
             </div>
             <div>
               <h1 className="font-display text-lg font-bold tracking-tight">Exam Generator</h1>
-              <p className="text-xs text-muted-foreground">Gemini · AI MCQ drafting</p>
+              <p className="text-xs text-muted-foreground">AI MCQ drafting</p>
             </div>
           </div>
 
@@ -183,7 +182,9 @@ export function ExamGeneratorPage() {
                   <FileText className="h-4 w-4 shrink-0 text-primary" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-xs font-semibold">{docName}</p>
-                    <p className="text-[10px] text-muted-foreground">{docText.length.toLocaleString()} chars</p>
+                    <p className="text-[10px] text-muted-foreground">
+                      {docText.length.toLocaleString()} chars
+                    </p>
                   </div>
                   <button
                     type="button"
@@ -198,12 +199,19 @@ export function ExamGeneratorPage() {
                   </button>
                 </div>
               )}
+              <p className="text-[11px] leading-relaxed text-muted-foreground">
+                Works best with text-based PDFs, DOCX, or TXT (lecture notes, past papers).
+                Scanned images and password-protected files aren&apos;t supported.
+              </p>
               {docError && <p className="text-xs text-destructive">{docError}</p>}
             </div>
 
             {!docMode && (
               <div className="space-y-2">
-                <Label htmlFor="topic" className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                <Label
+                  htmlFor="topic"
+                  className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground"
+                >
                   Topic
                 </Label>
                 <Input
@@ -218,7 +226,9 @@ export function ExamGeneratorPage() {
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Difficulty</Label>
+                <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Difficulty
+                </Label>
                 <Select value={difficulty} onValueChange={(v) => setDifficulty(v as Difficulty)}>
                   <SelectTrigger className="h-11 rounded-xl">
                     <SelectValue />
@@ -231,13 +241,17 @@ export function ExamGeneratorPage() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Questions</Label>
+                <Label className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Questions
+                </Label>
                 <Input
                   type="number"
                   min={1}
-                  max={50}
+                  max={200}
                   value={numQuestions}
-                  onChange={(e) => setNumQuestions(Math.min(50, Math.max(1, parseInt(e.target.value, 10) || 1)))}
+                  onChange={(e) =>
+                    setNumQuestions(Math.min(200, Math.max(1, parseInt(e.target.value, 10) || 1)))
+                  }
                   className="h-11 rounded-xl"
                 />
               </div>
@@ -305,7 +319,7 @@ export function ExamGeneratorPage() {
           {mutation.isPending && (
             <div className="flex flex-col items-center justify-center gap-3 rounded-[28px] border border-dashed border-border bg-card py-24 text-muted-foreground">
               <Loader2 className="h-7 w-7 animate-spin text-primary" />
-              <p className="text-sm">Drafting your exam via Gemini…</p>
+              <p className="text-sm">Drafting your exam…</p>
             </div>
           )}
 
@@ -314,7 +328,7 @@ export function ExamGeneratorPage() {
               <Sparkles className="h-5 w-5 text-primary" />
               <p className="text-sm">Set a topic and click Generate exam.</p>
               <p className="max-w-sm text-xs">
-                Provider is <strong>Google Gemini</strong>. A server key is used by default. Optionally paste your own key in the panel.
+                Save your Gemini, ChatGPT, or DeepSeek key in the panel above to generate.
               </p>
             </div>
           )}
@@ -359,13 +373,18 @@ export function ExamGeneratorPage() {
                             className={cn(
                               "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-bold",
                               isRevealed && isAnswer && "border-emerald-700 bg-emerald-700 text-white",
-                              isRevealed && isSelected && !isAnswer && "border-destructive bg-destructive text-white",
+                              isRevealed &&
+                                isSelected &&
+                                !isAnswer &&
+                                "border-destructive bg-destructive text-white",
                             )}
                           >
                             {letter}
                           </span>
                           <span className="flex-1 pt-0.5 text-sm">{opt}</span>
-                          {isRevealed && isAnswer && <CheckCircle2 className="h-5 w-5 text-emerald-700" />}
+                          {isRevealed && isAnswer && (
+                            <CheckCircle2 className="h-5 w-5 text-emerald-700" />
+                          )}
                           {isRevealed && isSelected && !isAnswer && (
                             <XCircle className="h-5 w-5 text-destructive" />
                           )}
