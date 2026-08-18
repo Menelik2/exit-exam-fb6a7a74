@@ -9,7 +9,21 @@ const partsDir = path.join(__dirname, "exam-page-parts");
 const out = path.join(__dirname, "..", "src", "components", "exam-generator-page.tsx");
 fs.mkdirSync(path.dirname(out), { recursive: true });
 
-// Prefer zlib-compressed split (exam.z0.b64 + exam.z1.b64)
+// 1) Plain text chunks (chunk.0.txt ...)
+const textChunks = [];
+for (let i = 0; ; i++) {
+  const f = path.join(partsDir, `chunk.${i}.txt`);
+  if (!fs.existsSync(f)) break;
+  textChunks.push(fs.readFileSync(f, "utf8"));
+}
+if (textChunks.length) {
+  const body = textChunks.join("");
+  fs.writeFileSync(out, body);
+  console.log("assemble-exam-page: wrote", out, `(${body.length} bytes, chunks)`);
+  process.exit(0);
+}
+
+// 2) zlib split
 const z0 = path.join(partsDir, "exam.z0.b64");
 const z1 = path.join(partsDir, "exam.z1.b64");
 if (fs.existsSync(z0) && fs.existsSync(z1)) {
@@ -21,7 +35,7 @@ if (fs.existsSync(z0) && fs.existsSync(z1)) {
   process.exit(0);
 }
 
-// Fallback: numbered base64 parts
+// 3) numbered b64
 const parts = [];
 for (let i = 0; ; i++) {
   const f = path.join(partsDir, `exam-generator-page.${i}.b64`);
