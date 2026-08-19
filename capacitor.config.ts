@@ -16,7 +16,7 @@ const config: CapacitorConfig = {
   webDir: "public",
   server: {
     // Production site (no trailing slash)
-    url: "https://exit-exam-fb6a7a74.vercel.app",
+    url: "https://yeniexams.vercel.app",
     cleartext: false,
   },
   android: {
