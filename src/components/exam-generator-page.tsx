@@ -525,34 +525,76 @@ export function ExamGeneratorPage() {
                     </Select>
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-slate-500">Questions</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={200}
-                      inputMode="numeric"
-                      value={numQuestionsText}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        if (v === "" || v === "-") {
-                          setNumQuestionsText(v);
-                          return;
-                        }
-                        if (!/^\d+$/.test(v)) return;
-                        setNumQuestionsText(v);
-                        const n = parseInt(v, 10);
-                        if (!Number.isNaN(n)) setNumQuestions(Math.min(200, Math.max(0, n)));
-                      }}
-                      onBlur={() => {
-                        let n = parseInt(numQuestionsText, 10);
-                        if (Number.isNaN(n) || n < 1) n = 1;
-                        if (n > 200) n = 200;
-                        setNumQuestions(n);
-                        setNumQuestionsText(String(n));
-                      }}
-                      className="h-10 rounded-xl border-slate-200 bg-white lg:h-11"
-                      disabled={hasWrongPending}
-                    />
+                    <Label className="text-xs font-semibold text-slate-500">Questions (1–200)</Label>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        aria-label="Decrease questions"
+                        disabled={hasWrongPending || numQuestions <= 1}
+                        onClick={() => {
+                          const n = Math.max(1, (numQuestions || 1) - 1);
+                          setNumQuestions(n);
+                          setNumQuestionsText(String(n));
+                        }}
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-lg font-semibold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-40 lg:h-11 lg:w-11"
+                      >
+                        −
+                      </button>
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        autoComplete="off"
+                        placeholder="5"
+                        value={numQuestionsText}
+                        onFocus={(e) => e.target.select()}
+                        onChange={(e) => {
+                          const digits = e.target.value.replace(/\D/g, "");
+                          if (digits === "") {
+                            setNumQuestionsText("");
+                            return;
+                          }
+                          const clipped = digits.slice(0, 3);
+                          let n = parseInt(clipped, 10);
+                          if (Number.isNaN(n)) {
+                            setNumQuestionsText("");
+                            return;
+                          }
+                          if (n > 200) {
+                            setNumQuestionsText("200");
+                            setNumQuestions(200);
+                            return;
+                          }
+                          setNumQuestionsText(clipped);
+                          setNumQuestions(n);
+                        }}
+                        onBlur={() => {
+                          let n = parseInt(numQuestionsText, 10);
+                          if (Number.isNaN(n) || n < 1) n = 1;
+                          if (n > 200) n = 200;
+                          setNumQuestions(n);
+                          setNumQuestionsText(String(n));
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") e.currentTarget.blur();
+                        }}
+                        className="h-10 flex-1 rounded-xl border-slate-200 bg-white text-center text-base font-semibold tabular-nums lg:h-11"
+                        disabled={hasWrongPending}
+                      />
+                      <button
+                        type="button"
+                        aria-label="Increase questions"
+                        disabled={hasWrongPending || numQuestions >= 200}
+                        onClick={() => {
+                          const n = Math.min(200, (numQuestions || 1) + 1);
+                          setNumQuestions(n);
+                          setNumQuestionsText(String(n));
+                        }}
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-lg font-semibold text-slate-700 shadow-sm hover:bg-slate-50 disabled:opacity-40 lg:h-11 lg:w-11"
+                      >
+                        +
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <label className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5">
