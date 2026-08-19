@@ -15,8 +15,8 @@ const config: CapacitorConfig = {
   appName: "Exit Exam Practice",
   webDir: "public",
   server: {
-    // ★ Change this to your real Vercel / custom domain
-    url: "https://exam-r3zzvpl1w-t4tsas-projects.vercel.app",
+    // Production site (no trailing slash)
+    url: "https://exit-exam-fb6a7a74.vercel.app",
     cleartext: false,
   },
   android: {
