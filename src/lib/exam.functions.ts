@@ -48,15 +48,12 @@ const RESPONSE_SCHEMA = {
   required: ["questions"],
 } as const;
 
-// Current Gemini models (as of 2026). Avoid retired IDs (1.5-flash, 2.0-flash).
+// Prefer known-stable Gemini models. Speculative / unreleased IDs only add 404 latency.
 const GEMINI_MODEL = "gemini-2.5-flash";
 const MODEL_FALLBACKS = [
-  "gemini-2.5-flash-lite", // fastest / cheapest
-  "gemini-2.5-flash",
-  "gemini-3.1-flash-lite",
-  "gemini-3.5-flash-lite",
-  "gemini-3.5-flash",
-  "gemini-flash-latest", // alias if supported
+  GEMINI_MODEL,
+  "gemini-2.5-flash-lite",
+  "gemini-flash-latest",
 ];
 
 export type AiProvider = "gemini";
