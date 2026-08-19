@@ -6,9 +6,15 @@
 // You can pass additional config via defineConfig({ vite: { ... } }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-// Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-// @cloudflare/vite-plugin builds from this — wrangler.jsonc main alone is insufficient.
+// Vercel sets VERCEL=1 during build. Use Nitro (Node) there so routes don't 404.
+// Lovable / local default keeps Cloudflare Workers target.
+const isVercel = !!process.env.VERCEL;
+
 export default defineConfig({
+  // Emit a Vercel-compatible server when deploying on Vercel
+  nitro: isVercel ? true : false,
+  // Disable Cloudflare adapter on Vercel (otherwise output doesn't match the host → 404)
+  cloudflare: isVercel ? false : undefined,
   tanstackStart: {
     server: { entry: "server" },
   },
