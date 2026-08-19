@@ -2,31 +2,23 @@
 // Do NOT add those plugins manually or the app will break with duplicates.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-// Lovable defaults to Cloudflare Workers output (cloudflare-module).
-// That artifact is not a Vercel serverless function → production shows
-// platform "404: NOT_FOUND" even when the build is marked Ready.
-//
-// Fix for Vercel:
-// 1) cloudflare: false  — do not inject @cloudflare/vite-plugin on build
-// 2) nitro.preset: "vercel" — emit Build Output API under .vercel/output
-//
-// Vercel sets VERCEL=1 (and often NITRO_PRESET via vercel.json).
-const isVercel = !!process.env.VERCEL || process.env.NITRO_PRESET === "vercel";
-
+/**
+ * Deploy target: Vercel only.
+ *
+ * Lovable's wrapper injects @cloudflare/vite-plugin on build by default
+ * (cloudflare-module). That produces Workers output Vercel cannot serve,
+ * which shows platform "404: NOT_FOUND" even when the deploy is Ready.
+ *
+ * Always disable Cloudflare and force Nitro's vercel preset so every CI
+ * build (VERCEL=1 or local) emits .vercel/output Functions correctly.
+ */
 export default defineConfig({
-  // Critical: turn off Lovable's Cloudflare Workers adapter on Vercel builds.
-  cloudflare: isVercel ? false : undefined,
-
-  nitro: isVercel
-    ? {
-        preset: "vercel",
-      }
-    : process.env.NITRO_PRESET
-      ? { preset: process.env.NITRO_PRESET }
-      : true,
-
+  cloudflare: false,
+  nitro: {
+    preset: "vercel",
+  },
   tanstackStart: {
-    // Use src/server.ts (SSR error wrapper) as the server entry.
+    // src/server.ts — SSR error wrapper around TanStack server entry
     server: { entry: "server" },
   },
 });
