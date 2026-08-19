@@ -163,7 +163,7 @@ export function ExamGeneratorPage() {
       setFlagged({});
     },
     mutationFn: async (requestedCount?: number) => {
-      const count = Math.min(200, Math.max(1, requestedCount ?? numQuestions || 1));
+      const count = Math.min(200, Math.max(1, requestedCount ?? (numQuestions || 1)));
       const avoid = seenQuestions.slice(-60);
       if (docMode) {
         return generateDocFn({
