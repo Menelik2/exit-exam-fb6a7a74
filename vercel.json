@@ -1,4 +1,5 @@
 {
   "framework": "tanstack-start",
-  "installCommand": "npm install --legacy-peer-deps"
+  "installCommand": "npm install --legacy-peer-deps",
+  "buildCommand": "NITRO_PRESET=vercel vite build"
 }
