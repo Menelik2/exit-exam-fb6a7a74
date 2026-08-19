@@ -84,6 +84,15 @@
     "seroval": "^1.6.0",
     "seroval-plugins": "^1.6.0"
   },
+  "allowScripts": {
+    "esbuild": true,
+    "sharp": true,
+    "workerd": true,
+    "core-js": true
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250821.0",
     "@eslint/js": "^9.32.0",
