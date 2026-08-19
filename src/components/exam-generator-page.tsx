@@ -408,6 +408,25 @@ export function ExamGeneratorPage() {
   const showFinishSummary = examFinished && !reviewMode && questions.length > 0 && allAnswered;
   const hasActiveExam = !mutation.isPending && !!currentQuestion && !showFinishSummary;
   const answeredCount = questions.filter((q) => answers[q.question_number] != null).length;
+
+  useEffect(() => {
+    if (!hasActiveExam || questions.length === 0) return;
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (reviewMode && needsRetry) return;
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        setCurrentIndex((i) => Math.max(0, i - 1));
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        setCurrentIndex((i) => Math.min(questions.length - 1, i + 1));
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [hasActiveExam, questions.length, reviewMode, needsRetry]);
+
   const quizTitle = reviewMode
     ? "Re-attempt: incorrect questions"
     : docMode
@@ -675,9 +694,29 @@ export function ExamGeneratorPage() {
               )}
               <article className="overflow-hidden rounded-2xl border border-slate-200/80 bg-white shadow-sm shadow-slate-200/40 ring-1 ring-slate-900/5">
                 <div className="flex items-center justify-between gap-2 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-indigo-50/30 px-4 py-3 lg:px-7 lg:py-3.5">
-                  <p className="text-sm font-semibold text-indigo-600 lg:text-base">
-                    Question {currentIndex + 1}<span className="font-normal text-slate-500"> of {questions.length}</span>
-                  </p>
+                  <div className="flex min-w-0 items-center gap-2">
+                    <button
+                      type="button"
+                      aria-label="Previous question"
+                      className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 sm:inline-flex"
+                      disabled={isFirst || (reviewMode && needsRetry)}
+                      onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <p className="text-sm font-semibold text-indigo-600 lg:text-base">
+                      Question {currentIndex + 1}<span className="font-normal text-slate-500"> of {questions.length}</span>
+                    </p>
+                    <button
+                      type="button"
+                      aria-label="Next question"
+                      className="hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 sm:inline-flex"
+                      disabled={isLast || (reviewMode && needsRetry)}
+                      onClick={() => setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))}
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  </div>
                   <button
                     type="button"
                     className={cn("inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-medium transition-colors", flagged[currentQuestion.question_number] ? "bg-amber-100 text-amber-800" : "text-slate-500 hover:bg-slate-100")}
@@ -753,17 +792,34 @@ export function ExamGeneratorPage() {
                   )}
                 </div>
               </article>
-              <div className="hidden items-center justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white/90 px-5 py-3.5 shadow-sm shadow-slate-200/40 ring-1 ring-slate-900/5 lg:flex xl:px-6">
-                <Button type="button" variant="outline" className="h-11 min-w-[140px] rounded-xl border-slate-200 px-5" disabled={isFirst || (reviewMode && needsRetry)} onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}>
+
+              <div className="hidden items-center justify-between gap-4 rounded-2xl border border-slate-200/80 bg-white px-4 py-3 shadow-sm shadow-slate-200/40 ring-1 ring-slate-900/5 sm:flex lg:px-5 xl:px-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 min-w-[130px] rounded-xl border-slate-200 px-4 text-sm font-semibold lg:min-w-[150px] lg:px-5"
+                  disabled={isFirst || (reviewMode && needsRetry)}
+                  onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+                >
                   <ChevronLeft className="mr-1.5 h-4 w-4" /> Previous
                 </Button>
-                <div className="flex flex-col items-center gap-1.5">
-                  <span className="text-sm font-medium text-slate-900">Page {currentIndex + 1} of {questions.length}</span>
-                  <div className="h-1.5 w-40 overflow-hidden rounded-full bg-slate-100 xl:w-56">
-                    <div className="h-full rounded-full bg-indigo-600 transition-all" style={{ width: `${((currentIndex + 1) / Math.max(questions.length, 1)) * 100}%` }} />
+                <div className="flex flex-col items-center gap-1.5 px-2">
+                  <span className="text-sm font-semibold text-slate-800">
+                    Question {currentIndex + 1} <span className="font-normal text-slate-500">of {questions.length}</span>
+                  </span>
+                  <div className="h-1.5 w-28 overflow-hidden rounded-full bg-slate-100 sm:w-36 lg:w-48 xl:w-56">
+                    <div
+                      className="h-full rounded-full bg-indigo-600 transition-all"
+                      style={{ width: `${((currentIndex + 1) / Math.max(questions.length, 1)) * 100}%` }}
+                    />
                   </div>
                 </div>
-                <Button type="button" variant="outline" className="h-11 min-w-[140px] rounded-xl border-slate-200 px-5" disabled={isLast || (reviewMode && needsRetry)} onClick={() => setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))}>
+                <Button
+                  type="button"
+                  className="h-11 min-w-[130px] rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-md shadow-indigo-600/20 hover:bg-indigo-700 lg:min-w-[150px] lg:px-5"
+                  disabled={isLast || (reviewMode && needsRetry)}
+                  onClick={() => setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))}
+                >
                   Next <ChevronRight className="ml-1.5 h-4 w-4" />
                 </Button>
               </div>
@@ -809,7 +865,7 @@ export function ExamGeneratorPage() {
                     <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded border border-red-500 bg-red-500" /> Incorrect</li>
                   </ul>
                   <p className="mt-3 text-center text-xs text-slate-500">Score: <strong className="text-slate-800">{correctCount}/{questions.length}</strong></p>
-                  <p className="mt-2 hidden text-center text-[10px] text-slate-400 lg:block">Click a number to jump · Flag to revisit</p>
+                  <p className="mt-2 hidden text-center text-[10px] text-slate-400 lg:block">Click a number to jump · use ← → keys</p>
                 </div>
               </div>
             </aside>
