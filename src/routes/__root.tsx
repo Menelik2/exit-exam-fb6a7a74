@@ -9,6 +9,7 @@ import {
 } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -73,14 +74,25 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Exam Architect — Real Exam Practice" },
-      { name: "description", content: "Practice like the real thing. Generate exit-exam style MCQs with a computer-based test interface, question palette, and instant review." },
+      {
+        name: "description",
+        content:
+          "Practice like the real thing. Generate exit-exam style MCQs with a computer-based test interface, question palette, and instant review.",
+      },
       { name: "author", content: "Exam Architect" },
       { property: "og:title", content: "Exam Architect — Real Exam Practice" },
-      { property: "og:description", content: "Real CBT-style exam simulator with question palette, timer, and detailed review." },
+      {
+        property: "og:description",
+        content: "Real CBT-style exam simulator with question palette, timer, and detailed review.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:title", content: "Exam Architect — Real Exam Practice" },
-      { name: "twitter:description", content: "Real CBT-style exam simulator with question palette and detailed review." },
+      {
+        name: "twitter:description",
+        content: "Real CBT-style exam simulator with question palette and detailed review.",
+      },
+      { name: "color-scheme", content: "light dark" },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -103,11 +115,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("exam-generator-theme-v1");var d=t==="dark"||(t!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("dark");}catch(e){}})();`,
+          }}
+        />
       </head>
-      <body>
+      <body className="min-h-screen bg-background text-foreground antialiased">
         {children}
         <Scripts />
       </body>
@@ -121,6 +138,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
+      <Toaster position="top-center" richColors closeButton />
     </QueryClientProvider>
   );
 }
