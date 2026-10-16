@@ -11,12 +11,7 @@ export default defineConfig({
   },
   plugins: [
     // Order matters: tanstackStart first, then React, then Nitro
-    tanstackStart({
-      // Use the project's existing server entry (src/server.ts)
-      server: {
-        entry: "./src/server.ts",
-      },
-    }),
+    tanstackStart(),
     viteReact(),
     tailwindcss(),
     tsConfigPaths({
