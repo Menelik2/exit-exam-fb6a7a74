@@ -393,7 +393,7 @@ export function ExamGeneratorPage() {
                   : phase === "summary"
                     ? "Summary of attempt"
                     : phase === "review"
-                      ? `Review · ${correctCount}/${questions.length}`
+                      ? `Review · ${correctCount}/{questions.length}`
                       : "Moodle-style quiz"}
               </p>
             </div>
@@ -404,11 +404,32 @@ export function ExamGeneratorPage() {
                 Answered {answeredCount}/{questions.length}
               </span>
             )}
-            <button type="button" className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card hover:bg-muted" onClick={cycleTheme} aria-label={`Theme: ${themeMode}`}>
-              {themeMode === "dark" ? <Moon className="h-3.5 w-3.5" /> : themeMode === "light" ? <Sun className="h-3.5 w-3.5" /> : <Monitor className="h-3.5 w-3.5" />}
+            <button
+              type="button"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-medium hover:bg-muted"
+              onClick={cycleTheme}
+              aria-label={`Theme: ${themeMode}. Click to change.`}
+              title={`Theme: ${themeMode}`}
+            >
+              {themeMode === "dark" ? (
+                <Moon className="h-3.5 w-3.5 shrink-0" />
+              ) : themeMode === "light" ? (
+                <Sun className="h-3.5 w-3.5 shrink-0" />
+              ) : (
+                <Monitor className="h-3.5 w-3.5 shrink-0" />
+              )}
+              <span>
+                {themeMode === "dark" ? "Dark" : themeMode === "light" ? "Light" : "Auto"}
+              </span>
             </button>
-            <button type="button" className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs hover:bg-muted" onClick={() => setSettingsOpen((o) => !o)}>
-              <Settings2 className="h-3.5 w-3.5" /><span className="hidden sm:inline">Setup</span>
+            <button
+              type="button"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-medium hover:bg-muted"
+              onClick={() => setSettingsOpen((o) => !o)}
+              aria-expanded={settingsOpen}
+            >
+              <Settings2 className="h-3.5 w-3.5 shrink-0" />
+              <span>{settingsOpen ? "Hide setup" : "Setup"}</span>
             </button>
           </div>
         </div>
