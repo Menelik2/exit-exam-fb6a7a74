@@ -408,7 +408,7 @@ async function generateExactly(
 }
 
 export const generateExam = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => InputSchema.parse(input))
+  .validator((input: unknown) => InputSchema.parse(input))
   .handler(async ({ data }): Promise<{ questions: ExamQuestion[] }> => {
     const apiKey = resolveApiKey(data.apiKey ?? "");
     const systemPrompt = `Role: Ethiopian Higher Education Exit Exam (EHEEE) examiner. Write rigorous MCQs at university exit-exam level.
@@ -490,25 +490,14 @@ const DocInputSchema = z.object({
   difficulty: z.enum(["Beginner", "Intermediate", "Advanced"]),
   numQuestions: z.number().int().min(1).max(200),
   nonce: z.string().optional(),
-  avoid: z.array(z.string().min(1).max(500)).max(500).optional(),
+  avoid: z.array(z.string().min(1).max(500).max(500)).optional(),
 });
 
 export const generateExamFromDocument = createServerFn({ method: "POST" })
-  .inputValidator((input: unknown) => DocInputSchema.parse(input))
+  .validator((input: unknown) => DocInputSchema.parse(input))
   .handler(async ({ data }): Promise<{ questions: ExamQuestion[] }> => {
     const apiKey = resolveApiKey(data.apiKey ?? "");
-    const systemPrompt = `Role: Exam writer. Create MCQs STRICTLY from the source document only.
-
-Output: JSON only. No markdown, no extra text.
-
-Rules:
-1. Use ONLY facts, definitions, and examples present in the document. Never invent outside knowledge.
-2. If material is thin, return as many solid items as the document supports — do not pad with fabrication.
-3. Stem ≤40 words; answerable from the document alone.
-4. Exactly 4 options; one correct; distractors = plausible misreadings of the text.
-5. "correct_answer" MUST be the FULL TEXT of the correct option (verbatim from options[]) — never only a letter.
-6. Cover different parts of the document; do not cluster on the opening paragraphs only.
-7. explanation: briefly ground the answer in the document and note why key distractors fail.`;
+    const systemPrompt = `Role: Exam writer. Create MCQs STRICTLY from the source document only.\n\nOutput: JSON only. No markdown, no extra text.\n\nRules:\n1. Use ONLY facts, definitions, and examples present in the document. Never invent outside knowledge.\n2. If material is thin, return as many solid items as the document supports — do not pad with fabrication.\n3. Stem ≤40 words; answerable from the document alone.\n4. Exactly 4 options; one correct; distractors = plausible misreadings of the text.\n5. "correct_answer" MUST be the FULL TEXT of the correct option (verbatim from options[]) — never only a letter.\n6. Cover different parts of the document; do not cluster on the opening paragraphs only.\n7. explanation: briefly ground the answer in the document and note why key distractors fail.`;
 
     const avoidList = (data.avoid ?? []).slice(-80);
     const seed = data.nonce ?? String(Date.now());
@@ -534,11 +523,11 @@ Rules:
           `Document: ${data.documentName}`,
           `Difficulty: ${data.difficulty}`,
           `Seed: ${seed}`,
-          `Requirements: 4 options; correct_answer = full option text; number 1..${need}.`,
-          avoidBlock.trim(),
-          `=== DOCUMENT ===`,
+          `Number of Questions: ${need}`,
+          avoidBlock,
+          "",
+          "SOURCE DOCUMENT:",
           docBody,
-          `=== END DOCUMENT ===`,
         ]
           .filter(Boolean)
           .join("\n");
