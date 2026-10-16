@@ -779,5 +779,3 @@ export function ExamGeneratorPage() {
     </div>
   );
 }
-
-export { ExamGeneratorPage };
