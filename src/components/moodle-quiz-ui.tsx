@@ -36,8 +36,8 @@ export function MoodleNavButton({
       aria-label={`Question ${number}${flagged ? ", flagged" : ""}, ${state}${isCurrent ? ", current" : ""}`}
       aria-current={isCurrent ? "true" : undefined}
       className={cn(
-        "relative h-11 w-9 shrink-0 overflow-hidden rounded border bg-white text-sm font-normal text-slate-800 dark:bg-slate-900 dark:text-slate-100",
-        isCurrent ? "border-[3px] border-slate-700 dark:border-slate-300" : "border border-slate-300 dark:border-slate-600",
+        "relative h-11 w-9 shrink-0 overflow-hidden rounded-md border bg-card text-sm font-normal text-foreground transition active:scale-[0.96]",
+        isCurrent ? "border-[3px] border-foreground" : "border border-border",
         disabled && "cursor-not-allowed opacity-50",
       )}
     >
@@ -103,7 +103,7 @@ export function MoodleQuestionInfo({
           : "text-slate-500";
 
   return (
-    <div className="w-full shrink-0 rounded border border-slate-300 bg-slate-50 p-3 text-sm dark:border-slate-600 dark:bg-slate-900/80 sm:w-40">
+    <div className="w-full shrink-0 rounded-lg border border-border bg-muted/40 p-3.5 text-sm sm:w-44">
       <p className="font-semibold text-slate-800 dark:text-slate-100">Question {number}</p>
       <p className={cn("mt-1 text-xs", statusColor)}>{status}</p>
       <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
@@ -156,14 +156,14 @@ export function MoodleOption({
   return (
     <label
       className={cn(
-        "flex cursor-pointer items-start gap-3 rounded border px-3 py-2.5 text-sm transition-colors",
-        disabled ? "cursor-default" : "hover:bg-slate-50 dark:hover:bg-slate-800/50",
-        !reviewState && selected && "border-slate-500 bg-slate-50 dark:border-slate-400 dark:bg-slate-800/60",
-        !reviewState && !selected && "border-slate-200 dark:border-slate-700",
-        reviewState === "correct" && "border-emerald-600 bg-emerald-50 dark:bg-emerald-950/40",
-        reviewState === "incorrect" && selected && "border-red-500 bg-red-50 dark:bg-red-950/40",
-        reviewState === "incorrect" && !selected && "border-slate-200 opacity-70 dark:border-slate-700",
-        reviewState === "neutral" && "border-slate-200 dark:border-slate-700",
+        "flex min-h-12 cursor-pointer items-start gap-3 rounded-lg border px-3.5 py-3 text-sm transition-colors active:scale-[0.995]",
+        disabled ? "cursor-default" : "hover:bg-muted/50",
+        !reviewState && selected && "border-foreground/40 bg-muted/60 ring-1 ring-foreground/10",
+        !reviewState && !selected && "border-border",
+        reviewState === "correct" && "border-emerald-600/80 bg-emerald-50 dark:bg-emerald-950/40",
+        reviewState === "incorrect" && selected && "border-red-500/80 bg-red-50 dark:bg-red-950/40",
+        reviewState === "incorrect" && !selected && "border-border opacity-70",
+        reviewState === "neutral" && "border-border",
       )}
     >
       <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center">

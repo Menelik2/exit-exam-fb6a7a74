@@ -161,3 +161,19 @@
     letter-spacing: -0.01em;
   }
 }
+
+/* Exam layout helpers */
+@layer utilities {
+  .min-h-dvh {
+    min-height: 100dvh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .active\:scale-\[0\.97\]:active,
+  .active\:scale-\[0\.98\]:active,
+  .active\:scale-\[0\.995\]:active,
+  .active\:scale-\[0\.96\]:active {
+    transform: none;
+  }
+}
