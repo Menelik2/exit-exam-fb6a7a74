@@ -16,8 +16,6 @@ import {
 } from "@/components/ui/select";
 import {
   Loader2,
-  CheckCircle2,
-  XCircle,
   Sparkles,
   RefreshCw,
   Upload,
@@ -26,11 +24,8 @@ import {
   Download,
   ChevronLeft,
   ChevronRight,
-  BookOpen,
   Trash2,
-  RotateCcw,
   Settings2,
-  Flag,
   ListChecks,
   Moon,
   Sun,
@@ -195,7 +190,10 @@ export function ExamGeneratorPage() {
   }, [importedQuestions, mutation.data?.questions]);
 
   useEffect(() => {
-    if (questions.length === 0) { setCurrentIndex(0); return; }
+    if (questions.length === 0) {
+      setCurrentIndex(0);
+      return;
+    }
     if (currentIndex >= questions.length) setCurrentIndex(questions.length - 1);
   }, [questions.length, currentIndex]);
 
@@ -241,8 +239,14 @@ export function ExamGeneratorPage() {
     setLastSaved(new Date());
   };
 
-  const finishAttempt = () => { setPhase("summary"); setConfirmSubmit(false); };
-  const returnToAttempt = () => { setPhase("attempt"); setConfirmSubmit(false); };
+  const finishAttempt = () => {
+    setPhase("summary");
+    setConfirmSubmit(false);
+  };
+  const returnToAttempt = () => {
+    setPhase("attempt");
+    setConfirmSubmit(false);
+  };
 
   const submitAllAndFinish = () => {
     const sessionWrong: ExamQuestion[] = [];
@@ -259,7 +263,10 @@ export function ExamGeneratorPage() {
     }
     const titleForHistory = docMode ? docName || "Document quiz" : topic.trim() || "Generated quiz";
     recordFinishedAttempt({
-      questions, answers, title: titleForHistory, difficulty,
+      questions,
+      answers,
+      title: titleForHistory,
+      difficulty,
       topic: topic.trim() || undefined,
       docName: docMode ? docName || undefined : undefined,
       isOptionCorrect,
@@ -272,7 +279,12 @@ export function ExamGeneratorPage() {
   };
 
   const correctCount = useMemo(
-    () => questions.filter((q) => answers[q.question_number] != null && isOptionCorrect(q, answers[q.question_number])).length,
+    () =>
+      questions.filter(
+        (q) =>
+          answers[q.question_number] != null &&
+          isOptionCorrect(q, answers[q.question_number]),
+      ).length,
     [questions, answers],
   );
   const answeredCount = questions.filter((q) => answers[q.question_number] != null).length;
@@ -290,8 +302,13 @@ export function ExamGeneratorPage() {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-      if (e.key === "ArrowLeft") { e.preventDefault(); setCurrentIndex((i) => Math.max(0, i - 1)); }
-      else if (e.key === "ArrowRight") { e.preventDefault(); setCurrentIndex((i) => Math.min(questions.length - 1, i + 1)); }
+      if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        setCurrentIndex((i) => Math.max(0, i - 1));
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        setCurrentIndex((i) => Math.min(questions.length - 1, i + 1));
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -335,11 +352,29 @@ export function ExamGeneratorPage() {
                 {answeredCount}/{questions.length}
               </span>
             )}
-            <button type="button" className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card transition active:scale-[0.97] hover:bg-muted sm:h-9 sm:w-auto sm:gap-1.5 sm:px-3 sm:text-xs sm:font-medium" onClick={cycleTheme} aria-label={`Theme: ${themeMode}`}>
-              {themeMode === "dark" ? <Moon className="h-4 w-4 sm:h-3.5 sm:w-3.5" /> : themeMode === "light" ? <Sun className="h-4 w-4 sm:h-3.5 sm:w-3.5" /> : <Monitor className="h-4 w-4 sm:h-3.5 sm:w-3.5" />}
-              <span className="hidden sm:inline">{themeMode === "dark" ? "Dark" : themeMode === "light" ? "Light" : "Auto"}</span>
+            <button
+              type="button"
+              className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border bg-card transition active:scale-[0.97] hover:bg-muted sm:h-9 sm:w-auto sm:gap-1.5 sm:px-3 sm:text-xs sm:font-medium"
+              onClick={cycleTheme}
+              aria-label={`Theme: ${themeMode}`}
+            >
+              {themeMode === "dark" ? (
+                <Moon className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+              ) : themeMode === "light" ? (
+                <Sun className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+              ) : (
+                <Monitor className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
+              )}
+              <span className="hidden sm:inline">
+                {themeMode === "dark" ? "Dark" : themeMode === "light" ? "Light" : "Auto"}
+              </span>
             </button>
-            <button type="button" className="inline-flex h-10 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-medium transition active:scale-[0.97] hover:bg-muted sm:h-9" onClick={() => setSettingsOpen((o) => !o)} aria-expanded={settingsOpen}>
+            <button
+              type="button"
+              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-medium transition active:scale-[0.97] hover:bg-muted sm:h-9"
+              onClick={() => setSettingsOpen((o) => !o)}
+              aria-expanded={settingsOpen}
+            >
               <Settings2 className="h-4 w-4 sm:h-3.5 sm:w-3.5" />
               <span>{settingsOpen ? "Hide" : "Setup"}</span>
             </button>
@@ -352,20 +387,36 @@ export function ExamGeneratorPage() {
           <section className="mb-5 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm lg:mb-7">
             <div className="border-b border-border/80 bg-muted/30 px-4 py-3.5 sm:px-5 lg:px-6">
               <h2 className="text-sm font-semibold tracking-tight">Quiz setup</h2>
-              <p className="mt-0.5 text-[11px] text-muted-foreground">Moodle deferred feedback — answer all, then submit.</p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                Moodle deferred feedback — answer all, then submit.
+              </p>
             </div>
             <div className="grid gap-5 p-4 sm:p-5 lg:grid-cols-2 lg:gap-8 lg:p-6">
               <div className="space-y-3.5">
-                <ApiKeyPanel onKeyChange={(k, p) => { setApiKey(k); setAiProvider(p); }} />
+                <ApiKeyPanel
+                  onKeyChange={(k, p) => {
+                    setApiKey(k);
+                    setAiProvider(p);
+                  }}
+                />
                 <div className="space-y-2">
                   <Label htmlFor="topic">Topic</Label>
-                  <Input id="topic" value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. Thermodynamics" className="h-11 rounded-xl text-base sm:h-10 sm:text-sm" disabled={docMode} />
+                  <Input
+                    id="topic"
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                    placeholder="e.g. Thermodynamics"
+                    className="h-11 rounded-xl text-base sm:h-10 sm:text-sm"
+                    disabled={docMode}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label>Difficulty</Label>
                     <Select value={difficulty} onValueChange={(v) => setDifficulty(v as Difficulty)}>
-                      <SelectTrigger className="h-11 rounded-xl sm:h-10"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="h-11 rounded-xl sm:h-10">
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Beginner">Beginner</SelectItem>
                         <SelectItem value="Intermediate">Intermediate</SelectItem>
@@ -375,46 +426,125 @@ export function ExamGeneratorPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="nq">Questions</Label>
-                    <Input id="nq" value={numQuestionsText} onChange={(e) => setNumQuestionsText(e.target.value)} className="h-11 rounded-xl text-base sm:h-10 sm:text-sm" inputMode="numeric" />
+                    <Input
+                      id="nq"
+                      value={numQuestionsText}
+                      onChange={(e) => setNumQuestionsText(e.target.value)}
+                      className="h-11 rounded-xl text-base sm:h-10 sm:text-sm"
+                      inputMode="numeric"
+                    />
                   </div>
                 </div>
                 <div className="flex items-center justify-between rounded-xl border border-border px-3 py-2">
-                  <Label htmlFor="auto" className="text-sm">Auto-generate</Label>
+                  <Label htmlFor="auto" className="text-sm">
+                    Auto-generate
+                  </Label>
                   <Switch id="auto" checked={autoGenerate} onCheckedChange={setAutoGenerate} />
                 </div>
                 <div className="space-y-2">
                   <Label>Or upload a document</Label>
                   <div className="flex flex-wrap gap-2">
                     <label className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-xl border border-border px-3 text-xs hover:bg-muted">
-                      <Upload className="h-3.5 w-3.5" />{docExtracting ? "Reading…" : "Upload PDF / DOCX / TXT"}
-                      <input type="file" className="sr-only" accept=".pdf,.docx,.txt,.md" disabled={docExtracting} onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
+                      <Upload className="h-3.5 w-3.5" />
+                      {docExtracting ? "Reading…" : "Upload PDF / DOCX / TXT"}
+                      <input
+                        type="file"
+                        className="sr-only"
+                        accept=".pdf,.docx,.txt,.md"
+                        disabled={docExtracting}
+                        onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+                      />
                     </label>
                     {docName && (
-                      <Button type="button" variant="outline" size="sm" className="h-10 rounded-xl text-xs" onClick={() => { setDocText(""); setDocName(""); setDocError(null); }}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-10 rounded-xl text-xs"
+                        onClick={() => {
+                          setDocText("");
+                          setDocName("");
+                          setDocError(null);
+                        }}
+                      >
                         <X className="mr-1 h-3.5 w-3.5" /> Clear
                       </Button>
                     )}
                   </div>
-                  {docName && <p className="text-[11px] text-muted-foreground"><FileText className="mr-1 inline h-3 w-3" />{docName}</p>}
+                  {docName && (
+                    <p className="text-[11px] text-muted-foreground">
+                      <FileText className="mr-1 inline h-3 w-3" />
+                      {docName}
+                    </p>
+                  )}
                   {docError && <p className="text-xs text-destructive">{docError}</p>}
                 </div>
-                <Button type="button" className="h-12 w-full rounded-xl text-[15px] font-semibold shadow-sm sm:h-11" disabled={mutation.isPending || (!docMode && !topic.trim())} onClick={run}>
-                  {mutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating…</> : questions.length > 0 ? <><RefreshCw className="mr-2 h-4 w-4" /> Start new attempt</> : <><Sparkles className="mr-2 h-4 w-4" /> Attempt quiz now</>}
+                <Button
+                  type="button"
+                  className="h-12 w-full rounded-xl text-[15px] font-semibold shadow-sm sm:h-11"
+                  disabled={mutation.isPending || (!docMode && !topic.trim())}
+                  onClick={run}
+                >
+                  {mutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating…
+                    </>
+                  ) : questions.length > 0 ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" /> Start new attempt
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" /> Attempt quiz now
+                    </>
+                  )}
                 </Button>
                 {questions.length > 0 && (
                   <div className="grid grid-cols-3 gap-1.5">
-                    <Button type="button" variant="outline" className="h-9 rounded-xl text-[11px]" onClick={() => exportPdf(questions, { title: quizTitle, difficulty })}><Download className="mr-1 h-3.5 w-3.5" /> PDF</Button>
-                    <Button type="button" variant="outline" className="h-9 rounded-xl text-[11px]" onClick={() => exportText(questions, { title: quizTitle, difficulty })}><FileDown className="mr-1 h-3.5 w-3.5" /> Text</Button>
-                    <Button type="button" variant="outline" className="h-9 rounded-xl text-[11px]" onClick={async () => { const res = await copyShareLink(questions, { title: quizTitle, difficulty }); toast.success(res.ok ? "Copied" : "Failed"); }}><Share2 className="mr-1 h-3.5 w-3.5" /> Share</Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-9 rounded-xl text-[11px]"
+                      onClick={() => exportPdf(questions, { title: quizTitle, difficulty })}
+                    >
+                      <Download className="mr-1 h-3.5 w-3.5" /> PDF
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-9 rounded-xl text-[11px]"
+                      onClick={() => exportText(questions, { title: quizTitle, difficulty })}
+                    >
+                      <FileDown className="mr-1 h-3.5 w-3.5" /> Text
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-9 rounded-xl text-[11px]"
+                      onClick={async () => {
+                        const res = await copyShareLink(questions, { title: quizTitle, difficulty });
+                        toast.success(res.ok ? "Copied" : "Failed");
+                      }}
+                    >
+                      <Share2 className="mr-1 h-3.5 w-3.5" /> Share
+                    </Button>
                   </div>
                 )}
                 {wrongQuestions.length > 0 && (
                   <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
-                    <p className="font-medium text-amber-800 dark:text-amber-300">{wrongQuestions.length} incorrect saved</p>
-                    <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => persistWrong([])}><Trash2 className="mr-1 h-3.5 w-3.5" /> Clear</Button>
+                    <p className="font-medium text-amber-800 dark:text-amber-300">
+                      {wrongQuestions.length} incorrect saved
+                    </p>
+                    <Button type="button" size="sm" variant="outline" className="mt-2" onClick={() => persistWrong([])}>
+                      <Trash2 className="mr-1 h-3.5 w-3.5" /> Clear
+                    </Button>
                   </div>
                 )}
-                {mutation.isError && <p className="text-xs text-destructive">{(mutation.error as Error)?.message || "Failed"}</p>}
+                {mutation.isError && (
+                  <p className="text-xs text-destructive">
+                    {(mutation.error as Error)?.message || "Failed"}
+                  </p>
+                )}
               </div>
               <ProgressAnalytics refreshKey={historyKey} />
             </div>
@@ -429,78 +559,15 @@ export function ExamGeneratorPage() {
           </div>
         )}
 
-        {showSummary && (
-          <div className="mx-auto max-w-2xl">
-            <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-sm sm:p-6">
-              <h2 className="text-lg font-semibold tracking-tight">Summary of attempt</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Review before submitting. You can still change answers.</p>
-              <div className="mt-4 overflow-hidden rounded-xl border border-border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/40 text-left text-xs text-muted-foreground">
-                      <th className="px-3 py-2">Question</th>
-                      <th className="px-3 py-2">Status</th>
-                      <th className="px-3 py-2 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {questions.map((q, idx) => {
-                      const answered = answers[q.question_number] != null;
-                      return (
-                        <tr key={q.question_number} className="border-b last:border-0">
-                          <td className="px-3 py-2.5 font-medium">{q.question_number}{flagged[q.question_number] && <span className="ml-1.5 inline-block h-0 w-0 border-l-[8px] border-t-[8px] border-l-transparent border-t-red-600 align-middle" />}</td>
-                          <td className="px-3 py-2.5">{answered ? <span className="text-muted-foreground">Answer saved</span> : <span className="font-medium text-amber-700 dark:text-amber-400">Not yet answered</span>}</td>
-                          <td className="px-3 py-2.5 text-right">
-                            <button type="button" className="text-xs font-medium text-primary hover:underline" onClick={() => { setCurrentIndex(idx); setPhase("attempt"); }}>{answered ? "Edit" : "Answer"}</button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              {(notAnsweredCount > 0 || flaggedCount > 0) && (
-                <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
-                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                  <p>{notAnsweredCount > 0 && `${notAnsweredCount} not yet answered. `}{flaggedCount > 0 && `${flaggedCount} flagged.`}</p>
-                </div>
-              )}
-              <div className="mt-5 flex flex-wrap gap-2">
-                <Button type="button" variant="outline" className="rounded-xl" onClick={returnToAttempt}>Return to attempt</Button>
-                {!confirmSubmit ? (
-                  <Button type="button" className="rounded-xl" onClick={() => setConfirmSubmit(true)}>Submit all and finish</Button>
-                ) : (
-                  <div className="flex flex-wrap items-center gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2">
-                    <p className="text-sm text-destructive">Once submitted, answers cannot be changed.</p>
-                    <Button type="button" variant="destructive" size="sm" onClick={submitAllAndFinish}>Confirm submit</Button>
-                    <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmSubmit(false)}>Cancel</Button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {phase === "review" && questions.length > 0 && (
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-muted/40 px-4 py-3.5 sm:px-5">
-            <div>
-              <p className="text-sm font-semibold">Review of attempt</p>
-              <p className="text-xs text-muted-foreground">Grade: <strong>{correctCount}/{questions.length}</strong> ({Math.round((correctCount / Math.max(questions.length, 1)) * 100)}%)</p>
-            </div>
-            <div className="flex gap-2">
-              <Button type="button" variant="outline" size="sm" className="h-8 text-xs" onClick={() => exportPdf(questions, { title: quizTitle, difficulty })}><Download className="mr-1 h-3.5 w-3.5" /> PDF</Button>
-              <Button type="button" size="sm" className="h-8 text-xs" onClick={() => setSettingsOpen(true)}>Start new attempt</Button>
-            </div>
-          </div>
-        )}
-
         {!mutation.isPending && questions.length === 0 && phase === "setup" && (
           <div className="rounded-2xl border border-dashed border-border/70 bg-card/60 px-4 py-14 text-center sm:py-20">
             <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <ListChecks className="h-6 w-6" />
             </span>
             <p className="mt-4 text-sm font-semibold tracking-tight">No active attempt</p>
-            <p className="mx-auto mt-1.5 max-w-xs text-xs leading-relaxed text-muted-foreground">Open Setup, choose a topic, then tap Attempt quiz now.</p>
+            <p className="mx-auto mt-1.5 max-w-xs text-xs leading-relaxed text-muted-foreground">
+              Open Setup, choose a topic, then tap Attempt quiz now.
+            </p>
           </div>
         )}
 
@@ -513,17 +580,38 @@ export function ExamGeneratorPage() {
                     number={currentQuestion.question_number}
                     status={
                       phase === "review"
-                        ? answers[currentQuestion.question_number] != null && isOptionCorrect(currentQuestion, answers[currentQuestion.question_number])
-                          ? "Correct" : "Incorrect"
-                        : answers[currentQuestion.question_number] != null ? "Answer saved" : "Not yet answered"
+                        ? answers[currentQuestion.question_number] != null &&
+                          isOptionCorrect(currentQuestion, answers[currentQuestion.question_number])
+                          ? "Correct"
+                          : "Incorrect"
+                        : answers[currentQuestion.question_number] != null
+                          ? "Answer saved"
+                          : "Not yet answered"
                     }
                     flagged={!!flagged[currentQuestion.question_number]}
                     showFlag={phase === "attempt"}
-                    onToggleFlag={phase === "attempt" ? () => setFlagged((f) => ({ ...f, [currentQuestion.question_number]: !f[currentQuestion.question_number] })) : undefined}
-                    reviewMarks={phase === "review" ? (answers[currentQuestion.question_number] != null && isOptionCorrect(currentQuestion, answers[currentQuestion.question_number]) ? "1.00 / 1.00" : "0.00 / 1.00") : undefined}
+                    onToggleFlag={
+                      phase === "attempt"
+                        ? () =>
+                            setFlagged((f) => ({
+                              ...f,
+                              [currentQuestion.question_number]: !f[currentQuestion.question_number],
+                            }))
+                        : undefined
+                    }
+                    reviewMarks={
+                      phase === "review"
+                        ? answers[currentQuestion.question_number] != null &&
+                          isOptionCorrect(currentQuestion, answers[currentQuestion.question_number])
+                          ? "1.00 / 1.00"
+                          : "0.00 / 1.00"
+                        : undefined
+                    }
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="text-[15px] leading-relaxed text-foreground sm:text-base">{currentQuestion.question}</p>
+                    <p className="text-[15px] leading-relaxed text-foreground sm:text-base">
+                      {currentQuestion.question}
+                    </p>
                     <fieldset className="mt-4 space-y-2.5" disabled={phase === "review"}>
                       <legend className="sr-only">Answers</legend>
                       {currentQuestion.options.map((opt, oi) => {
@@ -537,7 +625,15 @@ export function ExamGeneratorPage() {
                           else reviewState = "neutral";
                         }
                         return (
-                          <MoodleOption key={opt} label={opt} letter={moodleLetter(oi)} selected={selected} disabled={inReview} onSelect={() => selectAnswer(currentQuestion, opt)} reviewState={reviewState} />
+                          <MoodleOption
+                            key={opt}
+                            label={opt}
+                            letter={moodleLetter(oi)}
+                            selected={selected}
+                            disabled={inReview}
+                            onSelect={() => selectAnswer(currentQuestion, opt)}
+                            reviewState={reviewState}
+                          />
                         );
                       })}
                     </fieldset>
@@ -545,60 +641,93 @@ export function ExamGeneratorPage() {
                       <div className="mt-4 rounded-lg border border-border bg-muted/40 p-3 text-sm">
                         <p className="font-semibold">Feedback</p>
                         <p className="mt-1 text-muted-foreground">{currentQuestion.explanation}</p>
-                        <p className="mt-2 text-xs">The correct answer is: <strong>{currentQuestion.correct_answer}</strong></p>
+                        <p className="mt-2 text-xs">
+                          The correct answer is: <strong>{currentQuestion.correct_answer}</strong>
+                        </p>
                       </div>
                     )}
                     {phase === "attempt" && lastSaved && (
-                      <p className="mt-3 text-xs text-muted-foreground">Last saved {lastSaved.toLocaleTimeString()}</p>
+                      <p className="mt-3 text-xs text-muted-foreground">
+                        Last saved {lastSaved.toLocaleTimeString()}
+                      </p>
                     )}
                   </div>
                 </div>
               </div>
 
               <div className="hidden gap-2 lg:flex">
-                <Button type="button" variant="outline" className="h-11 flex-1 rounded-xl" disabled={isFirst} onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 flex-1 rounded-xl"
+                  disabled={isFirst}
+                  onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+                >
                   <ChevronLeft className="mr-1.5 h-4 w-4" /> Previous
                 </Button>
                 {!isLast ? (
-                  <Button type="button" variant="outline" className="h-11 flex-1 rounded-xl" onClick={() => setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 flex-1 rounded-xl"
+                    onClick={() => setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))}
+                  >
                     Next <ChevronRight className="ml-1.5 h-4 w-4" />
                   </Button>
                 ) : phase === "attempt" ? (
-                  <Button type="button" className="h-11 flex-1 rounded-xl font-semibold" onClick={finishAttempt}>Finish attempt</Button>
+                  <Button type="button" className="h-11 flex-1 rounded-xl font-semibold" onClick={finishAttempt}>
+                    Finish attempt
+                  </Button>
                 ) : (
-                  <Button type="button" variant="outline" className="h-11 flex-1 rounded-xl" onClick={() => setSettingsOpen(true)}>Done</Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 flex-1 rounded-xl"
+                    onClick={() => setSettingsOpen(true)}
+                  >
+                    Done
+                  </Button>
                 )}
               </div>
             </div>
 
             <aside className="order-first lg:order-none lg:sticky lg:top-[4.75rem] lg:self-start">
               <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm dark:border-slate-600">
-                <button type="button" className="flex w-full min-h-11 items-center justify-between border-b border-border/80 bg-muted/40 px-3.5 py-2.5 text-left text-sm font-semibold" onClick={() => setNavOpen((o) => !o)}>
+                <button
+                  type="button"
+                  className="flex min-h-11 w-full items-center justify-between border-b border-border/80 bg-muted/40 px-3.5 py-2.5 text-left text-sm font-semibold"
+                  onClick={() => setNavOpen((o) => !o)}
+                >
                   <span>Quiz navigation</span>
-                  <span className="text-xs font-normal text-muted-foreground lg:hidden">{navOpen ? "Hide" : "Show"}</span>
+                  <span className="text-xs font-normal text-muted-foreground lg:hidden">
+                    {navOpen ? "Hide" : "Show"}
+                  </span>
                 </button>
                 <div className={cn("p-3 sm:p-3.5", navOpen ? "block" : "hidden lg:block")}>
                   <div className="flex flex-wrap gap-1.5 sm:gap-2" role="navigation" aria-label="Quiz navigation">
                     {questions.map((q, idx) => (
-                      <MoodleNavButton key={q.question_number} number={idx + 1} state={navState(q)} flagged={!!flagged[q.question_number]} isCurrent={idx === currentIndex} onClick={() => setCurrentIndex(idx)} />
+                      <MoodleNavButton
+                        key={q.question_number}
+                        number={idx + 1}
+                        state={navState(q)}
+                        flagged={!!flagged[q.question_number]}
+                        isCurrent={idx === currentIndex}
+                        onClick={() => setCurrentIndex(idx)}
+                      />
                     ))}
                   </div>
-                  <ul className="mt-3 space-y-1.5 border-t border-border pt-3 text-[10px] text-muted-foreground">
-                    <li className="flex items-center gap-2"><span className="inline-block h-4 w-3 rounded-sm border border-border bg-card" /> Not yet answered</li>
-                    <li className="flex items-center gap-2"><span className="relative inline-block h-4 w-3 overflow-hidden rounded-sm border border-border bg-card"><span className="absolute inset-x-0 bottom-0 h-1/2 bg-slate-300" /></span> Answer saved</li>
-                    {phase === "review" && (
-                      <>
-                        <li className="flex items-center gap-2"><span className="relative inline-block h-4 w-3 overflow-hidden rounded-sm border"><span className="absolute inset-x-0 bottom-0 flex h-1/2 items-center justify-center bg-emerald-600 text-[7px] text-white">✓</span></span> Correct</li>
-                        <li className="flex items-center gap-2"><span className="relative inline-block h-4 w-3 overflow-hidden rounded-sm border"><span className="absolute inset-x-0 bottom-0 h-1/2 bg-red-600" /></span> Incorrect</li>
-                      </>
-                    )}
-                    <li className="flex items-center gap-2"><span className="relative inline-block h-4 w-3 rounded-sm border"><span className="absolute right-0 top-0 h-0 w-0 border-l-[7px] border-t-[7px] border-l-transparent border-t-red-600" /></span> Flagged</li>
-                  </ul>
                   {phase === "attempt" && (
-                    <Button type="button" className="mt-3 h-9 w-full rounded-lg text-xs" onClick={finishAttempt}>Finish attempt…</Button>
+                    <Button type="button" className="mt-3 h-9 w-full rounded-lg text-xs" onClick={finishAttempt}>
+                      Finish attempt…
+                    </Button>
                   )}
                   {phase === "review" && (
-                    <p className="mt-3 text-center text-xs text-muted-foreground">Score: <strong>{correctCount}/{questions.length}</strong></p>
+                    <p className="mt-3 text-center text-xs text-muted-foreground">
+                      Score:{" "}
+                      <strong>
+                        {correctCount}/{questions.length}
+                      </strong>
+                    </p>
                   )}
                 </div>
               </div>
@@ -606,17 +735,41 @@ export function ExamGeneratorPage() {
 
             <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/80 bg-card/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2.5 shadow-[0_-8px_24px_rgba(0,0,0,0.06)] backdrop-blur-xl supports-[backdrop-filter]:bg-card/80 dark:shadow-[0_-8px_24px_rgba(0,0,0,0.35)] lg:hidden">
               <div className="mx-auto flex max-w-7xl gap-2">
-                <Button type="button" variant="outline" className="h-12 flex-1 rounded-xl text-sm font-medium active:scale-[0.98]" disabled={isFirst} onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-12 flex-1 rounded-xl text-sm font-medium active:scale-[0.98]"
+                  disabled={isFirst}
+                  onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+                >
                   <ChevronLeft className="mr-1 h-4 w-4" /> Prev
                 </Button>
                 {!isLast ? (
-                  <Button type="button" variant="outline" className="h-12 flex-1 rounded-xl text-sm font-medium active:scale-[0.98]" onClick={() => setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))}>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-12 flex-1 rounded-xl text-sm font-medium active:scale-[0.98]"
+                    onClick={() => setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))}
+                  >
                     Next <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
                 ) : phase === "attempt" ? (
-                  <Button type="button" className="h-12 flex-1 rounded-xl text-sm font-semibold active:scale-[0.98]" onClick={finishAttempt}>Finish attempt</Button>
+                  <Button
+                    type="button"
+                    className="h-12 flex-1 rounded-xl text-sm font-semibold active:scale-[0.98]"
+                    onClick={finishAttempt}
+                  >
+                    Finish attempt
+                  </Button>
                 ) : (
-                  <Button type="button" variant="outline" className="h-12 flex-1 rounded-xl text-sm font-medium active:scale-[0.98]" onClick={() => setSettingsOpen(true)}>Done</Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-12 flex-1 rounded-xl text-sm font-medium active:scale-[0.98]"
+                    onClick={() => setSettingsOpen(true)}
+                  >
+                    Done
+                  </Button>
                 )}
               </div>
             </div>
@@ -626,3 +779,5 @@ export function ExamGeneratorPage() {
     </div>
   );
 }
+
+export { ExamGeneratorPage };
