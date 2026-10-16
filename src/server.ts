@@ -1,9 +1,6 @@
 import "./lib/error-capture";
 
-import {
-  createServerEntry,
-  defaultStreamHandler,
-} from "@tanstack/react-start/server-entry";
+import handler, { createServerEntry } from "@tanstack/react-start/server-entry";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 
@@ -56,7 +53,7 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 export default createServerEntry({
   async fetch(request) {
     try {
-      const response = await defaultStreamHandler.fetch(request);
+      const response = await handler.fetch(request);
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
       console.error(error);
