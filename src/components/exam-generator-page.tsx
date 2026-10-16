@@ -36,8 +36,8 @@ import {
   Sun,
   Monitor,
   Share2,
-  BarChart3,
   FileDown,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ApiKeyPanel, type AiProvider } from "@/components/api-key-panel";
@@ -48,6 +48,8 @@ import { useTheme } from "@/hooks/use-theme";
 import { toast } from "sonner";
 
 type Difficulty = "Beginner" | "Intermediate" | "Advanced";
+/** Moodle-style phases: attempt (deferred feedback) → summary → review */
+type QuizPhase = "setup" | "attempt" | "summary" | "review";
 
 const WRONG_STORAGE_KEY = "exam-generator-wrong-questions";
 const SEEN_STORAGE_KEY = "exam-generator-seen-questions";
@@ -127,6 +129,62 @@ function isSimilarToAny(q: string, list: string[], threshold = 0.72): boolean {
   return list.some((item) => isSimilarQuestion(q, item, threshold));
 }
 
+function isOptionCorrect(q: ExamQuestion, opt: string) {
+  if (opt === q.correct_answer) return true;
+  if (opt.trim().toLowerCase() === (q.correct_answer ?? "").trim().toLowerCase()) return true;
+  return false;
+}
+
+/** Moodle-style nav cell: number with optional red flag triangle + state coloring */
+function MoodleNavCell({
+  number,
+  state,
+  flagged,
+  isCurrent,
+  onClick,
+  disabled,
+}: {
+  number: number;
+  state: "todo" | "answered" | "correct" | "incorrect";
+  flagged: boolean;
+  isCurrent: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      aria-label={`Question ${number}${flagged ? ", flagged" : ""}, ${state}${isCurrent ? ", current" : ""}`}
+      aria-current={isCurrent ? "true" : undefined}
+      className={cn(
+        "relative flex h-9 w-full items-center justify-center overflow-hidden rounded-md border text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:h-10 lg:text-sm",
+        isCurrent && "ring-2 ring-foreground/40 border-foreground",
+        !isCurrent && state === "todo" && "border-border bg-background hover:bg-muted",
+        !isCurrent && state === "answered" && "border-border bg-muted text-foreground",
+        !isCurrent && state === "correct" && "border-emerald-700 bg-emerald-600 text-white",
+        !isCurrent && state === "incorrect" && "border-red-700 bg-red-600 text-white",
+        isCurrent && state === "todo" && "bg-background",
+        isCurrent && state === "answered" && "bg-muted",
+        isCurrent && state === "correct" && "bg-emerald-600 text-white",
+        isCurrent && state === "incorrect" && "bg-red-600 text-white",
+      )}
+    >
+      {state === "answered" && !isCurrent && (
+        <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-muted-foreground/15" aria-hidden />
+      )}
+      <span className="relative z-10">{number}</span>
+      {flagged && (
+        <span
+          className="absolute right-0 top-0 h-0 w-0 border-l-[10px] border-t-[10px] border-l-transparent border-t-red-600"
+          aria-hidden
+        />
+      )}
+    </button>
+  );
+}
+
 export function ExamGeneratorPage() {
   const [topic, setTopic] = useState("");
   const [difficulty, setDifficulty] = useState<Difficulty>("Beginner");
@@ -136,17 +194,13 @@ export function ExamGeneratorPage() {
   const [apiKey, setApiKey] = useState("");
   const [aiProvider, setAiProvider] = useState<AiProvider>("gemini");
   const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [revealed, setRevealed] = useState<Record<number, boolean>>({});
   const [docName, setDocName] = useState("");
   const [docText, setDocText] = useState("");
   const [docExtracting, setDocExtracting] = useState(false);
   const [docError, setDocError] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [wrongQuestions, setWrongQuestions] = useState<ExamQuestion[]>([]);
-  const [reviewMode, setReviewMode] = useState(false);
-  const [reviewQuestions, setReviewQuestions] = useState<ExamQuestion[]>([]);
-  const [examFinished, setExamFinished] = useState(false);
-  const [needsRetry, setNeedsRetry] = useState(false);
+  const [phase, setPhase] = useState<QuizPhase>("setup");
   const [settingsOpen, setSettingsOpen] = useState(true);
   const [navOpen, setNavOpen] = useState(true);
   const [flagged, setFlagged] = useState<Record<number, boolean>>({});
@@ -154,14 +208,14 @@ export function ExamGeneratorPage() {
   const [historyKey, setHistoryKey] = useState(0);
   const [shareMsg, setShareMsg] = useState<string | null>(null);
   const [importedQuestions, setImportedQuestions] = useState<ExamQuestion[] | null>(null);
-  const { mode: themeMode, cycle: cycleTheme, isDark } = useTheme();
+  const [confirmSubmit, setConfirmSubmit] = useState(false);
+  const { mode: themeMode, cycle: cycleTheme } = useTheme();
 
   useEffect(() => {
     setWrongQuestions(loadWrongQuestions());
     setSeenQuestions(loadSeenQuestions());
   }, []);
 
-  // Load shared quiz from ?quiz= URL
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
@@ -172,14 +226,10 @@ export function ExamGeneratorPage() {
     setImportedQuestions(parsed.questions.map((q, i) => ({ ...q, question_number: i + 1 })));
     setTopic(parsed.title || "Shared quiz");
     setDifficulty((parsed.difficulty as Difficulty) || "Beginner");
-    setReviewMode(false);
-    setReviewQuestions([]);
-    setExamFinished(false);
+    setPhase("attempt");
     setAnswers({});
-    setRevealed({});
     setCurrentIndex(0);
     setFlagged({});
-    setNeedsRetry(false);
     setSettingsOpen(false);
     const url = new URL(window.location.href);
     url.searchParams.delete("quiz");
@@ -198,10 +248,10 @@ export function ExamGeneratorPage() {
 
   const mutation = useMutation({
     onMutate: () => {
-      setExamFinished(false);
-      setNeedsRetry(false);
+      setPhase("setup");
       setFlagged({});
       setImportedQuestions(null);
+      setConfirmSubmit(false);
     },
     mutationFn: async (requestedCount?: number) => {
       const count = Math.min(200, Math.max(1, requestedCount ?? (numQuestions || 1)));
@@ -234,14 +284,11 @@ export function ExamGeneratorPage() {
     },
     onSuccess: (data) => {
       setAnswers({});
-      setRevealed({});
       setCurrentIndex(0);
-      setReviewMode(false);
-      setReviewQuestions([]);
-      setExamFinished(false);
-      setNeedsRetry(false);
       setFlagged({});
+      setConfirmSubmit(false);
       if (data?.questions?.length) {
+        setPhase("attempt");
         setSeenQuestions((prev) => {
           const merged = [...prev];
           for (const q of data.questions) {
@@ -260,11 +307,9 @@ export function ExamGeneratorPage() {
   });
 
   const questions: ExamQuestion[] = useMemo(() => {
-    const raw = reviewMode
-      ? reviewQuestions
-      : (importedQuestions ?? mutation.data?.questions ?? []);
+    const raw = importedQuestions ?? mutation.data?.questions ?? [];
     return raw.map((q, i) => ({ ...q, question_number: i + 1 }));
-  }, [reviewMode, reviewQuestions, importedQuestions, mutation.data?.questions]);
+  }, [importedQuestions, mutation.data?.questions]);
 
   useEffect(() => {
     if (questions.length === 0) {
@@ -281,18 +326,17 @@ export function ExamGeneratorPage() {
     if (n > 200) n = 200;
     setNumQuestions(n);
     setNumQuestionsText(String(n));
-    if (wrongQuestions.length > 0) return;
     mutation.mutate(n);
-  }, [docMode, topic, numQuestionsText, mutation, wrongQuestions.length]);
+  }, [docMode, topic, numQuestionsText, mutation]);
 
   useEffect(() => {
     if (!autoGenerate) return;
     if (!docMode && !topic.trim()) return;
-    if (wrongQuestions.length > 0) return;
+    if (phase === "attempt" || phase === "summary" || phase === "review") return;
     const t = setTimeout(() => run(), 800);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [topic, difficulty, numQuestions, autoGenerate, aiProvider, apiKey, docMode, wrongQuestions.length]);
+  }, [topic, difficulty, numQuestions, autoGenerate, aiProvider, apiKey, docMode, phase]);
 
   const handleFile = async (file: File | null) => {
     if (!file) return;
@@ -312,72 +356,38 @@ export function ExamGeneratorPage() {
     }
   };
 
-  const startReview = useCallback(
-    (source?: ExamQuestion[]) => {
-      const list = source ?? wrongQuestions;
-      if (list.length === 0) return;
-      setReviewQuestions(list.map((q, i) => ({ ...q, question_number: i + 1 })));
-      setReviewMode(true);
-      setExamFinished(false);
-      setAnswers({});
-      setRevealed({});
-      setCurrentIndex(0);
-      setNeedsRetry(false);
-      setFlagged({});
-      if (typeof window !== "undefined" && window.innerWidth < 1024) setSettingsOpen(false);
-    },
-    [wrongQuestions],
-  );
-
-  const clearAllWrong = () => {
-    persistWrong([]);
-    if (reviewMode) {
-      setReviewMode(false);
-      setReviewQuestions([]);
-      setAnswers({});
-      setRevealed({});
-      setCurrentIndex(0);
-    }
-    setExamFinished(false);
-    setNeedsRetry(false);
-  };
-
   const clearSeenHistory = () => {
     setSeenQuestions([]);
     saveSeenQuestions([]);
   };
 
-  const retryCurrentQuestion = useCallback(() => {
-    if (!questions[currentIndex]) return;
-    const qNum = questions[currentIndex].question_number;
-    setAnswers((a) => {
-      const next = { ...a };
-      delete next[qNum];
-      return next;
-    });
-    setRevealed((r) => {
-      const next = { ...r };
-      delete next[qNum];
-      return next;
-    });
-    setNeedsRetry(false);
-  }, [questions, currentIndex]);
-
-  const allAnswered =
-    !reviewMode && questions.length > 0 && questions.every((q) => revealed[q.question_number]);
-
-  const isOptionCorrect = (q: ExamQuestion, opt: string) => {
-    if (opt === q.correct_answer) return true;
-    if (opt.trim().toLowerCase() === (q.correct_answer ?? "").trim().toLowerCase()) return true;
-    return false;
+  const clearAllWrong = () => {
+    persistWrong([]);
   };
 
-  useEffect(() => {
-    if (!allAnswered || examFinished || reviewMode) return;
+  /** Moodle: select answer during attempt — no immediate feedback */
+  const selectAnswer = (q: ExamQuestion, opt: string) => {
+    if (phase !== "attempt") return;
+    setAnswers((a) => ({ ...a, [q.question_number]: opt }));
+  };
+
+  const finishAttempt = () => {
+    setPhase("summary");
+    setConfirmSubmit(false);
+  };
+
+  const returnToAttempt = () => {
+    setPhase("attempt");
+    setConfirmSubmit(false);
+  };
+
+  const submitAllAndFinish = () => {
     const sessionWrong: ExamQuestion[] = [];
     for (const q of questions) {
       const selected = answers[q.question_number];
-      if (selected && !isOptionCorrect(q, selected)) sessionWrong.push(q);
+      if (!selected || !isOptionCorrect(q, selected)) {
+        sessionWrong.push(q);
+      }
     }
     if (sessionWrong.length > 0) {
       const merged = [...wrongQuestions];
@@ -387,10 +397,7 @@ export function ExamGeneratorPage() {
       }
       persistWrong(merged.map((q, i) => ({ ...q, question_number: i + 1 })));
     }
-    setExamFinished(true);
-    const titleForHistory = docMode
-      ? docName || "Document quiz"
-      : topic.trim() || "Generated quiz";
+    const titleForHistory = docMode ? docName || "Document quiz" : topic.trim() || "Generated quiz";
     recordFinishedAttempt({
       questions,
       answers,
@@ -401,77 +408,36 @@ export function ExamGeneratorPage() {
       isOptionCorrect,
     });
     setHistoryKey((k) => k + 1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allAnswered, examFinished, reviewMode, questions, answers, wrongQuestions, persistWrong]);
-
-  useEffect(() => {
-    if (!examFinished || reviewMode || wrongQuestions.length === 0) return;
-    const t = setTimeout(() => startReview(wrongQuestions), 1500);
-    return () => clearTimeout(t);
-  }, [examFinished, reviewMode, wrongQuestions, startReview]);
-
-  const handleAnswer = (q: ExamQuestion, opt: string) => {
-    const qNum = q.question_number;
-    setAnswers((a) => ({ ...a, [qNum]: opt }));
-    setRevealed((r) => ({ ...r, [qNum]: true }));
-    const isCorrect = isOptionCorrect(q, opt);
-    if (!isCorrect) {
-      if (!wrongQuestions.some((w) => isSimilarQuestion(w.question, q.question))) {
-        persistWrong([...wrongQuestions, { ...q, question_number: wrongQuestions.length + 1 }]);
-      }
-      if (reviewMode) setNeedsRetry(true);
-    } else {
-      setNeedsRetry(false);
-      const remaining = wrongQuestions.filter((w) => !isSimilarQuestion(w.question, q.question));
-      if (remaining.length !== wrongQuestions.length) persistWrong(remaining);
-      if (reviewMode) {
-        setReviewQuestions((prev) => {
-          const next = prev
-            .filter((w) => !isSimilarQuestion(w.question, q.question))
-            .map((item, i) => ({ ...item, question_number: i + 1 }));
-          setCurrentIndex((idx) => (next.length === 0 ? 0 : Math.min(idx, next.length - 1)));
-          if (next.length === 0) {
-            setReviewMode(false);
-            setExamFinished(false);
-            setAnswers({});
-            setRevealed({});
-            setNeedsRetry(false);
-            setSettingsOpen(true);
-          }
-          return next;
-        });
-        setAnswers({});
-        setRevealed({});
-      }
-    }
+    setPhase("review");
+    setConfirmSubmit(false);
+    setCurrentIndex(0);
+    toast.success("Quiz submitted");
   };
 
   const correctCount = useMemo(
     () =>
       questions.filter(
-        (q) =>
-          revealed[q.question_number] &&
-          answers[q.question_number] != null &&
-          isOptionCorrect(q, answers[q.question_number]),
+        (q) => answers[q.question_number] != null && isOptionCorrect(q, answers[q.question_number]),
       ).length,
-    [questions, revealed, answers],
+    [questions, answers],
   );
+
+  const answeredCount = questions.filter((q) => answers[q.question_number] != null).length;
+  const notAnsweredCount = questions.length - answeredCount;
+  const flaggedCount = questions.filter((q) => flagged[q.question_number]).length;
 
   const currentQuestion = questions[currentIndex];
   const isFirst = currentIndex <= 0;
   const isLast = currentIndex >= questions.length - 1;
-  const hasWrongPending = wrongQuestions.length > 0;
-  const canGenerateNew = !hasWrongPending;
-  const showFinishSummary = examFinished && !reviewMode && questions.length > 0 && allAnswered;
-  const hasActiveExam = !mutation.isPending && !!currentQuestion && !showFinishSummary;
-  const answeredCount = questions.filter((q) => answers[q.question_number] != null).length;
+  const hasActiveQuiz = (phase === "attempt" || phase === "review") && !!currentQuestion;
+  const showSummary = phase === "summary" && questions.length > 0;
+  const showReviewResults = phase === "review" && questions.length > 0;
 
   useEffect(() => {
-    if (!hasActiveExam || questions.length === 0) return;
+    if (!hasActiveQuiz || questions.length === 0) return;
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-      if (reviewMode && needsRetry) return;
       if (e.key === "ArrowLeft") {
         e.preventDefault();
         setCurrentIndex((i) => Math.max(0, i - 1));
@@ -482,24 +448,18 @@ export function ExamGeneratorPage() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [hasActiveExam, questions.length, reviewMode, needsRetry]);
+  }, [hasActiveQuiz, questions.length]);
 
-  const quizTitle = reviewMode
-    ? "Re-attempt: incorrect questions"
-    : docMode
-      ? docName || "Document quiz"
-      : topic.trim() || "Generated quiz";
+  const quizTitle = docMode ? docName || "Document quiz" : topic.trim() || "Generated quiz";
 
-  const navStatus = (q: ExamQuestion, idx: number) => {
+  const navState = (q: ExamQuestion, idx: number): "todo" | "answered" | "correct" | "incorrect" => {
     const qNum = q.question_number;
     const answered = answers[qNum] != null;
-    const isRev = !!revealed[qNum];
-    const correct = answered && isOptionCorrect(q, answers[qNum]);
-    if (idx === currentIndex) return "current";
-    if (isRev && correct) return "correct";
-    if (isRev && answered && !correct) return "incorrect";
+    if (phase === "review") {
+      if (answered && isOptionCorrect(q, answers[qNum])) return "correct";
+      return "incorrect";
+    }
     if (answered) return "answered";
-    if (flagged[qNum]) return "flagged";
     return "todo";
   };
 
@@ -513,25 +473,24 @@ export function ExamGeneratorPage() {
             </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold tracking-tight sm:text-base lg:text-[17px]">
-                {hasActiveExam || showFinishSummary ? quizTitle : "Exit Exam Practice"}
+                {hasActiveQuiz || showSummary || showReviewResults ? quizTitle : "Exit Exam Practice"}
               </p>
               <p className="truncate text-[11px] text-muted-foreground">
-                {reviewMode
-                  ? "Review mode · answer correctly to clear mistakes"
-                  : hasActiveExam
-                    ? `${difficulty} · Question ${currentIndex + 1} of ${questions.length}`
-                    : "Modern quiz practice"}
+                {phase === "attempt"
+                  ? `${difficulty} · Question ${currentIndex + 1} of ${questions.length} · Deferred feedback`
+                  : phase === "summary"
+                    ? "Summary of attempt"
+                    : phase === "review"
+                      ? `Review · Score ${correctCount}/${questions.length}`
+                      : "Moodle-style quiz practice"}
               </p>
             </div>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            {hasActiveExam && (
+            {phase === "attempt" && (
               <div className="hidden items-center gap-2 sm:flex">
-                <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-foreground">
+                <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">
                   Answered {answeredCount}/{questions.length}
-                </span>
-                <span className="hidden rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary lg:inline">
-                  Score {correctCount}/{questions.length}
                 </span>
               </div>
             )}
@@ -550,7 +509,13 @@ export function ExamGeneratorPage() {
                 <Monitor className="h-3.5 w-3.5" />
               )}
             </button>
-            <button type="button" className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-medium text-foreground shadow-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" onClick={() => setSettingsOpen((o) => !o)} aria-expanded={settingsOpen} aria-controls="quiz-setup-panel">
+            <button
+              type="button"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-medium shadow-sm hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              onClick={() => setSettingsOpen((o) => !o)}
+              aria-expanded={settingsOpen}
+              aria-controls="quiz-setup-panel"
+            >
               <Settings2 className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Setup</span>
             </button>
@@ -560,22 +525,42 @@ export function ExamGeneratorPage() {
 
       <div className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-5 sm:py-6 lg:px-8 lg:py-8">
         {settingsOpen && (
-          <section id="quiz-setup-panel" className="mb-4 overflow-hidden rounded-2xl border border-border bg-card/90 shadow-sm ring-1 ring-foreground/5 lg:mb-6">
+          <section
+            id="quiz-setup-panel"
+            className="mb-4 overflow-hidden rounded-2xl border border-border bg-card/90 shadow-sm ring-1 ring-foreground/5 lg:mb-6"
+          >
             <div className="border-b border-border bg-muted/40 px-4 py-3 lg:px-6 lg:py-3.5">
               <h2 className="text-sm font-semibold tracking-tight lg:text-base">Quiz setup</h2>
+              <p className="mt-0.5 text-[11px] text-muted-foreground">
+                Moodle-style deferred feedback: answer all questions, then submit for grading.
+              </p>
             </div>
             <div className="grid gap-4 p-4 lg:grid-cols-2 lg:gap-8 lg:p-6">
               <div className="space-y-3">
-                <ApiKeyPanel onKeyChange={(k, p) => { setApiKey(k); setAiProvider(p); }} />
+                <ApiKeyPanel
+                  onKeyChange={(k, p) => {
+                    setApiKey(k);
+                    setAiProvider(p);
+                  }}
+                />
                 <div className="space-y-2">
                   <Label htmlFor="topic">Topic</Label>
-                  <Input id="topic" value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="e.g. Thermodynamics, Civil Procedure" className="rounded-xl" disabled={docMode} />
+                  <Input
+                    id="topic"
+                    value={topic}
+                    onChange={(e) => setTopic(e.target.value)}
+                    placeholder="e.g. Thermodynamics, Civil Procedure"
+                    className="rounded-xl"
+                    disabled={docMode}
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
                     <Label>Difficulty</Label>
                     <Select value={difficulty} onValueChange={(v) => setDifficulty(v as Difficulty)}>
-                      <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="rounded-xl">
+                        <SelectValue />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Beginner">Beginner</SelectItem>
                         <SelectItem value="Intermediate">Intermediate</SelectItem>
@@ -585,11 +570,19 @@ export function ExamGeneratorPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="nq">Questions</Label>
-                    <Input id="nq" value={numQuestionsText} onChange={(e) => setNumQuestionsText(e.target.value)} className="rounded-xl" inputMode="numeric" />
+                    <Input
+                      id="nq"
+                      value={numQuestionsText}
+                      onChange={(e) => setNumQuestionsText(e.target.value)}
+                      className="rounded-xl"
+                      inputMode="numeric"
+                    />
                   </div>
                 </div>
                 <div className="flex items-center justify-between gap-2 rounded-xl border border-border px-3 py-2">
-                  <Label htmlFor="auto" className="text-sm">Auto-generate</Label>
+                  <Label htmlFor="auto" className="text-sm">
+                    Auto-generate
+                  </Label>
                   <Switch id="auto" checked={autoGenerate} onCheckedChange={setAutoGenerate} />
                 </div>
                 <div className="space-y-2">
@@ -598,42 +591,97 @@ export function ExamGeneratorPage() {
                     <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-xl border border-border bg-background px-3 text-xs font-medium hover:bg-muted">
                       <Upload className="h-3.5 w-3.5" />
                       {docExtracting ? "Reading…" : "Upload PDF / DOCX / TXT"}
-                      <input type="file" className="sr-only" accept=".pdf,.docx,.txt,.md" disabled={docExtracting} onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
+                      <input
+                        type="file"
+                        className="sr-only"
+                        accept=".pdf,.docx,.txt,.md"
+                        disabled={docExtracting}
+                        onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+                      />
                     </label>
                     {docName && (
-                      <Button type="button" variant="outline" size="sm" className="h-9 rounded-xl text-xs" onClick={() => { setDocText(""); setDocName(""); setDocError(null); }}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-9 rounded-xl text-xs"
+                        onClick={() => {
+                          setDocText("");
+                          setDocName("");
+                          setDocError(null);
+                        }}
+                      >
                         <X className="mr-1 h-3.5 w-3.5" /> Clear doc
                       </Button>
                     )}
                   </div>
-                  {docName && <p className="text-[11px] text-muted-foreground"><FileText className="mr-1 inline h-3 w-3" />{docName}</p>}
+                  {docName && (
+                    <p className="text-[11px] text-muted-foreground">
+                      <FileText className="mr-1 inline h-3 w-3" />
+                      {docName}
+                    </p>
+                  )}
                   {docError && <p className="text-xs text-destructive">{docError}</p>}
                 </div>
-                <Button type="button" className="h-10 w-full rounded-xl" disabled={mutation.isPending || (!docMode && !topic.trim()) || hasWrongPending} onClick={run}>
-                  {mutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating…</> : questions.length > 0 && !reviewMode ? <><RefreshCw className="mr-2 h-4 w-4" /> Regenerate quiz</> : <><Sparkles className="mr-2 h-4 w-4" /> Start attempt</>}
+                <Button
+                  type="button"
+                  className="h-10 w-full rounded-xl"
+                  disabled={mutation.isPending || (!docMode && !topic.trim())}
+                  onClick={run}
+                >
+                  {mutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating…
+                    </>
+                  ) : questions.length > 0 ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4" /> Start new attempt
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" /> Attempt quiz now
+                    </>
+                  )}
                 </Button>
-                {questions.length > 0 && !reviewMode && (
+                {questions.length > 0 && (
                   <div className="space-y-1.5">
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Export</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Export
+                    </p>
                     <div className="grid grid-cols-3 gap-1.5">
-                      <Button type="button" variant="outline" className="h-9 rounded-xl border-border text-[11px]" onClick={() => exportPdf(questions, { title: quizTitle, difficulty })} aria-label="Download PDF">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-9 rounded-xl text-[11px]"
+                        onClick={() => exportPdf(questions, { title: quizTitle, difficulty })}
+                      >
                         <Download className="mr-1 h-3.5 w-3.5" /> PDF
                       </Button>
-                      <Button type="button" variant="outline" className="h-9 rounded-xl border-border text-[11px]" onClick={() => exportText(questions, { title: quizTitle, difficulty })} aria-label="Download text file for Word">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-9 rounded-xl text-[11px]"
+                        onClick={() => exportText(questions, { title: quizTitle, difficulty })}
+                      >
                         <FileDown className="mr-1 h-3.5 w-3.5" /> Text
                       </Button>
-                      <Button type="button" variant="outline" className="h-9 rounded-xl border-border text-[11px]" onClick={async () => {
-                        const res = await copyShareLink(questions, { title: quizTitle, difficulty });
-                        if (res.ok) {
-                          setShareMsg(res.mode === "url" ? "Share link copied" : "Share code copied (quiz too large for URL)");
-                          toast.success(res.mode === "url" ? "Share link copied to clipboard" : "Share code copied");
-                        } else {
-                          setShareMsg("Copy failed — code shown in console");
-                          console.log("Share code:", res.value);
-                          toast.error("Could not copy — check console for code");
-                        }
-                        setTimeout(() => setShareMsg(null), 4000);
-                      }} aria-label="Copy shareable quiz link">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-9 rounded-xl text-[11px]"
+                        onClick={async () => {
+                          const res = await copyShareLink(questions, { title: quizTitle, difficulty });
+                          toast.success(
+                            res.ok
+                              ? res.mode === "url"
+                                ? "Share link copied"
+                                : "Share code copied"
+                              : "Copy failed",
+                          );
+                          setShareMsg(res.ok ? "Copied" : "Failed");
+                          setTimeout(() => setShareMsg(null), 3000);
+                        }}
+                      >
                         <Share2 className="mr-1 h-3.5 w-3.5" /> Share
                       </Button>
                     </div>
@@ -643,20 +691,25 @@ export function ExamGeneratorPage() {
                 {seenQuestions.length > 0 && (
                   <div className="flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
                     <span>{seenQuestions.length} past questions remembered</span>
-                    <Button type="button" variant="ghost" size="sm" className="h-7 text-[11px]" onClick={clearSeenHistory}>Clear history</Button>
+                    <Button type="button" variant="ghost" size="sm" className="h-7 text-[11px]" onClick={clearSeenHistory}>
+                      Clear history
+                    </Button>
                   </div>
                 )}
-                {hasWrongPending && (
+                {wrongQuestions.length > 0 && (
                   <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm">
-                    <p className="font-medium text-amber-800 dark:text-amber-300">{wrongQuestions.length} to re-attempt</p>
-                    <div className="mt-2 flex gap-2">
-                      <Button type="button" size="sm" className="rounded-lg" onClick={() => startReview()}>Start review</Button>
-                      <Button type="button" size="sm" variant="outline" className="rounded-lg" onClick={clearAllWrong}><Trash2 className="mr-1 h-3.5 w-3.5" /> Clear</Button>
-                    </div>
+                    <p className="font-medium text-amber-800 dark:text-amber-300">
+                      {wrongQuestions.length} incorrect saved for practice
+                    </p>
+                    <Button type="button" size="sm" variant="outline" className="mt-2 rounded-lg" onClick={clearAllWrong}>
+                      <Trash2 className="mr-1 h-3.5 w-3.5" /> Clear
+                    </Button>
                   </div>
                 )}
                 {mutation.isError && (
-                  <p className="text-xs text-destructive">{(mutation.error as Error)?.message || "Generation failed"}</p>
+                  <p className="text-xs text-destructive">
+                    {(mutation.error as Error)?.message || "Generation failed"}
+                  </p>
                 )}
               </div>
               <div className="space-y-3">
@@ -666,59 +719,6 @@ export function ExamGeneratorPage() {
           </section>
         )}
 
-        {showFinishSummary && (
-          <div className="rounded-2xl border border-border bg-card/95 p-8 text-center shadow-sm ring-1 ring-foreground/5 lg:mx-auto lg:max-w-2xl lg:p-12" role="status" aria-live="polite">
-            <CheckCircle2 className="mx-auto h-12 w-12 text-primary" aria-hidden />
-            <h2 className="mt-3 text-xl font-semibold tracking-tight">Attempt finished</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Score: <strong className="text-foreground">{correctCount}/{questions.length}</strong> ·{" "}
-              {Math.round((correctCount / Math.max(questions.length, 1)) * 100)}%
-            </p>
-            <div className="mt-4 flex flex-wrap justify-center gap-2">
-              <Button type="button" variant="outline" className="rounded-xl text-xs" onClick={() => exportPdf(questions, { title: quizTitle, difficulty })}>
-                <Download className="mr-1.5 h-3.5 w-3.5" /> PDF
-              </Button>
-              <Button type="button" variant="outline" className="rounded-xl text-xs" onClick={() => exportText(questions, { title: quizTitle, difficulty })}>
-                <FileDown className="mr-1.5 h-3.5 w-3.5" /> Text
-              </Button>
-              <Button type="button" variant="outline" className="rounded-xl text-xs" onClick={async () => {
-                const res = await copyShareLink(questions, { title: quizTitle, difficulty });
-                toast.success(res.ok ? (res.mode === "url" ? "Share link copied" : "Share code copied") : "Copy failed");
-              }}>
-                <Share2 className="mr-1.5 h-3.5 w-3.5" /> Share
-              </Button>
-            </div>
-            {wrongQuestions.length > 0 ? (
-              <div className="mt-4 space-y-2">
-                <p className="text-sm text-amber-800 dark:text-amber-400">{wrongQuestions.length} incorrect — re-attempt available</p>
-                <Button type="button" className="rounded-xl" onClick={() => startReview()}>
-                  <RotateCcw className="mr-2 h-4 w-4" /> Re-attempt now
-                </Button>
-              </div>
-            ) : (
-              <p className="mt-3 text-sm text-muted-foreground">Perfect score. Generate a new quiz from Setup.</p>
-            )}
-          </div>
-        )}
-
-        {!mutation.isPending && questions.length === 0 && !mutation.isError && !showFinishSummary && (
-          <div className="rounded-2xl border border-dashed border-border bg-card/70 py-16 text-center shadow-sm">
-            {hasWrongPending ? (
-              <>
-                <BookOpen className="mx-auto h-8 w-8 text-amber-600" />
-                <p className="mt-3 text-sm text-muted-foreground">{wrongQuestions.length} question(s) left to review.</p>
-                <Button type="button" className="mt-4 rounded-xl" onClick={() => startReview()}>Start re-attempt</Button>
-              </>
-            ) : (
-              <>
-                <ListChecks className="mx-auto h-8 w-8 text-primary" />
-                <p className="mt-3 text-sm font-medium">No active attempt</p>
-                <p className="mt-1 text-xs text-muted-foreground">Open Setup, choose a topic, then click Start attempt.</p>
-              </>
-            )}
-          </div>
-        )}
-
         {mutation.isPending && (
           <div className="flex flex-col items-center justify-center gap-3 py-20" role="status">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -726,55 +726,212 @@ export function ExamGeneratorPage() {
           </div>
         )}
 
-        {hasActiveExam && currentQuestion && (
-          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-7 xl:grid-cols-[minmax(0,1fr)_320px] xl:gap-8">
-            <div className="min-w-0 space-y-3 pb-24 lg:pb-0">
-              {reviewMode && (
-                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
-                  Review mode — answer correctly to remove from your list.
+        {showSummary && (
+          <div className="mx-auto max-w-2xl space-y-4">
+            <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+              <h2 className="text-lg font-semibold tracking-tight">Summary of attempt</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Review your answers before submitting. You can return to the attempt to change answers.
+              </p>
+              <div className="mt-4 overflow-hidden rounded-xl border border-border">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/40 text-left text-xs font-medium text-muted-foreground">
+                      <th className="px-3 py-2">Question</th>
+                      <th className="px-3 py-2">Status</th>
+                      <th className="px-3 py-2 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {questions.map((q, idx) => {
+                      const answered = answers[q.question_number] != null;
+                      const isFlagged = !!flagged[q.question_number];
+                      return (
+                        <tr key={q.question_number} className="border-b border-border last:border-0">
+                          <td className="px-3 py-2.5 font-medium">
+                            {q.question_number}
+                            {isFlagged && (
+                              <span className="ml-1.5 inline-block h-0 w-0 border-l-[8px] border-t-[8px] border-l-transparent border-t-red-600 align-middle" title="Flagged" />
+                            )}
+                          </td>
+                          <td className="px-3 py-2.5">
+                            {answered ? (
+                              <span className="text-muted-foreground">Answer saved</span>
+                            ) : (
+                              <span className="font-medium text-amber-700 dark:text-amber-400">Not yet answered</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2.5 text-right">
+                            <button
+                              type="button"
+                              className="text-xs font-medium text-primary hover:underline"
+                              onClick={() => {
+                                setCurrentIndex(idx);
+                                setPhase("attempt");
+                              }}
+                            >
+                              {answered ? "Edit" : "Answer"}
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {(notAnsweredCount > 0 || flaggedCount > 0) && (
+                <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-900 dark:text-amber-200">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p>
+                    {notAnsweredCount > 0 && (
+                      <span>{notAnsweredCount} question{notAnsweredCount === 1 ? "" : "s"} not yet answered. </span>
+                    )}
+                    {flaggedCount > 0 && <span>{flaggedCount} flagged for review.</span>}
+                  </p>
                 </div>
               )}
-              <article className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6" aria-labelledby={`q-${currentQuestion.question_number}`}>
-                <div className="mb-3 flex items-start justify-between gap-2">
-                  <p id={`q-${currentQuestion.question_number}`} className="text-base font-medium leading-relaxed sm:text-lg">
-                    <span className="mr-2 text-muted-foreground">{currentQuestion.question_number}.</span>
-                    {currentQuestion.question}
-                  </p>
-                  <button
-                    type="button"
-                    className={cn(
-                      "shrink-0 rounded-lg border p-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                      flagged[currentQuestion.question_number] ? "border-amber-500 bg-amber-500/15 text-amber-700" : "border-border text-muted-foreground hover:bg-muted",
-                    )}
-                    onClick={() => setFlagged((f) => ({ ...f, [currentQuestion.question_number]: !f[currentQuestion.question_number] }))}
-                    aria-label={flagged[currentQuestion.question_number] ? "Unflag question" : "Flag question"}
-                    aria-pressed={!!flagged[currentQuestion.question_number]}
-                  >
-                    <Flag className="h-4 w-4" />
-                  </button>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <Button type="button" variant="outline" className="rounded-xl" onClick={returnToAttempt}>
+                  Return to attempt
+                </Button>
+                {!confirmSubmit ? (
+                  <Button type="button" className="rounded-xl" onClick={() => setConfirmSubmit(true)}>
+                    Submit all and finish
+                  </Button>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-2 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-2">
+                    <p className="text-sm text-destructive">Once submitted, you can no longer change answers.</p>
+                    <Button type="button" variant="destructive" size="sm" className="rounded-lg" onClick={submitAllAndFinish}>
+                      Confirm submit
+                    </Button>
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setConfirmSubmit(false)}>
+                      Cancel
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {showReviewResults && !hasActiveQuiz && (
+          <div className="mb-4 rounded-2xl border border-border bg-card p-6 text-center shadow-sm lg:mx-auto lg:max-w-2xl">
+            <CheckCircle2 className="mx-auto h-10 w-10 text-primary" />
+            <h2 className="mt-2 text-lg font-semibold">Attempt finished</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Score: <strong className="text-foreground">{correctCount}/{questions.length}</strong> ·{" "}
+              {Math.round((correctCount / Math.max(questions.length, 1)) * 100)}%
+            </p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              <Button type="button" variant="outline" className="rounded-xl text-xs" onClick={() => { setPhase("review"); setCurrentIndex(0); }}>
+                Review questions
+              </Button>
+              <Button type="button" variant="outline" className="rounded-xl text-xs" onClick={() => exportPdf(questions, { title: quizTitle, difficulty })}>
+                <Download className="mr-1 h-3.5 w-3.5" /> PDF
+              </Button>
+              <Button type="button" className="rounded-xl text-xs" onClick={() => setSettingsOpen(true)}>
+                New quiz
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {!mutation.isPending && questions.length === 0 && phase === "setup" && (
+          <div className="rounded-2xl border border-dashed border-border bg-card/70 py-16 text-center shadow-sm">
+            <ListChecks className="mx-auto h-8 w-8 text-primary" />
+            <p className="mt-3 text-sm font-medium">No active attempt</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Open Setup, choose a topic, then click Attempt quiz now.
+            </p>
+          </div>
+        )}
+
+        {hasActiveQuiz && currentQuestion && (
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px] lg:gap-7">
+            <div className="min-w-0 space-y-3 pb-28 lg:pb-0">
+              {phase === "review" && (
+                <div className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-sm text-muted-foreground">
+                  Review mode — answers are locked. Green = correct, red = incorrect.
                 </div>
-                <ul className="space-y-2" role="list">
+              )}
+              <article
+                className="rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6"
+                aria-labelledby={`q-${currentQuestion.question_number}`}
+              >
+                <div className="mb-1 flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-muted-foreground">
+                    Question {currentQuestion.question_number}
+                    {phase === "attempt" && " · Select one answer"}
+                  </span>
+                  {phase === "attempt" && (
+                    <button
+                      type="button"
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                        flagged[currentQuestion.question_number]
+                          ? "border-red-500 bg-red-500/10 text-red-700 dark:text-red-400"
+                          : "border-border text-muted-foreground hover:bg-muted",
+                      )}
+                      onClick={() =>
+                        setFlagged((f) => ({
+                          ...f,
+                          [currentQuestion.question_number]: !f[currentQuestion.question_number],
+                        }))
+                      }
+                      aria-pressed={!!flagged[currentQuestion.question_number]}
+                      aria-label={
+                        flagged[currentQuestion.question_number] ? "Remove flag" : "Flag question"
+                      }
+                    >
+                      <Flag className="h-3.5 w-3.5" />
+                      {flagged[currentQuestion.question_number] ? "Flagged" : "Flag question"}
+                    </button>
+                  )}
+                  {phase === "review" && flagged[currentQuestion.question_number] && (
+                    <span className="inline-flex items-center gap-1 text-xs text-red-600">
+                      <Flag className="h-3.5 w-3.5" /> Flagged
+                    </span>
+                  )}
+                </div>
+                <p
+                  id={`q-${currentQuestion.question_number}`}
+                  className="text-base font-medium leading-relaxed sm:text-lg"
+                >
+                  {currentQuestion.question}
+                </p>
+                <ul className="mt-4 space-y-2" role="list">
                   {currentQuestion.options.map((opt) => {
                     const qNum = currentQuestion.question_number;
                     const selected = answers[qNum] === opt;
-                    const shown = !!revealed[qNum];
+                    const inReview = phase === "review";
                     const isCorrect = isOptionCorrect(currentQuestion, opt);
                     return (
                       <li key={opt}>
                         <button
                           type="button"
-                          disabled={shown && !(reviewMode && needsRetry)}
-                          onClick={() => handleAnswer(currentQuestion, opt)}
+                          disabled={inReview}
+                          onClick={() => selectAnswer(currentQuestion, opt)}
                           className={cn(
                             "flex w-full items-start gap-3 rounded-xl border px-3 py-3 text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                            !shown && "border-border hover:border-primary/50 hover:bg-muted/50",
-                            shown && isCorrect && "border-emerald-600 bg-emerald-500/10",
-                            shown && selected && !isCorrect && "border-red-500 bg-red-500/10",
-                            shown && !selected && !isCorrect && "border-border opacity-70",
+                            !inReview && !selected && "border-border hover:border-foreground/30 hover:bg-muted/40",
+                            !inReview && selected && "border-foreground bg-muted/60 ring-1 ring-foreground/20",
+                            inReview && isCorrect && "border-emerald-600 bg-emerald-500/10",
+                            inReview && selected && !isCorrect && "border-red-500 bg-red-500/10",
+                            inReview && !selected && !isCorrect && "border-border opacity-60",
                           )}
                         >
                           <span className="mt-0.5 shrink-0">
-                            {shown && isCorrect ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : shown && selected ? <XCircle className="h-4 w-4 text-red-500" /> : <span className="block h-4 w-4 rounded-full border border-border" />}
+                            {inReview && isCorrect ? (
+                              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                            ) : inReview && selected ? (
+                              <XCircle className="h-4 w-4 text-red-500" />
+                            ) : selected ? (
+                              <span className="flex h-4 w-4 items-center justify-center rounded-full border-2 border-foreground bg-foreground">
+                                <span className="h-1.5 w-1.5 rounded-full bg-background" />
+                              </span>
+                            ) : (
+                              <span className="block h-4 w-4 rounded-full border-2 border-border" />
+                            )}
                           </span>
                           <span>{opt}</span>
                         </button>
@@ -782,83 +939,152 @@ export function ExamGeneratorPage() {
                     );
                   })}
                 </ul>
-                {revealed[currentQuestion.question_number] && currentQuestion.explanation && (
+                {phase === "review" && currentQuestion.explanation && (
                   <div className="mt-4 rounded-xl border border-border bg-muted/40 p-3 text-sm text-muted-foreground">
-                    <p className="font-medium text-foreground">Explanation</p>
+                    <p className="font-medium text-foreground">Feedback</p>
                     <p className="mt-1">{currentQuestion.explanation}</p>
+                    <p className="mt-2 text-xs">
+                      Correct answer: <strong className="text-foreground">{currentQuestion.correct_answer}</strong>
+                    </p>
                   </div>
                 )}
-                {reviewMode && needsRetry && (
-                  <Button type="button" variant="outline" className="mt-3 rounded-xl" onClick={retryCurrentQuestion}>
-                    <RotateCcw className="mr-2 h-4 w-4" /> Try again
-                  </Button>
-                )}
               </article>
+
               <div className="hidden gap-2 lg:flex">
-                <Button type="button" variant="outline" className="h-10 flex-1 rounded-xl" disabled={isFirst || (reviewMode && needsRetry)} onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 flex-1 rounded-xl"
+                  disabled={isFirst}
+                  onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+                >
                   <ChevronLeft className="mr-1.5 h-4 w-4" /> Previous
                 </Button>
-                <Button type="button" variant="outline" className="h-10 flex-1 rounded-xl" disabled={isLast || (reviewMode && needsRetry)} onClick={() => setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))}>
-                  Next <ChevronRight className="ml-1.5 h-4 w-4" />
-                </Button>
+                {!isLast ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 flex-1 rounded-xl"
+                    onClick={() => setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))}
+                  >
+                    Next <ChevronRight className="ml-1.5 h-4 w-4" />
+                  </Button>
+                ) : phase === "attempt" ? (
+                  <Button type="button" className="h-10 flex-1 rounded-xl" onClick={finishAttempt}>
+                    Finish attempt
+                  </Button>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 flex-1 rounded-xl"
+                    onClick={() => setSettingsOpen(true)}
+                  >
+                    Done
+                  </Button>
+                )}
               </div>
             </div>
 
             <aside className="lg:sticky lg:top-[4.5rem] lg:self-start">
-              <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm ring-1 ring-foreground/5">
-                <button type="button" className="flex w-full items-center justify-between border-b border-border bg-muted/30 px-3 py-3 text-left text-sm font-semibold lg:cursor-default" onClick={() => setNavOpen((o) => !o)}>
+              <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                <button
+                  type="button"
+                  className="flex w-full items-center justify-between border-b border-border bg-muted/30 px-3 py-2.5 text-left text-sm font-semibold lg:cursor-default"
+                  onClick={() => setNavOpen((o) => !o)}
+                >
                   Quiz navigation
-                  <span className="text-xs font-normal text-muted-foreground lg:hidden">{navOpen ? "Hide" : "Show"}</span>
+                  <span className="text-xs font-normal text-muted-foreground lg:hidden">
+                    {navOpen ? "Hide" : "Show"}
+                  </span>
                 </button>
-                <div className={cn("p-3 lg:p-4", navOpen ? "block" : "hidden lg:block")}>
-                  <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-6 lg:grid-cols-5 lg:gap-2" role="navigation" aria-label="Question palette">
-                    {questions.map((q, idx) => {
-                      const st = navStatus(q, idx);
-                      return (
-                        <button
-                          key={q.question_number}
-                          type="button"
-                          disabled={reviewMode && needsRetry && idx !== currentIndex}
-                          onClick={() => { if (!(reviewMode && needsRetry)) setCurrentIndex(idx); }}
-                          className={cn(
-                            "relative flex h-9 items-center justify-center rounded-lg border text-xs font-semibold transition-all hover:scale-[1.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring lg:h-10 lg:text-sm",
-                            st === "current" && "border-primary bg-primary text-primary-foreground ring-2 ring-primary/30",
-                            st === "answered" && "border-primary/40 bg-primary/10 text-primary",
-                            st === "correct" && "border-emerald-600 bg-emerald-600 text-white",
-                            st === "incorrect" && "border-red-500 bg-red-500 text-white",
-                            st === "flagged" && "border-amber-500 bg-amber-500/15 text-amber-800 dark:text-amber-300",
-                            st === "todo" && "border-border bg-background hover:border-primary/40",
-                          )}
-                          aria-label={`Question ${idx + 1}, ${st}`}
-                          aria-current={st === "current" ? "true" : undefined}
-                        >
-                          {idx + 1}
-                          {flagged[q.question_number] && st !== "current" && <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-amber-500" aria-hidden />}
-                        </button>
-                      );
-                    })}
+                <div className={cn("p-3", navOpen ? "block" : "hidden lg:block")}>
+                  <div
+                    className="grid grid-cols-5 gap-1.5 sm:grid-cols-6 lg:grid-cols-5"
+                    role="navigation"
+                    aria-label="Quiz navigation"
+                  >
+                    {questions.map((q, idx) => (
+                      <MoodleNavCell
+                        key={q.question_number}
+                        number={idx + 1}
+                        state={navState(q, idx)}
+                        flagged={!!flagged[q.question_number]}
+                        isCurrent={idx === currentIndex}
+                        onClick={() => setCurrentIndex(idx)}
+                      />
+                    ))}
                   </div>
-                  <ul className="mt-3 space-y-1.5 border-t border-border pt-3 text-[10px] text-muted-foreground lg:text-[11px]">
-                    <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded border border-primary bg-primary" /> Current</li>
-                    <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded border border-primary/40 bg-primary/10" /> Answered</li>
-                    <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded border border-border bg-background" /> Not yet answered</li>
-                    <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded border border-emerald-600 bg-emerald-600" /> Correct</li>
-                    <li className="flex items-center gap-1.5"><span className="h-3 w-3 rounded border border-red-500 bg-red-500" /> Incorrect</li>
+                  <ul className="mt-3 space-y-1 border-t border-border pt-3 text-[10px] text-muted-foreground">
+                    <li className="flex items-center gap-1.5">
+                      <span className="h-3 w-3 rounded border border-border bg-background" /> Not answered
+                    </li>
+                    <li className="flex items-center gap-1.5">
+                      <span className="relative h-3 w-3 overflow-hidden rounded border border-border bg-muted">
+                        <span className="absolute inset-x-0 bottom-0 h-1/2 bg-muted-foreground/20" />
+                      </span>{" "}
+                      Answered
+                    </li>
+                    {phase === "review" && (
+                      <>
+                        <li className="flex items-center gap-1.5">
+                          <span className="h-3 w-3 rounded border border-emerald-700 bg-emerald-600" /> Correct
+                        </li>
+                        <li className="flex items-center gap-1.5">
+                          <span className="h-3 w-3 rounded border border-red-700 bg-red-600" /> Incorrect
+                        </li>
+                      </>
+                    )}
+                    <li className="flex items-center gap-1.5">
+                      <span className="relative h-3 w-3 rounded border border-border">
+                        <span className="absolute right-0 top-0 h-0 w-0 border-l-[6px] border-t-[6px] border-l-transparent border-t-red-600" />
+                      </span>{" "}
+                      Flagged
+                    </li>
                   </ul>
-                  <p className="mt-3 text-center text-xs text-muted-foreground">Score: <strong className="text-foreground">{correctCount}/{questions.length}</strong></p>
-                  <p className="mt-2 hidden text-center text-[10px] text-muted-foreground lg:block">Click a number to jump · use ← → keys</p>
+                  {phase === "attempt" && (
+                    <Button type="button" className="mt-3 h-9 w-full rounded-lg text-xs" onClick={finishAttempt}>
+                      Finish attempt…
+                    </Button>
+                  )}
+                  {phase === "review" && (
+                    <p className="mt-3 text-center text-xs text-muted-foreground">
+                      Score: <strong className="text-foreground">{correctCount}/{questions.length}</strong>
+                    </p>
+                  )}
                 </div>
               </div>
             </aside>
 
             <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-card/95 px-3 pb-[max(0.6rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur lg:hidden">
               <div className="mx-auto flex max-w-7xl gap-2">
-                <Button type="button" variant="outline" className="h-11 flex-1 rounded-xl text-sm" disabled={isFirst || (reviewMode && needsRetry)} onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-11 flex-1 rounded-xl text-sm"
+                  disabled={isFirst}
+                  onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+                >
                   <ChevronLeft className="mr-1 h-4 w-4" /> Prev
                 </Button>
-                <Button type="button" variant="outline" className="h-11 flex-1 rounded-xl text-sm" disabled={isLast || (reviewMode && needsRetry)} onClick={() => setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))}>
-                  Next <ChevronRight className="ml-1 h-4 w-4" />
-                </Button>
+                {!isLast ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 flex-1 rounded-xl text-sm"
+                    onClick={() => setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))}
+                  >
+                    Next <ChevronRight className="ml-1 h-4 w-4" />
+                  </Button>
+                ) : phase === "attempt" ? (
+                  <Button type="button" className="h-11 flex-1 rounded-xl text-sm" onClick={finishAttempt}>
+                    Finish attempt
+                  </Button>
+                ) : (
+                  <Button type="button" variant="outline" className="h-11 flex-1 rounded-xl text-sm" onClick={() => setSettingsOpen(true)}>
+                    Done
+                  </Button>
+                )}
               </div>
             </div>
           </div>
