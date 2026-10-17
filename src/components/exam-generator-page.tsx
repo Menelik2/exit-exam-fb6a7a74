@@ -152,6 +152,8 @@ export function ExamGeneratorPage() {
   ).length;
   const answeredCount = questions.filter((q) => answers[q.question_number] != null).length;
   const notAnsweredCount = questions.length - answeredCount;
+  const incorrectCount = questions.length - correctCount;
+  const scorePercent = questions.length ? Math.round((correctCount / questions.length) * 100) : 0;
   const currentQuestion = questions[currentIndex];
   const isFirst = currentIndex <= 0;
   const isLast = currentIndex >= questions.length - 1;
@@ -374,6 +376,43 @@ export function ExamGeneratorPage() {
 
         {hasActiveQuiz && currentQuestion && (
           <div className="pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-4">
+            {phase === "review" && (
+              <div className="mb-3 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+                <div className="border-b border-border/80 bg-muted/30 px-4 py-3">
+                  <h2 className="text-base font-semibold">Your results</h2>
+                  <p className="text-xs text-muted-foreground">{topic || "Quiz"} · {difficulty}</p>
+                </div>
+                <div className="flex flex-col items-center gap-1 px-4 py-5">
+                  <p className="text-4xl font-bold tabular-nums tracking-tight sm:text-5xl">
+                    {scorePercent}%
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    <span className="font-semibold text-foreground">
+                      {correctCount}/{questions.length}
+                    </span>{" "}
+                    correct
+                  </p>
+                </div>
+                <div className="grid grid-cols-3 gap-2 border-t border-border/80 p-3 sm:gap-3 sm:p-4">
+                  <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 py-2.5 text-center">
+                    <p className="text-xl font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
+                      {correctCount}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">Correct</p>
+                  </div>
+                  <div className="rounded-xl border border-red-500/30 bg-red-500/10 py-2.5 text-center">
+                    <p className="text-xl font-semibold tabular-nums text-red-700 dark:text-red-400">
+                      {incorrectCount}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">Incorrect</p>
+                  </div>
+                  <div className="rounded-xl border border-border bg-muted/20 py-2.5 text-center">
+                    <p className="text-xl font-semibold tabular-nums">{questions.length}</p>
+                    <p className="text-[11px] text-muted-foreground">Total</p>
+                  </div>
+                </div>
+              </div>
+            )}
             <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
               <div className="flex flex-col gap-4 p-4 sm:flex-row sm:p-5">
                 <MoodleQuestionInfo
