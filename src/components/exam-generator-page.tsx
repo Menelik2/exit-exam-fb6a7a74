@@ -180,7 +180,10 @@ export function ExamGeneratorPage() {
           return trimmed;
         });
       }
-      if (typeof window !== "undefined" && window.innerWidth < 1024) setSettingsOpen(false);
+      if (typeof window !== "undefined" && window.innerWidth < 1024) {
+        setSettingsOpen(false);
+        setNavOpen(false);
+      }
     },
   });
 
@@ -242,6 +245,8 @@ export function ExamGeneratorPage() {
   const finishAttempt = () => {
     setPhase("summary");
     setConfirmSubmit(false);
+    setSettingsOpen(false);
+    if (typeof window !== "undefined" && window.innerWidth < 1024) setNavOpen(false);
   };
   const returnToAttempt = () => {
     setPhase("attempt");
@@ -275,6 +280,8 @@ export function ExamGeneratorPage() {
     setPhase("review");
     setConfirmSubmit(false);
     setCurrentIndex(0);
+    setSettingsOpen(false);
+    if (typeof window !== "undefined" && window.innerWidth < 1024) setNavOpen(false);
     toast.success("Quiz submitted");
   };
 
@@ -348,8 +355,13 @@ export function ExamGeneratorPage() {
           </div>
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             {phase === "attempt" && (
-              <span className="hidden rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium tabular-nums sm:inline">
+              <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium tabular-nums">
                 {answeredCount}/{questions.length}
+              </span>
+            )}
+            {phase === "review" && (
+              <span className="rounded-full bg-muted px-2.5 py-1 text-[11px] font-medium tabular-nums">
+                {correctCount}/{questions.length}
               </span>
             )}
             <button
@@ -384,7 +396,7 @@ export function ExamGeneratorPage() {
 
       <div className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-5 sm:py-5 lg:px-8 lg:py-6">
         {settingsOpen && (
-          <section className="mb-5 overflow-hidden rounded-2xl border border-border/80 bg-card shadow-sm lg:mb-7">
+          <section className="mb-4 max-h-[min(70dvh,640px)] overflow-y-auto overscroll-contain rounded-2xl border border-border/80 bg-card shadow-sm sm:mb-5 sm:max-h-none lg:mb-7">
             <div className="border-b border-border/80 bg-muted/30 px-4 py-3.5 sm:px-5 lg:px-6">
               <h2 className="text-sm font-semibold tracking-tight">Quiz setup</h2>
               <p className="mt-0.5 text-[11px] text-muted-foreground">
@@ -685,7 +697,7 @@ export function ExamGeneratorPage() {
         )}
 
         {hasActiveQuiz && currentQuestion && (
-          <div className="grid gap-4 md:gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(240px,300px)] xl:gap-6">
+          <div className="grid gap-3 sm:gap-4 md:gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(240px,300px)] xl:gap-6">
             <div className="min-w-0 space-y-3 pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0">
               <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm dark:border-slate-600">
                 <div className="flex flex-col gap-4 p-4 sm:flex-row sm:gap-5 sm:p-5 md:p-6">
@@ -804,7 +816,7 @@ export function ExamGeneratorPage() {
               </div>
             </div>
 
-            <aside className="order-first lg:order-none lg:sticky lg:top-[4.75rem] lg:self-start">
+            <aside className="lg:sticky lg:top-[4.75rem] lg:self-start">
               <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm dark:border-slate-600">
                 <button
                   type="button"
