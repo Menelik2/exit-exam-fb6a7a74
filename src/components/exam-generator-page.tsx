@@ -212,7 +212,7 @@ export function ExamGeneratorPage() {
   };
 
   const setupFields = (
-    <div className="space-y-3.5">
+    <div className="space-y-4">
       <ApiKeyPanel
         onKeyChange={(k, p) => {
           setApiKey(k);
@@ -226,14 +226,14 @@ export function ExamGeneratorPage() {
           value={topic}
           onChange={(e) => setTopic(e.target.value)}
           placeholder="e.g. Computer parts"
-          className="h-11 rounded-xl text-base"
+          className="h-11 rounded-2xl border-border/80 bg-background text-base shadow-sm"
           disabled={docMode}
         />
       </div>
       <div className="space-y-2">
         <Label>Or upload a document</Label>
         <div className="flex flex-wrap gap-2">
-          <label className="inline-flex h-11 cursor-pointer items-center gap-1.5 rounded-xl border border-border bg-background px-3 text-xs font-medium hover:bg-muted">
+          <label className="inline-flex h-11 cursor-pointer items-center gap-1.5 rounded-2xl border border-dashed border-border bg-muted/40 px-3.5 text-xs font-medium transition hover:border-foreground/30 hover:bg-muted">
             <Upload className="h-3.5 w-3.5" />
             {docExtracting ? "Reading…" : "Upload PDF / DOCX / TXT"}
             <input
@@ -248,7 +248,7 @@ export function ExamGeneratorPage() {
             <Button
               type="button"
               variant="outline"
-              className="h-11 rounded-xl text-xs"
+              className="h-11 rounded-2xl text-xs"
               onClick={() => {
                 setDocText("");
                 setDocName("");
@@ -271,7 +271,7 @@ export function ExamGeneratorPage() {
         <div className="space-y-2">
           <Label>Difficulty</Label>
           <Select value={difficulty} onValueChange={(v) => setDifficulty(v as Difficulty)}>
-            <SelectTrigger className="h-11 rounded-xl">
+            <SelectTrigger className="h-11 rounded-2xl border-border/80 bg-background shadow-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -287,14 +287,14 @@ export function ExamGeneratorPage() {
             id="nq"
             value={numQuestionsText}
             onChange={(e) => setNumQuestionsText(e.target.value)}
-            className="h-11 rounded-xl text-base"
+            className="h-11 rounded-2xl border-border/80 bg-background text-base shadow-sm"
             inputMode="numeric"
           />
         </div>
       </div>
       <Button
         type="button"
-        className="h-12 w-full rounded-xl text-[15px] font-semibold"
+        className="h-12 w-full rounded-2xl text-[15px] font-semibold shadow-md shadow-primary/15 transition active:scale-[0.99]"
         disabled={mutation.isPending || (!docMode && !topic.trim())}
         onClick={() => {
           run();
@@ -322,18 +322,18 @@ export function ExamGeneratorPage() {
   );
 
   return (
-    <div className="min-h-dvh w-full bg-background text-foreground">
-      <header className="sticky top-0 z-50 border-b border-border/80 bg-card/90 pt-[env(safe-area-inset-top)] shadow-sm backdrop-blur-xl">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-3 py-2.5 sm:px-5">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-              <ListChecks className="h-4 w-4" />
+    <div className="min-h-dvh w-full bg-background text-foreground selection:bg-primary/15">
+      <header className="sticky top-0 z-50 border-b border-border/60 bg-card/80 pt-[env(safe-area-inset-top)] shadow-[0_1px_0_0_rgba(0,0,0,0.03)] backdrop-blur-2xl supports-[backdrop-filter]:bg-card/70">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-3 py-3 sm:px-5">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md shadow-primary/20 ring-1 ring-black/5">
+              <ListChecks className="h-[18px] w-[18px]" />
             </span>
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">
+              <p className="truncate font-display text-[15px] font-semibold tracking-tight">
                 {hasActiveQuiz || showSummary ? (docMode ? docName || topic || "Document quiz" : topic || "Quiz") : "Exit Exam Practice"}
               </p>
-              <p className="truncate text-[11px] text-muted-foreground">
+              <p className="truncate text-[11px] text-muted-foreground/90">
                 {phase === "attempt"
                   ? `${difficulty} · Q${currentIndex + 1}/${questions.length}`
                   : phase === "summary"
@@ -348,7 +348,7 @@ export function ExamGeneratorPage() {
             {hasActiveQuiz && (
               <button
                 type="button"
-                className="inline-flex h-10 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-medium lg:hidden"
+                className="inline-flex h-10 items-center gap-1.5 rounded-full border border-border/80 bg-card/90 px-3.5 text-xs font-medium shadow-sm transition active:scale-[0.97] hover:bg-muted lg:hidden"
                 onClick={() => setNavOpen(true)}
               >
                 <Menu className="h-4 w-4" />
@@ -357,7 +357,7 @@ export function ExamGeneratorPage() {
             )}
             <button
               type="button"
-              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-xs font-medium"
+              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-border/80 bg-card/90 px-3.5 text-xs font-medium shadow-sm transition active:scale-[0.97] hover:bg-muted"
               onClick={() => setSettingsOpen((o) => !o)}
             >
               <Settings2 className="h-4 w-4" />
@@ -367,18 +367,21 @@ export function ExamGeneratorPage() {
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-3xl px-3 py-4 sm:px-5">
+      <div className="mx-auto w-full max-w-3xl px-3 py-5 sm:px-5 sm:py-6">
         {settingsOpen && !hasActiveQuiz && !showSummary && (
-          <section className="mb-4 overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-sm">
-            <h2 className="mb-3 text-sm font-semibold">Quiz setup</h2>
+          <section className="mb-5 overflow-hidden rounded-3xl border border-border/70 bg-card p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.02] sm:p-6">
+            <div className="mb-5">
+              <h2 className="font-display text-lg font-semibold tracking-tight">Quiz setup</h2>
+              <p className="mt-1 text-xs text-muted-foreground">Moodle deferred feedback — answer all, then submit.</p>
+            </div>
             {setupFields}
           </section>
         )}
 
         <Sheet open={settingsOpen && (hasActiveQuiz || showSummary)} onOpenChange={setSettingsOpen}>
-          <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto rounded-t-2xl lg:hidden">
+          <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto rounded-t-3xl border-border/60 lg:hidden">
             <SheetHeader className="text-left">
-              <SheetTitle>Quiz setup</SheetTitle>
+              <SheetTitle className="font-display">Quiz setup</SheetTitle>
               <SheetDescription>Change topic or start a new attempt</SheetDescription>
             </SheetHeader>
             <div className="mt-4 pb-[env(safe-area-inset-bottom)]">{setupFields}</div>
@@ -386,67 +389,78 @@ export function ExamGeneratorPage() {
         </Sheet>
 
         {settingsOpen && (hasActiveQuiz || showSummary) && (
-          <section className="mb-4 hidden overflow-hidden rounded-2xl border border-border bg-card p-4 shadow-sm lg:block">
-            <h2 className="mb-3 text-sm font-semibold">Quiz setup</h2>
+          <section className="mb-5 hidden overflow-hidden rounded-3xl border border-border/70 bg-card p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.02] lg:block sm:p-6">
+            <div className="mb-5">
+              <h2 className="font-display text-lg font-semibold tracking-tight">Quiz setup</h2>
+              <p className="mt-1 text-xs text-muted-foreground">Change topic or start a new attempt</p>
+            </div>
             {setupFields}
           </section>
         )}
 
         {mutation.isPending && (
-          <div className="flex flex-col items-center gap-3 py-20" role="status">
-            <Loader2 className="h-9 w-9 animate-spin text-primary" />
-            <p className="text-sm font-medium">Generating questions…</p>
+          <div className="flex flex-col items-center gap-3 py-20 sm:py-28" role="status">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+              <Loader2 className="h-7 w-7 animate-spin text-primary" />
+            </div>
+            <p className="font-display text-base font-semibold tracking-tight">Generating questions…</p>
+            <p className="text-xs text-muted-foreground">Usually takes a few seconds</p>
           </div>
         )}
 
         {!mutation.isPending && questions.length === 0 && phase === "setup" && !settingsOpen && (
-          <div className="rounded-2xl border border-dashed border-border px-4 py-16 text-center">
-            <p className="text-sm font-semibold">No active attempt</p>
-            <p className="mt-1 text-xs text-muted-foreground">Tap Setup to start a quiz</p>
+          <div className="rounded-3xl border border-dashed border-border/80 bg-card/50 px-4 py-16 text-center sm:py-20">
+            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+              <ListChecks className="h-6 w-6" />
+            </span>
+            <p className="mt-4 font-display text-base font-semibold tracking-tight">No active attempt</p>
+            <p className="mx-auto mt-1.5 max-w-[220px] text-xs leading-relaxed text-muted-foreground">
+              Open Setup, choose a topic or document, then start your quiz.
+            </p>
           </div>
         )}
 
         {showSummary && (
           <div className="space-y-4 pb-8">
-            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-              <div className="border-b border-border/80 bg-muted/30 px-4 py-3">
-                <h2 className="text-base font-semibold">Summary of attempt</h2>
-                <p className="text-xs text-muted-foreground">{docMode ? docName || topic : topic}</p>
+            <div className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-[0_8px_30px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.02]">
+              <div className="border-b border-border/60 bg-muted/25 px-5 py-4">
+                <h2 className="font-display text-lg font-semibold tracking-tight">Summary of attempt</h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">{docMode ? docName || topic : topic}</p>
               </div>
-              <div className="grid grid-cols-3 gap-3 p-4">
-                <div className="rounded-xl border border-border bg-muted/20 py-3 text-center">
-                  <p className="text-2xl font-semibold tabular-nums">{questions.length}</p>
-                  <p className="text-[11px] text-muted-foreground">Questions</p>
+              <div className="grid grid-cols-3 gap-2.5 p-4 sm:gap-3 sm:p-5">
+                <div className="rounded-2xl border border-border/60 bg-muted/15 py-3.5 text-center">
+                  <p className="font-display text-2xl font-semibold tabular-nums tracking-tight">{questions.length}</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">Questions</p>
                 </div>
-                <div className="rounded-xl border border-border bg-muted/20 py-3 text-center">
-                  <p className="text-2xl font-semibold tabular-nums text-emerald-600">{answeredCount}</p>
-                  <p className="text-[11px] text-muted-foreground">Answered</p>
+                <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 py-3.5 text-center">
+                  <p className="font-display text-2xl font-semibold tabular-nums tracking-tight text-emerald-700 dark:text-emerald-400">{answeredCount}</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">Answered</p>
                 </div>
-                <div className="rounded-xl border border-border bg-muted/20 py-3 text-center">
-                  <p className="text-2xl font-semibold tabular-nums text-amber-600">{notAnsweredCount}</p>
-                  <p className="text-[11px] text-muted-foreground">Not answered</p>
+                <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 py-3.5 text-center">
+                  <p className="font-display text-2xl font-semibold tabular-nums tracking-tight text-amber-700 dark:text-amber-400">{notAnsweredCount}</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">Not answered</p>
                 </div>
               </div>
             </div>
             {confirmSubmit ? (
-              <div className="space-y-3 rounded-2xl border border-destructive/40 bg-card p-4">
-                <p className="text-sm font-semibold">Submit this attempt?</p>
+              <div className="space-y-3 rounded-3xl border border-destructive/40 bg-card p-5 shadow-sm">
+                <p className="font-display text-base font-semibold">Submit this attempt?</p>
                 <p className="text-xs text-muted-foreground">You will see correct answers and feedback.</p>
                 <div className="flex flex-col gap-2 sm:flex-row">
-                  <Button className="h-12 flex-1 rounded-xl font-semibold" onClick={submitAllAndFinish}>
+                  <Button className="h-12 flex-1 rounded-2xl font-semibold shadow-md shadow-primary/15" onClick={submitAllAndFinish}>
                     Submit and view results
                   </Button>
-                  <Button variant="outline" className="h-12 flex-1 rounded-xl" onClick={() => setConfirmSubmit(false)}>
+                  <Button variant="outline" className="h-12 flex-1 rounded-2xl" onClick={() => setConfirmSubmit(false)}>
                     Cancel
                   </Button>
                 </div>
               </div>
             ) : (
               <div className="flex flex-col gap-2 sm:flex-row">
-                <Button variant="outline" className="h-12 flex-1 rounded-xl" onClick={() => setPhase("attempt")}>
+                <Button variant="outline" className="h-12 flex-1 rounded-2xl" onClick={() => setPhase("attempt")}>
                   <ChevronLeft className="mr-1 h-4 w-4" /> Return to attempt
                 </Button>
-                <Button className="h-12 flex-1 rounded-xl font-semibold" onClick={() => setConfirmSubmit(true)}>
+                <Button className="h-12 flex-1 rounded-2xl font-semibold shadow-md shadow-primary/15" onClick={() => setConfirmSubmit(true)}>
                   Submit all and finish
                 </Button>
               </div>
@@ -457,13 +471,13 @@ export function ExamGeneratorPage() {
         {hasActiveQuiz && currentQuestion && (
           <div className="pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-4">
             {phase === "review" && (
-              <div className="mb-3 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
-                <div className="border-b border-border/80 bg-muted/30 px-4 py-3">
-                  <h2 className="text-base font-semibold">Your results</h2>
-                  <p className="text-xs text-muted-foreground">{docMode ? docName || "Document quiz" : topic || "Quiz"} · {difficulty}</p>
+              <div className="mb-4 overflow-hidden rounded-3xl border border-border/70 bg-card shadow-[0_8px_30px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.02]">
+                <div className="border-b border-border/60 bg-muted/25 px-5 py-4">
+                  <h2 className="font-display text-lg font-semibold tracking-tight">Your results</h2>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{docMode ? docName || "Document quiz" : topic || "Quiz"} · {difficulty}</p>
                 </div>
-                <div className="flex flex-col items-center gap-1 px-4 py-5">
-                  <p className="text-4xl font-bold tabular-nums tracking-tight sm:text-5xl">
+                <div className="flex flex-col items-center gap-1.5 px-4 py-6">
+                  <p className="font-display text-5xl font-bold tabular-nums tracking-tight sm:text-6xl">
                     {scorePercent}%
                   </p>
                   <p className="text-sm text-muted-foreground">
@@ -473,28 +487,28 @@ export function ExamGeneratorPage() {
                     correct
                   </p>
                 </div>
-                <div className="grid grid-cols-3 gap-2 border-t border-border/80 p-3 sm:gap-3 sm:p-4">
-                  <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 py-2.5 text-center">
-                    <p className="text-xl font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
+                <div className="grid grid-cols-3 gap-2.5 border-t border-border/60 p-4 sm:gap-3 sm:p-5">
+                  <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/10 py-3 text-center">
+                    <p className="font-display text-xl font-semibold tabular-nums text-emerald-700 dark:text-emerald-400">
                       {correctCount}
                     </p>
-                    <p className="text-[11px] text-muted-foreground">Correct</p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">Correct</p>
                   </div>
-                  <div className="rounded-xl border border-red-500/30 bg-red-500/10 py-2.5 text-center">
-                    <p className="text-xl font-semibold tabular-nums text-red-700 dark:text-red-400">
+                  <div className="rounded-2xl border border-red-500/25 bg-red-500/10 py-3 text-center">
+                    <p className="font-display text-xl font-semibold tabular-nums text-red-700 dark:text-red-400">
                       {incorrectCount}
                     </p>
-                    <p className="text-[11px] text-muted-foreground">Incorrect</p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">Incorrect</p>
                   </div>
-                  <div className="rounded-xl border border-border bg-muted/20 py-2.5 text-center">
-                    <p className="text-xl font-semibold tabular-nums">{questions.length}</p>
-                    <p className="text-[11px] text-muted-foreground">Total</p>
+                  <div className="rounded-2xl border border-border/60 bg-muted/15 py-3 text-center">
+                    <p className="font-display text-xl font-semibold tabular-nums">{questions.length}</p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">Total</p>
                   </div>
                 </div>
               </div>
             )}
-            <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-              <div className="flex flex-col gap-4 p-4 sm:flex-row sm:p-5">
+            <div className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-[0_8px_30px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.02]">
+              <div className="flex flex-col gap-5 p-5 sm:flex-row sm:gap-6 sm:p-6">
                 <MoodleQuestionInfo
                   number={currentQuestion.question_number}
                   status={
@@ -528,7 +542,7 @@ export function ExamGeneratorPage() {
                   }
                 />
                 <div className="min-w-0 flex-1">
-                  <p className="text-[15px] leading-relaxed sm:text-base">{currentQuestion.question}</p>
+                  <p className="text-[15px] leading-relaxed text-foreground sm:text-[17px] sm:leading-relaxed">{currentQuestion.question}</p>
                   <fieldset className="mt-4 space-y-2.5" disabled={phase === "review"}>
                     <legend className="sr-only">Answers</legend>
                     {currentQuestion.options.map((opt, oi) => {
@@ -555,7 +569,7 @@ export function ExamGeneratorPage() {
                     })}
                   </fieldset>
                   {phase === "review" && currentQuestion.explanation && (
-                    <div className="mt-4 rounded-lg border border-border bg-muted/40 p-3 text-sm">
+                    <div className="mt-5 rounded-2xl border border-border/70 bg-muted/30 p-4 text-sm">
                       <p className="font-semibold">Feedback</p>
                       <p className="mt-1 text-muted-foreground">{currentQuestion.explanation}</p>
                       <p className="mt-2 text-xs">
@@ -567,7 +581,7 @@ export function ExamGeneratorPage() {
               </div>
             </div>
 
-            <div className="mt-3 hidden rounded-xl border border-border bg-card p-3 lg:block">
+            <div className="mt-4 hidden rounded-2xl border border-border/70 bg-card p-4 shadow-sm ring-1 ring-black/[0.02] lg:block">
               <p className="mb-2 text-xs font-semibold text-muted-foreground">Quiz navigation</p>
               <div className="flex flex-wrap gap-1.5">
                 {questions.map((q, idx) => (
@@ -583,12 +597,12 @@ export function ExamGeneratorPage() {
               </div>
             </div>
 
-            <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/80 bg-card/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2.5 backdrop-blur-xl lg:static lg:mt-3 lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
-              <div className="mx-auto flex max-w-3xl gap-2">
+            <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/60 bg-card/90 px-3 pb-[max(0.85rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_40px_rgba(0,0,0,0.06)] backdrop-blur-2xl supports-[backdrop-filter]:bg-card/75 lg:static lg:mt-4 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none lg:backdrop-blur-none">
+              <div className="mx-auto flex max-w-3xl gap-2.5">
                 <Button
                   type="button"
                   variant="outline"
-                  className="h-12 flex-1 rounded-xl lg:h-11"
+                  className="h-12 flex-1 rounded-2xl border-border/80 shadow-sm lg:h-11"
                   disabled={isFirst}
                   onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
                 >
@@ -598,20 +612,20 @@ export function ExamGeneratorPage() {
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-12 flex-1 rounded-xl lg:h-11"
+                    className="h-12 flex-1 rounded-2xl border-border/80 shadow-sm lg:h-11"
                     onClick={() => setCurrentIndex((i) => Math.min(questions.length - 1, i + 1))}
                   >
                     Next <ChevronRight className="ml-1 h-4 w-4" />
                   </Button>
                 ) : phase === "attempt" ? (
-                  <Button type="button" className="h-12 flex-1 rounded-xl font-semibold lg:h-11" onClick={finishAttempt}>
+                  <Button type="button" className="h-12 flex-1 rounded-2xl font-semibold shadow-md shadow-primary/15 lg:h-11" onClick={finishAttempt}>
                     Finish attempt
                   </Button>
                 ) : (
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-12 flex-1 rounded-xl lg:h-11"
+                    className="h-12 flex-1 rounded-2xl border-border/80 shadow-sm lg:h-11"
                     onClick={() => setSettingsOpen(true)}
                   >
                     Done
@@ -623,9 +637,9 @@ export function ExamGeneratorPage() {
         )}
 
         <Sheet open={navOpen && hasActiveQuiz} onOpenChange={setNavOpen}>
-          <SheetContent side="bottom" className="max-h-[70dvh] overflow-y-auto rounded-t-2xl lg:hidden">
+          <SheetContent side="bottom" className="max-h-[70dvh] overflow-y-auto rounded-t-3xl border-border/60 lg:hidden">
             <SheetHeader className="text-left">
-              <SheetTitle>Quiz navigation</SheetTitle>
+              <SheetTitle className="font-display">Quiz navigation</SheetTitle>
               <SheetDescription>
                 {phase === "review"
                   ? `Score ${correctCount}/${questions.length}`
@@ -650,7 +664,7 @@ export function ExamGeneratorPage() {
             {phase === "attempt" && (
               <Button
                 type="button"
-                className="mt-4 h-11 w-full rounded-xl font-semibold"
+                className="mt-4 h-11 w-full rounded-2xl font-semibold shadow-md shadow-primary/15"
                 onClick={() => {
                   setNavOpen(false);
                   finishAttempt();
