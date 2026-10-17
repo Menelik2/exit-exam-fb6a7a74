@@ -2,6 +2,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { generateExam, generateExamFromDocument, type ExamQuestion } from "@/lib/exam.functions";
+import { extractDocumentText } from "@/lib/extract-document";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Loader2, Sparkles, RefreshCw, ChevronLeft, ChevronRight, Settings2, ListChecks, Menu } from "lucide-react";
+import { Loader2, Sparkles, RefreshCw, ChevronLeft, ChevronRight, Settings2, ListChecks, Menu, Upload, FileText, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ApiKeyPanel, type AiProvider } from "@/components/api-key-panel";
 import {
@@ -48,6 +49,10 @@ export function ExamGeneratorPage() {
   const [topic, setTopic] = useState("");
   const [difficulty, setDifficulty] = useState<Difficulty>("Beginner");
   const [numQuestionsText, setNumQuestionsText] = useState("5");
+  const [docName, setDocName] = useState("");
+  const [docText, setDocText] = useState("");
+  const [docExtracting, setDocExtracting] = useState(false);
+  const [docError, setDocError] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState("");
   const [aiProvider, setAiProvider] = useState<AiProvider>("gemini");
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -64,10 +69,27 @@ export function ExamGeneratorPage() {
   }, []);
 
   const generateFn = useServerFn(generateExam);
+  const generateDocFn = useServerFn(generateExamFromDocument);
+  const docMode = docText.length > 0;
 
   const mutation = useMutation({
-    mutationFn: async (count: number) =>
-      generateFn({
+    mutationFn: async (count: number) => {
+      const avoid = seenQuestions.slice(-60);
+      if (docMode) {
+        return generateDocFn({
+          data: {
+            apiKey,
+            provider: aiProvider,
+            documentName: docName || "Uploaded document",
+            documentText: docText,
+            difficulty,
+            numQuestions: count,
+            nonce: `${Date.now()}`,
+            avoid,
+          },
+        });
+      }
+      return generateFn({
         data: {
           apiKey,
           provider: aiProvider,
@@ -75,9 +97,10 @@ export function ExamGeneratorPage() {
           difficulty,
           numQuestions: count,
           nonce: `${Date.now()}`,
-          avoid: seenQuestions.slice(-60),
+          avoid,
         },
-      }),
+      });
+    },
     onSuccess: (data) => {
       setAnswers({});
       setCurrentIndex(0);
@@ -107,13 +130,32 @@ export function ExamGeneratorPage() {
     [mutation.data?.questions],
   );
 
+  const handleFile = async (file: File | null) => {
+    if (!file) return;
+    setDocError(null);
+    setDocExtracting(true);
+    try {
+      const text = await extractDocumentText(file);
+      if (!text || text.length < 20) throw new Error("Couldn't extract readable text from this file.");
+      setDocText(text.length > 190000 ? text.slice(0, 190000) : text);
+      setDocName(file.name);
+      toast.success(`Loaded ${file.name}`);
+    } catch (e) {
+      setDocError((e as Error).message || "Failed to read document.");
+      setDocText("");
+      setDocName("");
+    } finally {
+      setDocExtracting(false);
+    }
+  };
+
   const run = useCallback(() => {
-    if (!topic.trim()) return;
+    if (!docMode && !topic.trim()) return;
     let n = parseInt(numQuestionsText, 10);
     if (Number.isNaN(n) || n < 1) n = 1;
     if (n > 200) n = 200;
     mutation.mutate(n);
-  }, [topic, numQuestionsText, mutation]);
+  }, [docMode, topic, numQuestionsText, mutation]);
 
   const selectAnswer = (q: ExamQuestion, opt: string) => {
     if (phase !== "attempt") return;
@@ -185,7 +227,45 @@ export function ExamGeneratorPage() {
           onChange={(e) => setTopic(e.target.value)}
           placeholder="e.g. Computer parts"
           className="h-11 rounded-xl text-base"
+          disabled={docMode}
         />
+      </div>
+      <div className="space-y-2">
+        <Label>Or upload a document</Label>
+        <div className="flex flex-wrap gap-2">
+          <label className="inline-flex h-11 cursor-pointer items-center gap-1.5 rounded-xl border border-border bg-background px-3 text-xs font-medium hover:bg-muted">
+            <Upload className="h-3.5 w-3.5" />
+            {docExtracting ? "Reading…" : "Upload PDF / DOCX / TXT"}
+            <input
+              type="file"
+              className="sr-only"
+              accept=".pdf,.docx,.txt,.md,application/pdf,text/plain"
+              disabled={docExtracting}
+              onChange={(e) => handleFile(e.target.files?.[0] ?? null)}
+            />
+          </label>
+          {docName && (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-11 rounded-xl text-xs"
+              onClick={() => {
+                setDocText("");
+                setDocName("");
+                setDocError(null);
+              }}
+            >
+              <X className="mr-1 h-3.5 w-3.5" /> Clear
+            </Button>
+          )}
+        </div>
+        {docName && (
+          <p className="text-[11px] text-muted-foreground">
+            <FileText className="mr-1 inline h-3 w-3" />
+            {docName} · {Math.round(docText.length / 1000)}k chars
+          </p>
+        )}
+        {docError && <p className="text-xs text-destructive">{docError}</p>}
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
@@ -215,7 +295,7 @@ export function ExamGeneratorPage() {
       <Button
         type="button"
         className="h-12 w-full rounded-xl text-[15px] font-semibold"
-        disabled={mutation.isPending || !topic.trim()}
+        disabled={mutation.isPending || (!docMode && !topic.trim())}
         onClick={() => {
           run();
           setSettingsOpen(false);
@@ -251,7 +331,7 @@ export function ExamGeneratorPage() {
             </span>
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">
-                {hasActiveQuiz || showSummary ? topic || "Quiz" : "Exit Exam Practice"}
+                {hasActiveQuiz || showSummary ? (docMode ? docName || topic || "Document quiz" : topic || "Quiz") : "Exit Exam Practice"}
               </p>
               <p className="truncate text-[11px] text-muted-foreground">
                 {phase === "attempt"
@@ -331,7 +411,7 @@ export function ExamGeneratorPage() {
             <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
               <div className="border-b border-border/80 bg-muted/30 px-4 py-3">
                 <h2 className="text-base font-semibold">Summary of attempt</h2>
-                <p className="text-xs text-muted-foreground">{topic}</p>
+                <p className="text-xs text-muted-foreground">{docMode ? docName || topic : topic}</p>
               </div>
               <div className="grid grid-cols-3 gap-3 p-4">
                 <div className="rounded-xl border border-border bg-muted/20 py-3 text-center">
@@ -380,7 +460,7 @@ export function ExamGeneratorPage() {
               <div className="mb-3 overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
                 <div className="border-b border-border/80 bg-muted/30 px-4 py-3">
                   <h2 className="text-base font-semibold">Your results</h2>
-                  <p className="text-xs text-muted-foreground">{topic || "Quiz"} · {difficulty}</p>
+                  <p className="text-xs text-muted-foreground">{docMode ? docName || "Document quiz" : topic || "Quiz"} · {difficulty}</p>
                 </div>
                 <div className="flex flex-col items-center gap-1 px-4 py-5">
                   <p className="text-4xl font-bold tabular-nums tracking-tight sm:text-5xl">
