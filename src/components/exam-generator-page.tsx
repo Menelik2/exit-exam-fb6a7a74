@@ -259,7 +259,7 @@ export function ExamGeneratorPage() {
                   : phase === "summary"
                     ? "Summary of attempt"
                     : phase === "review"
-                      ? `Review · ${correctCount}/{questions.length}`
+                      ? `Review · ${correctCount}/${questions.length}`
                       : "Moodle-style quiz"}
               </p>
             </div>
@@ -548,7 +548,7 @@ export function ExamGeneratorPage() {
               <SheetTitle>Quiz navigation</SheetTitle>
               <SheetDescription>
                 {phase === "review"
-                  ? `Score ${correctCount}/{questions.length}`
+                  ? `Score ${correctCount}/${questions.length}`
                   : `${answeredCount} of ${questions.length} answered`}
               </SheetDescription>
             </SheetHeader>
