@@ -571,6 +571,119 @@ export function ExamGeneratorPage() {
           </div>
         )}
 
+        {showSummary && (
+          <div className="mx-auto max-w-2xl space-y-4 pb-[calc(1rem+env(safe-area-inset-bottom))]">
+            <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+              <div className="border-b border-border/80 bg-muted/30 px-4 py-3.5 sm:px-5">
+                <h2 className="text-base font-semibold tracking-tight">Summary of attempt</h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">{quizTitle}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4 sm:gap-4 sm:p-5">
+                <div className="rounded-xl border border-border bg-muted/20 px-3 py-3 text-center">
+                  <p className="text-2xl font-semibold tabular-nums">{questions.length}</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">Questions</p>
+                </div>
+                <div className="rounded-xl border border-border bg-muted/20 px-3 py-3 text-center">
+                  <p className="text-2xl font-semibold tabular-nums text-emerald-600 dark:text-emerald-400">{answeredCount}</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">Answered</p>
+                </div>
+                <div className="rounded-xl border border-border bg-muted/20 px-3 py-3 text-center">
+                  <p className="text-2xl font-semibold tabular-nums text-amber-600 dark:text-amber-400">{notAnsweredCount}</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">Not answered</p>
+                </div>
+                <div className="rounded-xl border border-border bg-muted/20 px-3 py-3 text-center">
+                  <p className="text-2xl font-semibold tabular-nums text-sky-600 dark:text-sky-400">{flaggedCount}</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">Flagged</p>
+                </div>
+              </div>
+              {notAnsweredCount > 0 && (
+                <div className="mx-4 mb-4 flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm text-amber-900 dark:text-amber-200 sm:mx-5">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  <p>
+                    You have <strong>{notAnsweredCount}</strong> unanswered question
+                    {notAnsweredCount === 1 ? "" : "s"}. You can go back and answer them, or submit as-is.
+                  </p>
+                </div>
+              )}
+              <div className="border-t border-border/80 px-4 py-4 sm:px-5">
+                <p className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Question status
+                </p>
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                  {questions.map((q, idx) => {
+                    const answered = answers[q.question_number] != null;
+                    return (
+                      <button
+                        key={q.question_number}
+                        type="button"
+                        onClick={() => {
+                          setCurrentIndex(idx);
+                          returnToAttempt();
+                        }}
+                        className={cn(
+                          "inline-flex h-9 min-w-9 items-center justify-center rounded-lg border px-2 text-xs font-semibold tabular-nums transition active:scale-[0.97]",
+                          answered
+                            ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-800 dark:text-emerald-300"
+                            : "border-border bg-muted/40 text-muted-foreground",
+                          flagged[q.question_number] && "ring-2 ring-sky-500/50",
+                        )}
+                        aria-label={`Question ${idx + 1}${answered ? ", answered" : ", not answered"}`}
+                      >
+                        {idx + 1}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {confirmSubmit ? (
+              <div className="overflow-hidden rounded-2xl border border-destructive/40 bg-card p-4 shadow-sm sm:p-5">
+                <p className="text-sm font-semibold">Submit this attempt?</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  After submit you will see correct answers and feedback. You cannot change answers.
+                </p>
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                  <Button
+                    type="button"
+                    className="h-12 flex-1 rounded-xl font-semibold sm:h-11"
+                    onClick={submitAllAndFinish}
+                  >
+                    Submit and view results
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-12 flex-1 rounded-xl sm:h-11"
+                    onClick={() => setConfirmSubmit(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-12 flex-1 rounded-xl text-sm font-medium sm:h-11"
+                  onClick={returnToAttempt}
+                >
+                  <ChevronLeft className="mr-1.5 h-4 w-4" />
+                  Return to attempt
+                </Button>
+                <Button
+                  type="button"
+                  className="h-12 flex-1 rounded-xl text-sm font-semibold sm:h-11"
+                  onClick={() => setConfirmSubmit(true)}
+                >
+                  Submit all and finish
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+
         {hasActiveQuiz && currentQuestion && (
           <div className="grid gap-4 md:gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(240px,300px)] xl:gap-6">
             <div className="min-w-0 space-y-3 pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-0">
