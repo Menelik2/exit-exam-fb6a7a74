@@ -63,7 +63,7 @@
 }
 
 :root {
-  --radius: 0.5rem;
+  --radius: 0.625rem;
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Libre Baskerville", "Iowan Old Style", Georgia, serif;
   /* Paper & Ink palette */
@@ -167,13 +167,18 @@
   .min-h-dvh {
     min-height: 100dvh;
   }
+
+  .font-display {
+    font-family: var(--font-display);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .active\:scale-\[0\.97\]:active,
   .active\:scale-\[0\.98\]:active,
   .active\:scale-\[0\.995\]:active,
-  .active\:scale-\[0\.96\]:active {
+  .active\:scale-\[0\.96\]:active,
+  .active\:scale-\[0\.99\]:active {
     transform: none;
   }
 }
