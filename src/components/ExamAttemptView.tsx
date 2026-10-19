@@ -41,12 +41,7 @@ export function ExamAttemptView(p: AttemptProps) {
   } = p;
 
   const selected = answers[currentQuestion.question_number];
-  const options = [
-    currentQuestion.option_a,
-    currentQuestion.option_b,
-    currentQuestion.option_c,
-    currentQuestion.option_d,
-  ].filter(Boolean) as string[];
+  const options = currentQuestion.options ?? [];
 
   return (
     <div className="pb-[calc(5.5rem+env(safe-area-inset-bottom))] lg:pb-4">
@@ -112,7 +107,7 @@ export function ExamAttemptView(p: AttemptProps) {
               <MoodleOption
                 key={i}
                 letter={moodleLetter(i)}
-                text={opt}
+                label={opt}
                 selected={selected === opt}
                 disabled={phase !== "attempt"}
                 reviewState={
