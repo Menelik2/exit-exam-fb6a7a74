@@ -37,6 +37,7 @@ type Props = {
   finishAttempt: () => void;
   submitAllAndFinish: () => void;
   navState: (q: ExamQuestion) => MoodleNavState;
+  setSettingsOpen: (v: boolean | ((o: boolean) => boolean)) => void;
 };
 
 export function ExamQuizBody(p: Props) {
@@ -68,6 +69,7 @@ export function ExamQuizBody(p: Props) {
           currentIndex={p.currentIndex}
           currentQuestion={p.currentQuestion}
           correctCount={p.correctCount}
+          incorrectCount={p.incorrectCount}
           scorePercent={p.scorePercent}
           flagged={p.flagged}
           isFirst={p.isFirst}
@@ -77,6 +79,7 @@ export function ExamQuizBody(p: Props) {
           selectAnswer={p.selectAnswer}
           finishAttempt={p.finishAttempt}
           navState={p.navState}
+          setSettingsOpen={p.setSettingsOpen}
         />
       )}
       <ExamNavSheet
