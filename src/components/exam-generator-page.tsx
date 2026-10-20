@@ -1,6 +1,19 @@
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
+
+/** Match Tailwind lg breakpoint — Setup sheet is mobile-only below this. */
+function useIsLgUp() {
+  const [lgUp, setLgUp] = useState(true);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const apply = () => setLgUp(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+  return lgUp;
+}
 import { generateExam, generateExamFromDocument, type ExamQuestion } from "@/lib/exam.functions";
 import { extractDocumentText } from "@/lib/extract-document";
 import { Button } from "@/components/ui/button";
@@ -35,6 +48,7 @@ export function ExamGeneratorPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [phase, setPhase] = useState<QuizPhase>("setup");
   const [settingsOpen, setSettingsOpen] = useState(true);
+  const isLgUp = useIsLgUp();
   const [navOpen, setNavOpen] = useState(false);
   const [flagged, setFlagged] = useState<Record<number, boolean>>({});
   const [seenQuestions, setSeenQuestions] = useState<string[]>([]);
@@ -248,7 +262,26 @@ export function ExamGeneratorPage() {
               <MessageCircle className="h-4 w-4 text-[#229ED9]" />
               <span className="hidden sm:inline">Support</span>
             </a>
-            <button type="button" className="inline-flex h-10 items-center gap-1.5 rounded-full border border-border/80 bg-card/90 px-3.5 text-xs font-medium shadow-sm transition active:scale-[0.97] hover:bg-muted" onClick={() => setSettingsOpen((o) => !o)}>
+            <button
+              type="button"
+              aria-pressed={settingsOpen}
+              className={`inline-flex h-10 items-center gap-1.5 rounded-full border px-3.5 text-xs font-medium shadow-sm transition active:scale-[0.97] ${
+                settingsOpen
+                  ? "border-foreground/30 bg-muted"
+                  : "border-border/80 bg-card/90 hover:bg-muted"
+              }`}
+              onClick={() => {
+                setSettingsOpen((o) => {
+                  const next = !o;
+                  if (next && typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches) {
+                    requestAnimationFrame(() => {
+                      document.getElementById("quiz-setup-panel")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                    });
+                  }
+                  return next;
+                });
+              }}
+            >
               <Settings2 className="h-4 w-4" /> Setup
             </button>
           </div>
@@ -257,7 +290,7 @@ export function ExamGeneratorPage() {
 
       <div className="mx-auto w-full max-w-6xl px-3 py-5 sm:px-5 sm:py-6 lg:px-6 lg:py-8">
         {settingsOpen && !hasActiveQuiz && !showSummary && (
-          <section className="mb-5 overflow-hidden rounded-3xl border border-border/70 bg-card p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.02] sm:p-6 lg:p-8">
+          <section id="quiz-setup-panel" className="mb-5 overflow-hidden rounded-3xl border border-border/70 bg-card p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.02] sm:p-6 lg:p-8">
             <div className="mb-5">
               <h2 className="font-display text-lg font-semibold tracking-tight">Quiz setup</h2>
               <p className="mt-1 text-xs text-muted-foreground">Moodle deferred feedback — answer all, then submit.</p>
@@ -266,7 +299,7 @@ export function ExamGeneratorPage() {
           </section>
         )}
 
-        <Sheet open={settingsOpen && (hasActiveQuiz || showSummary)} onOpenChange={setSettingsOpen}>
+        <Sheet open={settingsOpen && (hasActiveQuiz || showSummary) && !isLgUp} onOpenChange={setSettingsOpen}>
           <SheetContent side="bottom" className="max-h-[90dvh] overflow-y-auto rounded-t-3xl border-border/60 lg:hidden">
             <SheetHeader className="text-left">
               <SheetTitle className="font-display">Quiz setup</SheetTitle>
@@ -276,11 +309,20 @@ export function ExamGeneratorPage() {
           </SheetContent>
         </Sheet>
 
-        {settingsOpen && (hasActiveQuiz || showSummary) && (
-          <section className="mb-5 hidden overflow-hidden rounded-3xl border border-border/70 bg-card p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.02] lg:block sm:p-6">
-            <div className="mb-5">
-              <h2 className="font-display text-lg font-semibold tracking-tight">Quiz setup</h2>
-              <p className="mt-1 text-xs text-muted-foreground">Change topic or start a new attempt</p>
+        {settingsOpen && (hasActiveQuiz || showSummary) && isLgUp && (
+          <section id="quiz-setup-panel" className="mb-5 overflow-hidden rounded-3xl border border-border/70 bg-card p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.02] sm:p-6 lg:p-6">
+            <div className="mb-5 flex items-start justify-between gap-3">
+              <div>
+                <h2 className="font-display text-lg font-semibold tracking-tight">Quiz setup</h2>
+                <p className="mt-1 text-xs text-muted-foreground">Change topic or start a new attempt</p>
+              </div>
+              <button
+                type="button"
+                className="shrink-0 rounded-full border border-border/80 px-3 py-1.5 text-xs font-medium hover:bg-muted"
+                onClick={() => setSettingsOpen(false)}
+              >
+                Close
+              </button>
             </div>
             {setupFields}
           </section>
