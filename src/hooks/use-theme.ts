@@ -4,6 +4,12 @@ const THEME_KEY = "exam-generator-theme-v1";
 
 export type ThemeMode = "light" | "dark" | "system";
 
+/** Desktop (lg+) defaults to light; narrow screens may follow system if mode is "system". */
+function isDesktopViewport() {
+  if (typeof window === "undefined") return true;
+  return window.matchMedia("(min-width: 1024px)").matches;
+}
+
 function getSystemDark() {
   if (typeof window === "undefined") return false;
   return window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -12,40 +18,55 @@ function getSystemDark() {
 function applyTheme(mode: ThemeMode) {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
-  const dark = mode === "dark" || (mode === "system" && getSystemDark());
+  // Explicit dark always wins; system only goes dark on non-desktop; light stays light
+  const dark =
+    mode === "dark" ||
+    (mode === "system" && !isDesktopViewport() && getSystemDark());
   root.classList.toggle("dark", dark);
 }
 
+function resolveInitialMode(): ThemeMode {
+  try {
+    const saved = localStorage.getItem(THEME_KEY) as ThemeMode | null;
+    if (saved === "light" || saved === "dark" || saved === "system") return saved;
+  } catch {
+    /* ignore */
+  }
+  // Default: light on desktop; system on mobile (so phone OS theme can still apply)
+  return isDesktopViewport() ? "light" : "system";
+}
+
 export function useTheme() {
-  const [mode, setModeState] = useState<ThemeMode>("system");
+  const [mode, setModeState] = useState<ThemeMode>("light");
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(THEME_KEY) as ThemeMode | null;
-      const initial: ThemeMode =
-        saved === "light" || saved === "dark" || saved === "system" ? saved : "system";
-      setModeState(initial);
-      applyTheme(initial);
-    } catch {
-      applyTheme("system");
-    }
+    const initial = resolveInitialMode();
+    setModeState(initial);
+    applyTheme(initial);
     setReady(true);
   }, []);
 
   useEffect(() => {
     if (!ready || mode !== "system") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const vq = window.matchMedia("(min-width: 1024px)");
     const onChange = () => applyTheme("system");
     mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
+    vq.addEventListener("change", onChange);
+    return () => {
+      mq.removeEventListener("change", onChange);
+      vq.removeEventListener("change", onChange);
+    };
   }, [mode, ready]);
 
   const setMode = useCallback((next: ThemeMode) => {
     setModeState(next);
     try {
       localStorage.setItem(THEME_KEY, next);
-    } catch {}
+    } catch {
+      /* ignore */
+    }
     applyTheme(next);
   }, []);
 
@@ -54,7 +75,11 @@ export function useTheme() {
   }, [mode, setMode]);
 
   const isDark =
-    mode === "dark" || (mode === "system" && typeof window !== "undefined" && getSystemDark());
+    mode === "dark" ||
+    (mode === "system" &&
+      typeof window !== "undefined" &&
+      !isDesktopViewport() &&
+      getSystemDark());
 
   return { mode, setMode, cycle, isDark, ready };
 }
