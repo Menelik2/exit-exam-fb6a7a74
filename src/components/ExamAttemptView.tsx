@@ -77,7 +77,7 @@ export function ExamAttemptView(p: AttemptProps) {
       )}
 
       <div className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-sm">
-        <div className="p-5 sm:p-6">
+        <div className="flex flex-col gap-4 p-4 sm:p-5 md:flex-row md:items-start md:gap-6 md:p-6">
           <MoodleQuestionInfo
             number={currentQuestion.question_number}
             status={
@@ -101,45 +101,47 @@ export function ExamAttemptView(p: AttemptProps) {
                 : undefined
             }
           />
-          <p className="mt-4 text-[15px] leading-relaxed">{currentQuestion.question}</p>
-          <div className="mt-4 space-y-2">
-            {options.map((opt, i) => (
-              <MoodleOption
-                key={i}
-                letter={moodleLetter(i)}
-                label={opt}
-                selected={selected === opt}
-                disabled={phase !== "attempt"}
-                reviewState={
-                  phase === "review"
-                    ? isOptionCorrect(currentQuestion, opt)
-                      ? "correct"
-                      : selected === opt
-                        ? "incorrect"
-                        : undefined
-                    : undefined
-                }
-                onSelect={() => selectAnswer(currentQuestion, opt)}
-              />
-            ))}
-          </div>
-          {phase === "review" && currentQuestion.explanation && (
-            <div className="mt-4 rounded-2xl border border-border/60 bg-muted/20 p-3 text-xs leading-relaxed text-muted-foreground">
-              <span className="font-semibold text-foreground">Explanation: </span>
-              {currentQuestion.explanation}
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] leading-relaxed sm:text-base">{currentQuestion.question}</p>
+            <div className="mt-4 space-y-2">
+              {options.map((opt, i) => (
+                <MoodleOption
+                  key={i}
+                  letter={moodleLetter(i)}
+                  label={opt}
+                  selected={selected === opt}
+                  disabled={phase !== "attempt"}
+                  reviewState={
+                    phase === "review"
+                      ? isOptionCorrect(currentQuestion, opt)
+                        ? "correct"
+                        : selected === opt
+                          ? ("incorrect" as const)
+                          : undefined
+                      : undefined
+                  }
+                  onSelect={() => selectAnswer(currentQuestion, opt)}
+                />
+              ))}
             </div>
-          )}
+            {phase === "review" && currentQuestion.explanation && (
+              <div className="mt-4 rounded-2xl border border-border/60 bg-muted/20 p-3 text-xs leading-relaxed text-muted-foreground sm:text-sm">
+                <span className="font-semibold text-foreground">Explanation: </span>
+                {currentQuestion.explanation}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/60 bg-card/90 px-3 pb-[max(0.85rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_40px_rgba(0,0,0,0.06)] backdrop-blur-2xl lg:static lg:mt-4 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
-        <div className="mx-auto flex max-w-3xl items-center gap-2">
+        <div className="mx-auto flex w-full max-w-6xl items-center gap-2 lg:max-w-none">
           <Button
             type="button"
             variant="outline"
             className="h-12 flex-1 rounded-2xl border-border/80 shadow-sm lg:h-11"
             disabled={isFirst}
-            onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
+            onClick={() => setCurrentIndex((i) => Math.max(0, (typeof i === "number" ? i : 0) - 1))}
           >
             <ChevronLeft className="mr-1 h-4 w-4" /> Previous
           </Button>
@@ -164,7 +166,7 @@ export function ExamAttemptView(p: AttemptProps) {
               type="button"
               className="h-12 flex-1 rounded-2xl font-semibold shadow-md shadow-primary/15 lg:h-11"
               disabled={isLast}
-              onClick={() => setCurrentIndex((i) => i + 1)}
+              onClick={() => setCurrentIndex((i) => (typeof i === "number" ? i : 0) + 1)}
             >
               Next <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
