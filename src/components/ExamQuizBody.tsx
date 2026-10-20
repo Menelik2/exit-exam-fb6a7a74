@@ -44,58 +44,83 @@ export function ExamQuizBody(p: Props) {
   return (
     <>
       {p.showSummary && (
-        <ExamSummaryView
-          docMode={p.docMode}
-          docName={p.docName}
-          topic={p.topic}
-          questions={p.questions}
-          answeredCount={p.answeredCount}
-          notAnsweredCount={p.notAnsweredCount}
-          confirmSubmit={p.confirmSubmit}
-          setConfirmSubmit={p.setConfirmSubmit}
-          setPhase={p.setPhase}
-          submitAllAndFinish={p.submitAllAndFinish}
-        />
+        <div className="mx-auto w-full max-w-3xl">
+          <ExamSummaryView
+            docMode={p.docMode}
+            docName={p.docName}
+            topic={p.topic}
+            questions={p.questions}
+            answeredCount={p.answeredCount}
+            notAnsweredCount={p.notAnsweredCount}
+            confirmSubmit={p.confirmSubmit}
+            setConfirmSubmit={p.setConfirmSubmit}
+            setPhase={p.setPhase}
+            submitAllAndFinish={p.submitAllAndFinish}
+          />
+        </div>
       )}
+
+      {/* Desktop: question + sticky palette side-by-side */}
       {p.hasActiveQuiz && p.currentQuestion && (
-        <ExamAttemptView
+        <div className="flex w-full flex-col gap-5 lg:flex-row lg:items-start lg:gap-6">
+          <div className="min-w-0 flex-1">
+            <ExamAttemptView
+              phase={p.phase}
+              docMode={p.docMode}
+              docName={p.docName}
+              topic={p.topic}
+              difficulty={p.difficulty}
+              questions={p.questions}
+              answers={p.answers}
+              currentIndex={p.currentIndex}
+              currentQuestion={p.currentQuestion}
+              correctCount={p.correctCount}
+              incorrectCount={p.incorrectCount}
+              scorePercent={p.scorePercent}
+              flagged={p.flagged}
+              isFirst={p.isFirst}
+              isLast={p.isLast}
+              setCurrentIndex={p.setCurrentIndex}
+              setFlagged={p.setFlagged}
+              selectAnswer={p.selectAnswer}
+              finishAttempt={p.finishAttempt}
+              navState={p.navState}
+              setSettingsOpen={p.setSettingsOpen}
+            />
+          </div>
+          <ExamNavSheet
+            phase={p.phase}
+            questions={p.questions}
+            answers={p.answers}
+            currentIndex={p.currentIndex}
+            correctCount={p.correctCount}
+            answeredCount={p.answeredCount}
+            flagged={p.flagged}
+            navOpen={p.navOpen}
+            setNavOpen={p.setNavOpen}
+            setCurrentIndex={(i) => p.setCurrentIndex(i)}
+            finishAttempt={p.finishAttempt}
+            navState={p.navState}
+          />
+        </div>
+      )}
+
+      {!p.hasActiveQuiz && (
+        <ExamNavSheet
           phase={p.phase}
-          docMode={p.docMode}
-          docName={p.docName}
-          topic={p.topic}
-          difficulty={p.difficulty}
           questions={p.questions}
           answers={p.answers}
           currentIndex={p.currentIndex}
-          currentQuestion={p.currentQuestion}
           correctCount={p.correctCount}
-          incorrectCount={p.incorrectCount}
-          scorePercent={p.scorePercent}
+          answeredCount={p.answeredCount}
           flagged={p.flagged}
-          isFirst={p.isFirst}
-          isLast={p.isLast}
-          setCurrentIndex={p.setCurrentIndex}
-          setFlagged={p.setFlagged}
-          selectAnswer={p.selectAnswer}
+          navOpen={p.navOpen}
+          setNavOpen={p.setNavOpen}
+          setCurrentIndex={(i) => p.setCurrentIndex(i)}
           finishAttempt={p.finishAttempt}
           navState={p.navState}
-          setSettingsOpen={p.setSettingsOpen}
         />
       )}
-      <ExamNavSheet
-        phase={p.phase}
-        questions={p.questions}
-        answers={p.answers}
-        currentIndex={p.currentIndex}
-        correctCount={p.correctCount}
-        answeredCount={p.answeredCount}
-        flagged={p.flagged}
-        navOpen={p.navOpen}
-        setNavOpen={p.setNavOpen}
-        setCurrentIndex={(i) => p.setCurrentIndex(i)}
-        finishAttempt={p.finishAttempt}
-        navState={p.navState}
-      />
     </>
   );
 }
