@@ -5,20 +5,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/*
- * Design system definition.
- *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
- *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
- */
-
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -66,12 +52,10 @@
   --radius: 0.625rem;
   --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Libre Baskerville", "Iowan Old Style", Georgia, serif;
-  /* Paper & Ink palette */
   --paper: oklch(0.97 0.006 85);
   --paper-2: oklch(0.925 0.007 80);
   --ink: oklch(0.24 0 0);
   --ink-deep: oklch(0.14 0 0);
-
   --background: var(--paper);
   --foreground: var(--ink-deep);
   --card: oklch(0.995 0.003 85);
@@ -145,31 +129,35 @@
   * {
     border-color: var(--color-border);
   }
-
   html, body {
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
-
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
   }
-
   h1, h2, h3, h4, .font-display {
     font-family: var(--font-display);
     letter-spacing: -0.01em;
   }
 }
 
-/* Exam layout helpers */
 @layer utilities {
   .min-h-dvh {
     min-height: 100dvh;
   }
-
   .font-display {
     font-family: var(--font-display);
+  }
+}
+
+@media (min-width: 1024px) {
+  .exam-desktop-shell {
+    max-width: 72rem;
+  }
+  body {
+    overflow-x: hidden;
   }
 }
 
