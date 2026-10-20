@@ -1,0 +1,51 @@
+{
+  "appUrl": "https://yeniexams.vercel.app",
+  "channelUrl": "https://t.me/exitexamto",
+  "channelUsername": "@exitexamto",
+  "departments": [
+    {
+      "id": "computer-science",
+      "name": "Computer Science",
+      "emoji": "💻",
+      "exams": [
+        {
+          "id": "cs-sample",
+          "title": "CS Exit Exam (sample)",
+          "year": null,
+          "pdfUrl": null,
+          "note": "Add your PDF URL or Telegram file_id here"
+        }
+      ]
+    },
+    {
+      "id": "information-technology",
+      "name": "Information Technology",
+      "emoji": "🖥️",
+      "exams": []
+    },
+    {
+      "id": "nursing",
+      "name": "Nursing",
+      "emoji": "🩺",
+      "exams": []
+    },
+    {
+      "id": "accounting",
+      "name": "Accounting",
+      "emoji": "📊",
+      "exams": []
+    },
+    {
+      "id": "law",
+      "name": "Law",
+      "emoji": "⚖️",
+      "exams": []
+    },
+    {
+      "id": "management",
+      "name": "Management",
+      "emoji": "📁",
+      "exams": []
+    }
+  ]
+}
