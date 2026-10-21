@@ -76,34 +76,39 @@ export function ExamAttemptView(p: AttemptProps) {
         </div>
       )}
 
-      <div className="overflow-hidden rounded-3xl border border-border/70 bg-card shadow-sm">
-        <div className="flex flex-col gap-4 p-4 sm:p-5 md:flex-row md:items-start md:gap-6 md:p-6">
-          <MoodleQuestionInfo
-            number={currentQuestion.question_number}
-            status={
-              phase === "review"
-                ? selected != null && isOptionCorrect(currentQuestion, selected)
-                  ? "Correct"
-                  : "Incorrect"
-                : selected != null
-                  ? "Answer saved"
-                  : "Not yet answered"
-            }
-            flagged={!!flagged[currentQuestion.question_number]}
-            showFlag={phase === "attempt"}
-            onToggleFlag={
-              phase === "attempt"
-                ? () =>
-                    setFlagged((f) => ({
-                      ...f,
-                      [currentQuestion.question_number]: !f[currentQuestion.question_number],
-                    }))
-                : undefined
-            }
-          />
-          <div className="min-w-0 flex-1">
-            <p className="text-[15px] leading-relaxed sm:text-base">{currentQuestion.question}</p>
-            <div className="mt-4 space-y-2">
+      {/* Moodle-style question card: purple frame, cyan body, peach feedback */}
+      <div className="overflow-hidden rounded-sm border-[3px] border-[#9b2d8e] bg-white shadow-sm dark:border-fuchsia-700 dark:bg-card">
+        <div className="flex flex-col gap-0 md:flex-row md:items-stretch">
+          <div className="border-b border-slate-200 bg-white p-3 dark:border-border dark:bg-card md:w-48 md:shrink-0 md:border-b-0 md:border-r">
+            <MoodleQuestionInfo
+              number={currentQuestion.question_number}
+              status={
+                phase === "review"
+                  ? selected != null && isOptionCorrect(currentQuestion, selected)
+                    ? "Correct"
+                    : "Incorrect"
+                  : selected != null
+                    ? "Answer saved"
+                    : "Not yet answered"
+              }
+              flagged={!!flagged[currentQuestion.question_number]}
+              showFlag={phase === "attempt"}
+              onToggleFlag={
+                phase === "attempt"
+                  ? () =>
+                      setFlagged((f) => ({
+                        ...f,
+                        [currentQuestion.question_number]: !f[currentQuestion.question_number],
+                      }))
+                  : undefined
+              }
+            />
+          </div>
+          <div className="min-w-0 flex-1 bg-[#e8f6f8] p-4 sm:p-5 dark:bg-cyan-950/40">
+            <p className="text-[15px] leading-relaxed text-slate-900 sm:text-base dark:text-slate-100">
+              {currentQuestion.question}
+            </p>
+            <div className="mt-4 space-y-1">
               {options.map((opt, i) => (
                 <MoodleOption
                   key={i}
@@ -124,14 +129,31 @@ export function ExamAttemptView(p: AttemptProps) {
                 />
               ))}
             </div>
-            {phase === "review" && currentQuestion.explanation && (
-              <div className="mt-4 rounded-2xl border border-border/60 bg-muted/20 p-3 text-xs leading-relaxed text-muted-foreground sm:text-sm">
-                <span className="font-semibold text-foreground">Explanation: </span>
-                {currentQuestion.explanation}
-              </div>
-            )}
           </div>
         </div>
+        {phase === "review" && (
+          <div className="border-t border-[#9b2d8e]/30 bg-[#fdf3e4] px-4 py-3 text-sm leading-relaxed text-[#7a5c2e] dark:border-fuchsia-800 dark:bg-amber-950/50 dark:text-amber-100">
+            {selected != null && isOptionCorrect(currentQuestion, selected) ? (
+              <p className="font-medium text-emerald-800 dark:text-emerald-300">Your answer is correct.</p>
+            ) : (
+              <>
+                <p className="font-medium">Your answer is incorrect.</p>
+                {selected != null && (
+                  <p className="mt-1">You selected: {selected}</p>
+                )}
+                {selected == null && (
+                  <p className="mt-1">You did not answer this question.</p>
+                )}
+              </>
+            )}
+            {currentQuestion.explanation && (
+              <p className="mt-2">
+                <span className="font-semibold">Feedback: </span>
+                {currentQuestion.explanation}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-border/60 bg-card/90 px-3 pb-[max(0.85rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-12px_40px_rgba(0,0,0,0.06)] backdrop-blur-2xl lg:static lg:mt-4 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
