@@ -1,4 +1,4 @@
-import type { Catalog, Department, ExamEntry } from "./admin-types";
+import type { Catalog, Department, ExamEntry, StoredQuestion } from "./admin-types";
 
 export const ADMIN_SESSION_KEY = "exit-exam-admin-session-v1";
 export const CATALOG_KEY = "exit-exam-admin-catalog-v1";
@@ -35,6 +35,36 @@ export function createSeed(): Catalog {
 /** @deprecated use createSeed() */
 export const SEED: Catalog = createSeed();
 
+function normalizeQuestions(raw: unknown): StoredQuestion[] | undefined {
+  if (!Array.isArray(raw) || raw.length === 0) return undefined;
+  const out: StoredQuestion[] = [];
+  for (let i = 0; i < Math.min(raw.length, 300); i++) {
+    const q = raw[i];
+    if (!q || typeof q !== "object") continue;
+    const row = q as Record<string, unknown>;
+    const question = String(row.question || "").trim().slice(0, 2000);
+    if (!question) continue;
+    const options = Array.isArray(row.options)
+      ? row.options.map((o) => String(o ?? "").trim()).filter(Boolean).slice(0, 6)
+      : [];
+    if (options.length < 2) continue;
+    let correct = String(row.correct_answer || "").trim();
+    if (!options.includes(correct)) {
+      const found = options.find((o) => o.toLowerCase() === correct.toLowerCase());
+      correct = found || options[0];
+    }
+    out.push({
+      question_number: out.length + 1,
+      question,
+      options,
+      correct_answer: correct,
+      explanation:
+        row.explanation == null ? undefined : String(row.explanation).slice(0, 2000),
+    });
+  }
+  return out.length ? out : undefined;
+}
+
 function isExam(x: unknown): x is ExamEntry {
   if (!x || typeof x !== "object") return false;
   const e = x as Record<string, unknown>;
@@ -67,14 +97,19 @@ export function normalizeCatalog(raw: unknown): Catalog | null {
       id: item.id,
       name: item.name.trim() || item.id,
       emoji: typeof item.emoji === "string" && item.emoji ? item.emoji : "📘",
-      exams: item.exams.map((e) => ({
-        id: e.id,
-        title: (e.title || "Untitled exam").trim(),
-        year: typeof e.year === "number" ? e.year : e.year == null ? null : Number(e.year) || null,
-        pdfUrl: e.pdfUrl ? String(e.pdfUrl) : null,
-        telegramFileId: e.telegramFileId ? String(e.telegramFileId) : null,
-        note: e.note ? String(e.note) : undefined,
-      })),
+      exams: item.exams.map((e) => {
+        const entry: ExamEntry = {
+          id: e.id,
+          title: (e.title || "Untitled exam").trim(),
+          year: typeof e.year === "number" ? e.year : e.year == null ? null : Number(e.year) || null,
+          pdfUrl: e.pdfUrl ? String(e.pdfUrl) : null,
+          telegramFileId: e.telegramFileId ? String(e.telegramFileId) : null,
+          note: e.note ? String(e.note) : undefined,
+        };
+        const qs = normalizeQuestions((e as ExamEntry).questions);
+        if (qs) entry.questions = qs;
+        return entry;
+      }),
     });
   }
   if (!departments.length && list.length > 0) return null;
