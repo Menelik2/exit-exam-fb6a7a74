@@ -29,7 +29,6 @@ import {
 } from "@/lib/exam-page-helpers";
 import { toast } from "sonner";
 import { ExamQuizBody } from "@/components/ExamQuizBody";
-import { DepartmentBrowser } from "@/components/department-browser";
 
 type Difficulty = "Beginner" | "Intermediate" | "Advanced";
 type QuizPhase = "setup" | "attempt" | "summary" | "review";
@@ -217,27 +216,6 @@ export function ExamGeneratorPage() {
 
   const setupFields = (
     <div className="space-y-4">
-      <DepartmentBrowser
-        onUseTopic={(name) => setTopic(name)}
-        onLoadExamDocument={({ name, text, topic: deptTopic }) => {
-          const clipped = text.length > 190000 ? text.slice(0, 190000) : text;
-          setDocName(name);
-          setDocText(clipped);
-          setDocError(null);
-          setTopic(deptTopic || name);
-          let n = parseInt(numQuestionsText, 10);
-          if (Number.isNaN(n) || n < 10) n = 25;
-          if (n > 100) n = 100;
-          setNumQuestionsText(String(n));
-          setSettingsOpen(false);
-          mutation.mutate({
-            count: n,
-            documentText: clipped,
-            documentName: name,
-            topicOverride: deptTopic || name,
-          });
-        }}
-      />
       <ApiKeyPanel onKeyChange={(k, p) => { setApiKey(k); setAiProvider(p); }} />
       <div className="space-y-2">
         <Label htmlFor="topic">Topic</Label>
@@ -422,16 +400,6 @@ export function ExamGeneratorPage() {
             navState={navState}
             setSettingsOpen={setSettingsOpen}
           />
-        )}
-
-        {!mutation.isPending && !hasActiveQuiz && !showSummary && !settingsOpen && (
-          <div className="rounded-3xl border border-dashed border-border/70 bg-muted/20 px-6 py-16 text-center">
-            <p className="font-display text-base font-semibold">Ready when you are</p>
-            <p className="mt-1 text-xs text-muted-foreground">Open Setup, enter a topic, then tap Attempt quiz now.</p>
-            <Button type="button" className="mt-4 h-11 rounded-2xl" onClick={() => setSettingsOpen(true)}>
-              <Settings2 className="mr-2 h-4 w-4" /> Open setup
-            </Button>
-          </div>
         )}
       </div>
     </div>
