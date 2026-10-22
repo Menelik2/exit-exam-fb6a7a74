@@ -30,6 +30,7 @@ import {
 } from "@/lib/exam-page-helpers";
 import { toast } from "sonner";
 import { ExamQuizBody } from "@/components/ExamQuizBody";
+import { DepartmentBrowser } from "@/components/department-browser";
 
 type Difficulty = "Beginner" | "Intermediate" | "Advanced";
 type QuizPhase = "setup" | "attempt" | "summary" | "review";
@@ -182,6 +183,7 @@ export function ExamGeneratorPage() {
 
   const setupFields = (
     <div className="space-y-4">
+      <DepartmentBrowser onUseTopic={(name) => setTopic(name)} />
       <ApiKeyPanel onKeyChange={(k, p) => { setApiKey(k); setAiProvider(p); }} />
       <div className="space-y-2">
         <Label htmlFor="topic">Topic</Label>
@@ -369,18 +371,18 @@ export function ExamGeneratorPage() {
           scorePercent={scorePercent}
           confirmSubmit={confirmSubmit}
           flagged={flagged}
-          navOpen={navOpen}
           isFirst={isFirst}
           isLast={isLast}
-          setConfirmSubmit={setConfirmSubmit}
-          setPhase={setPhase}
-          setCurrentIndex={setCurrentIndex}
+          navOpen={navOpen}
           setNavOpen={setNavOpen}
-          setFlagged={setFlagged}
+          navState={navState}
           selectAnswer={selectAnswer}
+          setCurrentIndex={setCurrentIndex}
+          setFlagged={setFlagged}
+          setConfirmSubmit={setConfirmSubmit}
           finishAttempt={finishAttempt}
           submitAllAndFinish={submitAllAndFinish}
-          navState={navState}
+          setPhase={setPhase}
           setSettingsOpen={setSettingsOpen}
         />
       </div>
