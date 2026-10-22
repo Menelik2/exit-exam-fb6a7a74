@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getAdminCatalog } from "@/lib/admin.functions";
+import { fetchExamPdf } from "@/lib/exam-source.functions";
+import { extractDocumentText } from "@/lib/extract-document";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,6 +13,7 @@ import {
   Loader2,
   MessageCircle,
   Search,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -32,22 +35,21 @@ type Dept = {
 
 type View = "list" | "dept";
 
-/**
- * Public department → exam picker.
- * Users select a department, then open a PDF or get Telegram delivery.
- */
 export function DepartmentBrowser({
   onUseTopic,
+  onLoadExamDocument,
 }: {
-  /** Optional: fill quiz topic with department name */
   onUseTopic?: (topic: string) => void;
+  onLoadExamDocument?: (payload: { name: string; text: string; topic: string }) => void;
 }) {
   const getCatalogFn = useServerFn(getAdminCatalog);
+  const fetchPdfFn = useServerFn(fetchExamPdf);
   const [loading, setLoading] = useState(true);
   const [departments, setDepartments] = useState<Dept[]>([]);
   const [search, setSearch] = useState("");
   const [view, setView] = useState<View>("list");
   const [selected, setSelected] = useState<Dept | null>(null);
+  const [busyExamId, setBusyExamId] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,6 +90,48 @@ export function DepartmentBrowser({
     setSelected(null);
   };
 
+  const generateFromExam = async (exam: Exam, deptName: string) => {
+    if (!onLoadExamDocument) {
+      toast.message("Open Setup to generate a quiz from this exam");
+      return;
+    }
+    if (!exam.pdfUrl && !exam.telegramFileId) {
+      toast.error("No PDF linked for this exam yet");
+      return;
+    }
+    setBusyExamId(exam.id);
+    try {
+      toast.message("Loading exam PDF…");
+      const file = await fetchPdfFn({
+        data: {
+          title: exam.title,
+          pdfUrl: exam.pdfUrl ?? null,
+          telegramFileId: exam.telegramFileId ?? null,
+        },
+      });
+      const bin = Uint8Array.from(atob(file.base64), (c) => c.charCodeAt(0));
+      const blob = new Blob([bin], { type: file.mimeType || "application/pdf" });
+      const f = new File([blob], file.filename || `${exam.title}.pdf`, {
+        type: file.mimeType || "application/pdf",
+      });
+      toast.message("Extracting text from PDF…");
+      const text = await extractDocumentText(f);
+      if (!text || text.trim().length < 40) {
+        throw new Error("Could not read enough text from this PDF (it may be scanned images only).");
+      }
+      onLoadExamDocument({
+        name: exam.title,
+        text,
+        topic: deptName,
+      });
+      toast.success("PDF loaded — generating quiz questions");
+    } catch (e) {
+      toast.error((e as Error).message || "Failed to load exam PDF");
+    } finally {
+      setBusyExamId(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center gap-2 rounded-2xl border border-border/60 bg-card px-4 py-10 text-sm text-muted-foreground">
@@ -111,7 +155,7 @@ export function DepartmentBrowser({
               {selected.name}
             </h3>
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {selected.exams.length} exam{selected.exams.length === 1 ? "" : "s"}
+              {selected.exams.length} exam{selected.exams.length === 1 ? "" : "s"} — pick one to generate quiz questions
             </p>
           </div>
           {onUseTopic && (
@@ -125,7 +169,7 @@ export function DepartmentBrowser({
                 toast.success(`Topic set to “${selected.name}”`);
               }}
             >
-              Practice this department
+              Use as topic only
             </Button>
           )}
         </div>
@@ -139,21 +183,47 @@ export function DepartmentBrowser({
             {selected.exams.map((exam) => {
               const hasPdf = Boolean(exam.pdfUrl);
               const hasTg = Boolean(exam.telegramFileId);
+              const canGenerate = hasPdf || hasTg;
+              const busy = busyExamId === exam.id;
+              const meta = [
+                exam.year != null ? String(exam.year) : null,
+                hasPdf ? "PDF link" : null,
+                hasTg ? "Telegram file" : null,
+                !canGenerate ? "Not linked yet" : null,
+              ]
+                .filter(Boolean)
+                .join(" · ");
               return (
-                <li key={exam.id} className="flex flex-wrap items-center gap-3 px-3 py-3 sm:px-4">
-                  <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium leading-snug">{exam.title}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {exam.year ?? "Year —"}
-                      {hasPdf ? " · PDF link" : ""}
-                      {hasTg ? " · Telegram" : ""}
-                      {!hasPdf && !hasTg ? " · Not linked yet" : ""}
-                    </p>
+                <li key={exam.id} className="flex flex-col gap-2 px-3 py-3 sm:px-4">
+                  <div className="flex flex-wrap items-start gap-3">
+                    <FileText className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium leading-snug">{exam.title}</p>
+                      {meta && <p className="text-[11px] text-muted-foreground">{meta}</p>}
+                    </div>
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1.5 pl-7">
+                    {canGenerate && onLoadExamDocument && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="h-8 rounded-lg"
+                        disabled={busy}
+                        onClick={() => void generateFromExam(exam, selected.name)}
+                      >
+                        {busy ? (
+                          <>
+                            <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> Loading…
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="mr-1 h-3.5 w-3.5" /> Generate all questions
+                          </>
+                        )}
+                      </Button>
+                    )}
                     {hasPdf && (
-                      <Button type="button" size="sm" className="h-8 rounded-lg" asChild>
+                      <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg" asChild>
                         <a href={exam.pdfUrl!} target="_blank" rel="noreferrer">
                           Open PDF <ExternalLink className="ml-1 h-3 w-3" />
                         </a>
@@ -162,12 +232,11 @@ export function DepartmentBrowser({
                     {hasTg && (
                       <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg" asChild>
                         <a href="https://t.me/exitexamto" target="_blank" rel="noreferrer">
-                          <MessageCircle className="mr-1 h-3.5 w-3.5 text-[#229ED9]" />
-                          Get on Telegram
+                          <MessageCircle className="mr-1 h-3.5 w-3.5 text-[#229ED9]" /> Telegram
                         </a>
                       </Button>
                     )}
-                    {!hasPdf && !hasTg && (
+                    {!canGenerate && (
                       <span className="text-[11px] text-muted-foreground">Coming soon</span>
                     )}
                   </div>
@@ -189,7 +258,9 @@ export function DepartmentBrowser({
           </span>
           <div>
             <h3 className="font-display text-base font-semibold tracking-tight">Select by department</h3>
-            <p className="text-[11px] text-muted-foreground">Choose a department to view exam PDFs</p>
+            <p className="text-[11px] text-muted-foreground">
+              Choose a department → exam PDF → generate all questions
+            </p>
           </div>
         </div>
         <div className="relative">
