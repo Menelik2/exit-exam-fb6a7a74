@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-22T11:15:37.918Z",
+  "updatedAt": "2026-10-22T12:29:17.481Z",
   "departments": [
     {
       "id": "computer-science",
@@ -13,8 +13,8 @@
           "id": "cs-sample",
           "title": "CS Exit Exam (sample)",
           "year": null,
-          "pdfUrl": "https://www.google.com/url?sa=t&source=web&rct=j&opi=89978449&url=https://howtotrade.com/wp-content/uploads/2023/11/ICT-Trading-Strategy-1.pdf&ved=2ahUKEwiYwr7Kv82XAxUoF1kFHQExNnQQFnoECDUQAQ&usg=AOvVaw3GqQnOJP79-oFtftiQIUcW",
-          "telegramFileId": "BQACAgQAAxkBAAEv8hJq2ei6T93AhN_p5kdwhmALJ1nclgACUR4AAksloFKJ_zwOD1KmRz0E",
+          "pdfUrl": "https://drive.google.com/file/d/1F371UJkWCyN5V2R18drURVLxM_96dRvB/view?usp=drivesdk",
+          "telegramFileId": null,
           "note": "Add your PDF URL or Telegram file_id here"
         }
       ]
