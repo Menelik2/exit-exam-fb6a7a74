@@ -35,6 +35,36 @@ type Dept = {
 
 type View = "list" | "dept";
 
+/** Decode standard or base64url payloads; strip data-URL prefix and whitespace. */
+function base64ToUint8Array(input: string): Uint8Array {
+  let s = String(input ?? "").trim();
+  if (!s) throw new Error("Empty document payload from server");
+
+  // data:application/pdf;base64,....
+  const dataUrl = /^data:[^;]+;base64,/i.exec(s);
+  if (dataUrl) s = s.slice(dataUrl[0].length);
+
+  s = s.replace(/[\s\n\r]/g, "").replace(/-/g, "+").replace(/_/g, "/");
+  while (s.length % 4) s += "=";
+
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(s)) {
+    throw new Error(
+      "Document data from server was corrupted. Try again, or open the file link and upload it manually.",
+    );
+  }
+
+  try {
+    const binary = atob(s);
+    const out = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
+    return out;
+  } catch {
+    throw new Error(
+      "Could not decode exam document. The file may be too large or the download failed — try a smaller PDF or a direct public link.",
+    );
+  }
+}
+
 export function DepartmentBrowser({
   onUseTopic,
   onLoadExamDocument,
@@ -113,14 +143,16 @@ export function DepartmentBrowser({
       let text = "";
       if (file.kind === "text") {
         text = file.text;
-      } else {
+      } else if (file.kind === "binary" && typeof file.base64 === "string") {
         toast.message("Extracting text…");
-        const bin = Uint8Array.from(atob(file.base64), (c) => c.charCodeAt(0));
+        const bin = base64ToUint8Array(file.base64);
         const blob = new Blob([bin], { type: file.mimeType || "application/pdf" });
         const f = new File([blob], file.filename || `${exam.title}.pdf`, {
           type: file.mimeType || "application/pdf",
         });
         text = await extractDocumentText(f);
+      } else {
+        throw new Error("Server returned an unexpected document format. Try uploading the file manually in Setup.");
       }
 
       if (!text || text.trim().length < 40) {
@@ -135,7 +167,15 @@ export function DepartmentBrowser({
       });
       toast.success("Document loaded — generating quiz questions");
     } catch (e) {
-      toast.error((e as Error).message || "Failed to load exam document");
+      const msg = (e as Error)?.message || "Failed to load exam document";
+      // Avoid dumping raw atob / DOMException text to the user
+      if (/atob|not correctly encoded|InvalidCharacterError/i.test(msg)) {
+        toast.error(
+          "Could not decode exam document. Try a smaller PDF, a public direct link, or upload the file in Setup.",
+        );
+      } else {
+        toast.error(msg);
+      }
     } finally {
       setBusyExamId(null);
     }
