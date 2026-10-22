@@ -181,7 +181,7 @@ async function generateExactly(apiKey, buildUserPrompt, target, seedAvoid) {
   const seenNorm = new Set();
   const avoidList = Array.isArray(seedAvoid) ? seedAvoid.slice() : [];
   let attempts = 0;
-  const maxAttempts = 5;
+  const maxAttempts = Math.min(12, Math.max(5, Math.ceil(target / 15) + 2));
 
   while (collected.length < target && attempts < maxAttempts) {
     attempts++;
@@ -265,7 +265,8 @@ export default async function handler(req, res) {
 
     let numQuestions = parseInt(String(body.numQuestions ?? 5), 10);
     if (!Number.isFinite(numQuestions) || numQuestions < 1) numQuestions = 5;
-    if (numQuestions > 50) numQuestions = 50;
+    // Per-batch max for full-document chunk generation (admin can do up to 200 total across chunks)
+    if (numQuestions > 100) numQuestions = 100;
 
     const topic = String(body.topic || "").trim().slice(0, 400);
     const documentText = String(body.documentText || "").trim().slice(0, 180000);
@@ -290,7 +291,7 @@ export default async function handler(req, res) {
             : "";
         if (documentText) {
           return [
-            `Task: Generate EXACTLY ${need} MCQs from the document only.`,
+            `Task: Generate EXACTLY ${need} MCQs covering this document section thoroughly. Use the document only.`,
             `Document: ${documentName}`,
             `Difficulty: ${difficulty}`,
             `Seed: ${seed}`,
