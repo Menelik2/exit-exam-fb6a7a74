@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
 import { apiGetCatalog } from "@/lib/admin-api";
-import { fetchExamDocument } from "@/lib/exam-source.functions";
+import { extractDocumentText } from "@/lib/extract-document";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -34,47 +33,68 @@ type Dept = {
 
 type View = "list" | "dept";
 
-type DocPayload = {
-  kind?: string;
-  text?: string;
-  filename?: string;
-  mimeType?: string;
-  size?: number;
-  base64?: string;
-  error?: string;
-  message?: string;
-};
+/** Fetch exam document text via Vercel API (reliable) + browser PDF extraction. */
+async function loadExamText(exam: Exam): Promise<string> {
+  const res = await fetch("/api/exam-document", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      title: exam.title,
+      pdfUrl: exam.pdfUrl ?? null,
+      telegramFileId: exam.telegramFileId ?? null,
+    }),
+    cache: "no-store",
+  });
 
-/** Normalize whatever shape TanStack server-fn returns. */
-function unwrapDoc(raw: unknown): DocPayload {
-  if (!raw || typeof raw !== "object") return {};
-  const o = raw as Record<string, unknown>;
-  // Nested under data / result / payload (RPC wrappers)
-  for (const key of ["data", "result", "payload", "document"] as const) {
-    const inner = o[key];
-    if (inner && typeof inner === "object" && ("text" in (inner as object) || "kind" in (inner as object))) {
-      return unwrapDoc(inner);
+  const ctype = (res.headers.get("content-type") || "").toLowerCase();
+
+  // JSON path: text already extracted (DOCX/TXT) or error
+  if (ctype.includes("application/json")) {
+    const data = (await res.json()) as {
+      ok?: boolean;
+      kind?: string;
+      text?: string;
+      error?: string;
+    };
+    if (!res.ok || data.ok === false) {
+      throw new Error(data.error || `Server error (${res.status})`);
     }
+    if (typeof data.text === "string" && data.text.trim().length > 0) {
+      return data.text.trim();
+    }
+    throw new Error(data.error || "Server did not return exam text");
   }
-  return o as DocPayload;
-}
 
-function pickText(file: DocPayload): string {
-  if (typeof file.text === "string" && file.text.trim().length > 0) {
-    return file.text.trim();
+  // Binary PDF path: extract in the browser with pdfjs (already works for uploads)
+  if (!res.ok) {
+    const fallback = await res.text().catch(() => "");
+    throw new Error(fallback.slice(0, 200) || `Download failed (${res.status})`);
   }
-  // Legacy binary responses should no longer appear; surface a clear error.
-  if (file.kind === "binary" || typeof file.base64 === "string") {
+
+  const buf = await res.arrayBuffer();
+  if (buf.byteLength < 50) throw new Error("Downloaded file is empty");
+
+  const header = new Uint8Array(buf.slice(0, 5));
+  const magic = String.fromCharCode(...header);
+  if (magic !== "%PDF-") {
     throw new Error(
-      "Server still returned a binary PDF. Redeploy may still be rolling out — wait a minute and retry, or upload the file in Setup.",
+      "Downloaded file is not a PDF (often a Google Drive login page). Set the file to Anyone with the link.",
     );
   }
-  if (file.error || file.message) {
-    throw new Error(String(file.error || file.message));
+
+  const nameHeader = res.headers.get("X-Exam-Filename");
+  let filename = `${exam.title || "exam"}.pdf`;
+  if (nameHeader) {
+    try {
+      filename = decodeURIComponent(nameHeader);
+    } catch {
+      filename = nameHeader;
+    }
   }
-  throw new Error(
-    "Server did not return exam text. Check the document link is public, or upload the file manually in Setup.",
-  );
+  if (!filename.toLowerCase().endsWith(".pdf")) filename += ".pdf";
+
+  const file = new File([buf], filename, { type: "application/pdf" });
+  return await extractDocumentText(file);
 }
 
 export function DepartmentBrowser({
@@ -84,7 +104,6 @@ export function DepartmentBrowser({
   onUseTopic?: (topic: string) => void;
   onLoadExamDocument?: (payload: { name: string; text: string; topic: string }) => void;
 }) {
-  const fetchDocFn = useServerFn(fetchExamDocument);
   const [loading, setLoading] = useState(true);
   const [departments, setDepartments] = useState<Dept[]>([]);
   const [search, setSearch] = useState("");
@@ -144,18 +163,9 @@ export function DepartmentBrowser({
     setBusyExamId(exam.id);
     try {
       toast.message("Loading exam document…");
-      const raw = await fetchDocFn({
-        data: {
-          title: exam.title,
-          pdfUrl: exam.pdfUrl ?? null,
-          telegramFileId: exam.telegramFileId ?? null,
-        },
-      });
+      const text = await loadExamText(exam);
 
-      const file = unwrapDoc(raw);
-      const text = pickText(file);
-
-      if (text.length < 40) {
+      if (!text || text.trim().length < 40) {
         throw new Error(
           "Could not read enough text from this file (scanned PDFs need OCR; try DOCX/PDF with real text).",
         );
@@ -169,13 +179,7 @@ export function DepartmentBrowser({
       toast.success("Document loaded — generating quiz questions");
     } catch (e) {
       const msg = (e as Error)?.message || "Failed to load exam document";
-      if (/atob|not correctly encoded|InvalidCharacterError/i.test(msg)) {
-        toast.error(
-          "Could not decode exam document. Try a smaller PDF, a public direct link, or upload the file in Setup.",
-        );
-      } else {
-        toast.error(msg);
-      }
+      toast.error(msg);
     } finally {
       setBusyExamId(null);
     }
