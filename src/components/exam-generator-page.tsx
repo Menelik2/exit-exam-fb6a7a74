@@ -1,17 +1,18 @@
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
 /** Match Tailwind lg breakpoint — Setup sheet is mobile-only below this. */
 function useIsLgUp() {
-  const [isLg, setIsLg] = useState(false);
+  const [lgUp, setLgUp] = useState(true);
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)");
-    const apply = () => setIsLg(mq.matches);
+    const apply = () => setLgUp(mq.matches);
     apply();
     mq.addEventListener("change", apply);
     return () => mq.removeEventListener("change", apply);
   }, []);
-  return isLg;
+  return lgUp;
 }
 import type { ExamQuestion } from "@/lib/exam.functions";
 import { extractDocumentText } from "@/lib/extract-document";
@@ -24,33 +25,37 @@ import { ApiKeyPanel, type AiProvider } from "@/components/api-key-panel";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import type { MoodleNavState } from "@/components/moodle-quiz-ui";
 import {
-  isOptionCorrect,
+  loadWrongQuestions, saveWrongQuestions, loadSeenQuestions, saveSeenQuestions,
+  isSimilarQuestion, isSimilarToAny, isOptionCorrect, MAX_SEEN_QUESTIONS,
 } from "@/lib/exam-page-helpers";
 import { toast } from "sonner";
 import { ExamQuizBody } from "@/components/ExamQuizBody";
 
+type Difficulty = "Beginner" | "Intermediate" | "Advanced";
+type QuizPhase = "setup" | "attempt" | "summary" | "review";
+
 export function ExamGeneratorPage() {
-  const isLgUp = useIsLgUp();
   const [topic, setTopic] = useState("");
-  const [difficulty, setDifficulty] = useState("Intermediate");
-  const [numQuestions, setNumQuestions] = useState(10);
+  const [difficulty, setDifficulty] = useState<Difficulty>("Beginner");
+  const [numQuestionsText, setNumQuestionsText] = useState("5");
+  const [docName, setDocName] = useState("");
+  const [docText, setDocText] = useState("");
+  const [docExtracting, setDocExtracting] = useState(false);
+  const [docError, setDocError] = useState<string | null>(null);
   const [apiKey, setApiKey] = useState("");
   const [aiProvider, setAiProvider] = useState<AiProvider>("gemini");
-  const [docText, setDocText] = useState("");
-  const [docName, setDocName] = useState("");
-  const [docError, setDocError] = useState("");
-  const [docExtracting, setDocExtracting] = useState(false);
-  const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [phase, setPhase] = useState<"setup" | "attempt" | "summary" | "review">("setup");
-  const [flagged, setFlagged] = useState<Record<number, boolean>>({});
+  const [phase, setPhase] = useState<QuizPhase>("setup");
+  const [settingsOpen, setSettingsOpen] = useState(true);
+  const isLgUp = useIsLgUp();
   const [navOpen, setNavOpen] = useState(false);
   const [confirmSubmit, setConfirmSubmit] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(true);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [flagged, setFlagged] = useState<Record<number, boolean>>({});
+  const [questions, setQuestions] = useState<ExamQuestion[]>([]);
 
   const docMode = docText.trim().length > 40;
+  const numQuestions = Math.max(1, Math.min(50, parseInt(numQuestionsText, 10) || 5));
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -76,21 +81,31 @@ export function ExamGeneratorPage() {
       return qs as ExamQuestion[];
     },
     onSuccess: (qs) => {
-      setQuestions(qs.map((q, i) => ({ ...q, question_number: q.question_number ?? i + 1 })));
+      const normalized = qs.map((q, i) => ({
+        ...q,
+        question_number: q.question_number ?? i + 1,
+      }));
+      setQuestions(normalized);
       setAnswers({});
       setCurrentIndex(0);
       setPhase("attempt");
       setFlagged({});
       setConfirmSubmit(false);
       setSettingsOpen(false);
-      toast.success(`Generated ${qs.length} questions`);
+      try {
+        const seen = loadSeenQuestions();
+        const texts = normalized.map((q) => q.question);
+        const next = [...texts, ...seen].slice(0, MAX_SEEN_QUESTIONS);
+        saveSeenQuestions(next);
+      } catch { /* ignore */ }
+      toast.success(`Generated ${normalized.length} questions`);
     },
     onError: (e: Error) => toast.error(e.message || "Generation failed"),
   });
 
   const handleFile = async (file: File | null) => {
     if (!file) return;
-    setDocError("");
+    setDocError(null);
     setDocExtracting(true);
     try {
       const text = await extractDocumentText(file);
@@ -104,14 +119,13 @@ export function ExamGeneratorPage() {
       setDocName("");
     } finally {
       setDocExtracting(false);
-      if (fileRef.current) fileRef.current.value = "";
     }
   };
 
   const clearDoc = () => {
     setDocText("");
     setDocName("");
-    setDocError("");
+    setDocError(null);
   };
 
   const selectAnswer = (q: ExamQuestion, opt: string) => {
@@ -125,6 +139,15 @@ export function ExamGeneratorPage() {
   };
 
   const submitAllAndFinish = () => {
+    try {
+      const wrong = questions.filter(
+        (q) => answers[q.question_number] != null && !isOptionCorrect(q, answers[q.question_number]),
+      );
+      if (wrong.length) {
+        const prev = loadWrongQuestions();
+        saveWrongQuestions([...wrong, ...prev].slice(0, 200));
+      }
+    } catch { /* ignore */ }
     setPhase("review");
     setConfirmSubmit(false);
     setCurrentIndex(0);
@@ -180,7 +203,7 @@ export function ExamGeneratorPage() {
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label>Difficulty</Label>
-          <Select value={difficulty} onValueChange={setDifficulty}>
+          <Select value={difficulty} onValueChange={(v) => setDifficulty(v as Difficulty)}>
             <SelectTrigger className="h-11 rounded-2xl border-border/80 bg-background shadow-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="Beginner">Beginner</SelectItem>
@@ -191,7 +214,7 @@ export function ExamGeneratorPage() {
         </div>
         <div className="space-y-2">
           <Label>Questions</Label>
-          <Select value={String(numQuestions)} onValueChange={(v) => setNumQuestions(Number(v))}>
+          <Select value={String(numQuestions)} onValueChange={(v) => setNumQuestionsText(v)}>
             <SelectTrigger className="h-11 rounded-2xl border-border/80 bg-background shadow-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
               {[5, 10, 15, 20, 25, 30, 40, 50].map((n) => (
