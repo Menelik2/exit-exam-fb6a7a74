@@ -1,4 +1,3 @@
-import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -14,7 +13,7 @@ function useIsLgUp() {
   }, []);
   return lgUp;
 }
-import { generateExam, generateExamFromDocument, type ExamQuestion } from "@/lib/exam.functions";
+import type { ExamQuestion } from "@/lib/exam.functions";
 import { extractDocumentText } from "@/lib/extract-document";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,8 +56,6 @@ export function ExamGeneratorPage() {
 
   useEffect(() => { setSeenQuestions(loadSeenQuestions()); }, []);
 
-  const generateFn = useServerFn(generateExam);
-  const generateDocFn = useServerFn(generateExamFromDocument);
   const docMode = docText.length > 0;
 
   const mutation = useMutation({
@@ -70,14 +67,41 @@ export function ExamGeneratorPage() {
       const avoid = seenQuestions.slice(-60);
       const text = (overrideText ?? docText).trim();
       const name = overrideName || docName || "Uploaded document";
-      if (text.length > 0) {
-        return generateDocFn({
-          data: { apiKey, provider: aiProvider, documentName: name, documentText: text, difficulty, numQuestions: count, nonce: `${Date.now()}`, avoid },
-        });
+      const topicValue = (topicOverride ?? topic).trim();
+
+      if (!text && !topicValue) {
+        throw new Error("Enter a topic or upload a document first.");
       }
-      return generateFn({
-        data: { apiKey, provider: aiProvider, topic: (topicOverride ?? topic).trim(), difficulty, numQuestions: count, nonce: `${Date.now()}`, avoid },
+
+      const res = await fetch("/api/generate-exam", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          apiKey,
+          difficulty,
+          numQuestions: count,
+          nonce: `${Date.now()}`,
+          avoid,
+          topic: topicValue || name,
+          documentName: text ? name : undefined,
+          documentText: text || undefined,
+        }),
+        cache: "no-store",
       });
+
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        questions?: ExamQuestion[];
+        error?: string;
+      };
+
+      if (!res.ok || data.ok === false) {
+        throw new Error(data.error || `Generation failed (${res.status})`);
+      }
+      if (!Array.isArray(data.questions) || data.questions.length === 0) {
+        throw new Error("No questions returned. Try again or check your Gemini API key.");
+      }
+      return { questions: data.questions };
     },
     onSuccess: (data) => {
       setAnswers({});
@@ -99,7 +123,11 @@ export function ExamGeneratorPage() {
           saveSeenQuestions(trimmed);
           return trimmed;
         });
+        toast.success(`Generated ${data.questions.length} questions`);
       }
+    },
+    onError: (err) => {
+      toast.error((err as Error)?.message || "Failed to generate quiz");
     },
   });
 
@@ -360,51 +388,51 @@ export function ExamGeneratorPage() {
           </div>
         )}
 
-        {!mutation.isPending && questions.length === 0 && phase === "setup" && !settingsOpen && (
-          <div className="rounded-3xl border border-dashed border-border/80 bg-card/50 px-4 py-16 text-center sm:py-20">
-            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-              <ListChecks className="h-6 w-6" />
-            </span>
-            <p className="mt-4 font-display text-base font-semibold tracking-tight">No active attempt</p>
-            <p className="mx-auto mt-1.5 max-w-[220px] text-xs leading-relaxed text-muted-foreground">
-              Open Setup, choose a department exam (PDF/DOCX/DOC), then generate questions.
-            </p>
-          </div>
+        {!mutation.isPending && (hasActiveQuiz || showSummary) && (
+          <ExamQuizBody
+            showSummary={showSummary}
+            hasActiveQuiz={hasActiveQuiz}
+            phase={phase}
+            docMode={docMode}
+            docName={docName}
+            topic={topic}
+            difficulty={difficulty}
+            questions={questions}
+            answers={answers}
+            currentIndex={currentIndex}
+            currentQuestion={currentQuestion}
+            answeredCount={answeredCount}
+            notAnsweredCount={notAnsweredCount}
+            correctCount={correctCount}
+            incorrectCount={incorrectCount}
+            scorePercent={scorePercent}
+            confirmSubmit={confirmSubmit}
+            flagged={flagged}
+            navOpen={navOpen}
+            isFirst={isFirst}
+            isLast={isLast}
+            setConfirmSubmit={setConfirmSubmit}
+            setPhase={setPhase}
+            setCurrentIndex={setCurrentIndex}
+            setNavOpen={setNavOpen}
+            setFlagged={setFlagged}
+            selectAnswer={selectAnswer}
+            finishAttempt={finishAttempt}
+            submitAllAndFinish={submitAllAndFinish}
+            navState={navState}
+            setSettingsOpen={setSettingsOpen}
+          />
         )}
 
-        <ExamQuizBody
-          showSummary={showSummary}
-          hasActiveQuiz={hasActiveQuiz}
-          phase={phase}
-          docMode={docMode}
-          docName={docName}
-          topic={topic}
-          difficulty={difficulty}
-          questions={questions}
-          answers={answers}
-          currentIndex={currentIndex}
-          currentQuestion={currentQuestion}
-          answeredCount={answeredCount}
-          notAnsweredCount={notAnsweredCount}
-          correctCount={correctCount}
-          incorrectCount={incorrectCount}
-          scorePercent={scorePercent}
-          confirmSubmit={confirmSubmit}
-          flagged={flagged}
-          isFirst={isFirst}
-          isLast={isLast}
-          navOpen={navOpen}
-          setNavOpen={setNavOpen}
-          navState={navState}
-          selectAnswer={selectAnswer}
-          setCurrentIndex={setCurrentIndex}
-          setFlagged={setFlagged}
-          setConfirmSubmit={setConfirmSubmit}
-          finishAttempt={finishAttempt}
-          submitAllAndFinish={submitAllAndFinish}
-          setPhase={setPhase}
-          setSettingsOpen={setSettingsOpen}
-        />
+        {!mutation.isPending && !hasActiveQuiz && !showSummary && !settingsOpen && (
+          <div className="rounded-3xl border border-dashed border-border/70 bg-muted/20 px-6 py-16 text-center">
+            <p className="font-display text-base font-semibold">Ready when you are</p>
+            <p className="mt-1 text-xs text-muted-foreground">Open Setup, enter a topic, then tap Attempt quiz now.</p>
+            <Button type="button" className="mt-4 h-11 rounded-2xl" onClick={() => setSettingsOpen(true)}>
+              <Settings2 className="mr-2 h-4 w-4" /> Open setup
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
