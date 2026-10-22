@@ -14,7 +14,6 @@ import {
   MessageCircle,
   Search,
   Sparkles,
-  BookOpen,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ExamQuizBody } from "@/components/ExamQuizBody";
@@ -94,19 +93,6 @@ export function PracticeHome() {
     setView("departments");
     setSelectedDept(null);
     setActiveExam(null);
-  };
-
-  const openDocument = (exam: ExamEntry) => {
-    if (exam.pdfUrl) {
-      window.open(exam.pdfUrl, "_blank", "noopener,noreferrer");
-      return;
-    }
-    if (exam.telegramFileId) {
-      toast.message("This exam is on Telegram — open the channel to get the file.");
-      window.open("https://t.me/exitexamto", "_blank", "noopener,noreferrer");
-      return;
-    }
-    toast.error("No document linked for this exam yet");
   };
 
   const startStoredQuiz = (exam: ExamEntry) => {
@@ -302,7 +288,6 @@ export function PracticeHome() {
           ) : (
             <ul className="space-y-3">
               {list.map((exam) => {
-                const hasFile = Boolean(exam.pdfUrl || exam.telegramFileId);
                 const hasQuiz = Array.isArray(exam.questions) && exam.questions.length > 0;
                 return (
                   <li key={exam.id} className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm">
@@ -315,9 +300,7 @@ export function PracticeHome() {
                         <p className="mt-0.5 text-[11px] text-muted-foreground">
                           {[
                             exam.year != null ? String(exam.year) : null,
-                            hasQuiz ? `${exam.questions!.length} practice Qs` : null,
-                            hasFile && !hasQuiz ? "Document only" : null,
-                            !hasFile && !hasQuiz ? "Coming soon" : null,
+                            hasQuiz ? `${exam.questions!.length} practice Qs` : "Quiz coming soon",
                           ]
                             .filter(Boolean)
                             .join(" · ")}
@@ -326,26 +309,14 @@ export function PracticeHome() {
                           <p className="mt-1 text-[11px] text-muted-foreground">{exam.note}</p>
                         )}
                         <div className="mt-3 flex flex-wrap gap-2">
-                          {hasQuiz && (
+                          {hasQuiz ? (
                             <Button type="button" className="h-9 rounded-xl" onClick={() => startStoredQuiz(exam)}>
                               <ListChecks className="mr-1.5 h-3.5 w-3.5" />
                               Start quiz ({exam.questions!.length} Qs)
                             </Button>
-                          )}
-                          {hasFile && (
-                            <Button
-                              type="button"
-                              variant={hasQuiz ? "outline" : "default"}
-                              className="h-9 rounded-xl"
-                              onClick={() => openDocument(exam)}
-                            >
-                              <BookOpen className="mr-1.5 h-3.5 w-3.5" />
-                              Open PDF/DOCX
-                            </Button>
-                          )}
-                          {!hasQuiz && !hasFile && (
+                          ) : (
                             <span className="text-[11px] text-muted-foreground">
-                              Admin has not stored questions for this exam yet
+                              Quiz not ready yet — admin will store questions soon
                             </span>
                           )}
                         </div>
