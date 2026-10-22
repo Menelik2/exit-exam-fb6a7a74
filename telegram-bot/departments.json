@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-22T17:41:25.550Z",
+  "updatedAt": "2026-10-22T17:42:53.579Z",
   "departments": [
     {
       "id": "computer-science",
@@ -757,15 +757,7 @@
       "id": "accounting",
       "name": "Accounting",
       "emoji": "📊",
-      "exams": [
-        {
-          "id": "accounting-1792681968030-mf1io",
-          "title": "New exam document",
-          "year": 2026,
-          "pdfUrl": null,
-          "telegramFileId": null
-        }
-      ]
+      "exams": []
     },
     {
       "id": "law",
