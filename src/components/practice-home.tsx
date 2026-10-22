@@ -469,6 +469,25 @@ export function PracticeHome() {
             })}
           </ul>
         )}
+
+        <a
+          href="https://t.me/exitexamto"
+          target="_blank"
+          rel="noreferrer"
+          className="mt-8 flex items-center gap-3.5 rounded-2xl border border-sky-200/80 bg-sky-50/90 px-4 py-3.5 shadow-sm transition hover:bg-sky-100/90 active:scale-[0.99] dark:border-sky-500/25 dark:bg-sky-500/10 sm:mt-10"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#229ED9] text-white shadow-md shadow-sky-500/30">
+            <MessageCircle className="h-5 w-5" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[14px] font-semibold tracking-tight text-slate-900 dark:text-foreground">
+              Join Telegram for support
+            </span>
+            <span className="mt-0.5 block text-xs text-slate-500 dark:text-muted-foreground">
+              @exitexamto — help, tips & updates
+            </span>
+          </span>
+        </a>
       </main>
     </div>
   );
