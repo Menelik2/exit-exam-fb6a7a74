@@ -1,5 +1,8 @@
 {
-  "framework": "tanstack-start",
   "installCommand": "npm install --legacy-peer-deps",
-  "buildCommand": "NITRO_PRESET=vercel vite build"
+  "buildCommand": "NITRO_PRESET=vercel vite build",
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
 }
