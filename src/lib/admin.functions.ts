@@ -102,36 +102,44 @@ function defaultCatalog(): ServerCatalog {
   };
 }
 
+const noStore = { cache: "no-store" as RequestCache };
+
 async function githubGetFile(): Promise<{ content: ServerCatalog; sha: string | null }> {
   const { token, owner, repo, branch } = getGithubConfig();
 
-  if (token) {
-    const res = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/contents/${CATALOG_PATH}?ref=${encodeURIComponent(branch)}`,
-      {
-        headers: {
-          Accept: "application/vnd.github+json",
-          Authorization: `Bearer ${token}`,
-          "X-GitHub-Api-Version": "2022-11-28",
-        },
-      },
-    );
-    if (res.status === 404) return { content: defaultCatalog(), sha: null };
-    if (!res.ok) {
-      const text = await res.text();
-      throw new Error(`GitHub read failed (${res.status}): ${text.slice(0, 200)}`);
-    }
-    const json = (await res.json()) as { content?: string; encoding?: string; sha?: string };
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${CATALOG_PATH}?ref=${encodeURIComponent(branch)}`;
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(apiUrl, { headers, ...noStore });
+
+  if (res.status === 404) {
+    return { content: defaultCatalog(), sha: null };
+  }
+
+  if (res.ok) {
+    const json = (await res.json()) as { content?: string; sha?: string };
     const raw = Buffer.from(json.content || "", "base64").toString("utf8");
     const parsed = CatalogSchema.parse(JSON.parse(raw));
     return { content: parsed, sha: json.sha ?? null };
   }
 
+  const bust = Date.now();
   const rawRes = await fetch(
-    `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${CATALOG_PATH}`,
-    { headers: { Accept: "application/json" } },
+    `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/${CATALOG_PATH}?t=${bust}`,
+    { headers: { Accept: "application/json", "Cache-Control": "no-cache" }, ...noStore },
   );
-  if (!rawRes.ok) return { content: defaultCatalog(), sha: null };
+  if (!rawRes.ok) {
+    if (res.status === 403 || res.status === 401) {
+      throw new Error(
+        "GitHub rate-limited catalog read. Set ADMIN_GITHUB_TOKEN on Vercel for reliable loads.",
+      );
+    }
+    throw new Error(`Catalog read failed (${res.status})`);
+  }
   const parsed = CatalogSchema.parse(await rawRes.json());
   return { content: parsed, sha: null };
 }
@@ -164,12 +172,16 @@ async function githubPutFile(catalog: ServerCatalog, sha: string | null): Promis
 
   if (!res.ok) {
     const text = await res.text();
+    if (res.status === 409) {
+      const again = await githubGetFile();
+      return githubPutFile(catalog, again.sha);
+    }
     throw new Error(`GitHub save failed (${res.status}): ${text.slice(0, 300)}`);
   }
 }
 
 export const verifyAdminPassword = createServerFn({ method: "POST" })
-  .validator(z.object({ password: z.string().min(1).max(200) }))
+  .validator((input: unknown) => z.object({ password: z.string().min(1).max(200) }).parse(input))
   .handler(async ({ data }) => {
     const expected = getAdminPassword();
     const ok = data.password === expected;
@@ -198,11 +210,13 @@ export const getAdminCatalog = createServerFn({ method: "GET" }).handler(async (
 });
 
 export const saveAdminCatalog = createServerFn({ method: "POST" })
-  .validator(
-    z.object({
-      token: z.string().min(10).max(500),
-      catalog: CatalogSchema,
-    }),
+  .validator((input: unknown) =>
+    z
+      .object({
+        token: z.string().min(10).max(500),
+        catalog: CatalogSchema,
+      })
+      .parse(input),
   )
   .handler(async ({ data }) => {
     if (!verifySessionToken(data.token)) {
