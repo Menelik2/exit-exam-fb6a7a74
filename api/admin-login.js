@@ -1,4 +1,4 @@
-const { createHmac } = require("crypto");
+import { createHmac } from "node:crypto";
 
 function getAdminPassword() {
   return (process.env.ADMIN_PASSWORD || "").trim() || "admin123";
@@ -15,7 +15,30 @@ function createSessionToken() {
   return `${payload}.${sig}`;
 }
 
-module.exports = function handler(req, res) {
+async function readBody(req) {
+  if (req.body != null) {
+    if (typeof req.body === "string") {
+      try {
+        return JSON.parse(req.body || "{}");
+      } catch {
+        return {};
+      }
+    }
+    if (typeof req.body === "object") return req.body;
+  }
+  // Fallback: stream body (some runtimes)
+  try {
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    const raw = Buffer.concat(chunks).toString("utf8");
+    if (!raw) return {};
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("Content-Type", "application/json");
 
@@ -25,16 +48,7 @@ module.exports = function handler(req, res) {
   }
 
   try {
-    let body = req.body;
-    if (typeof body === "string") {
-      try {
-        body = JSON.parse(body || "{}");
-      } catch {
-        body = {};
-      }
-    }
-    body = body || {};
-
+    const body = await readBody(req);
     const password = String(body.password ?? (body.data && body.data.password) ?? "").trim();
     const expected = getAdminPassword();
     const ok = password.length > 0 && password === expected;
@@ -69,4 +83,4 @@ module.exports = function handler(req, res) {
       }),
     );
   }
-};
+}
