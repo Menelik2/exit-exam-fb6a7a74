@@ -1,1 +1,4 @@
-PLACEHOLDER_REPLACE_WITH_FILE
+// WIP
+export function AdminDashboard() {
+  return null;
+}
