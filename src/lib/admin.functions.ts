@@ -104,6 +104,55 @@ function defaultCatalog(): ServerCatalog {
 
 const noStore = { cache: "no-store" as RequestCache };
 
+function normalizeCatalogJson(raw: string): ServerCatalog {
+  try {
+    const data = typeof raw === "string" ? JSON.parse(raw) : raw;
+    const result = CatalogSchema.safeParse(data);
+    if (result.success) return result.data;
+    const depts = Array.isArray((data as { departments?: unknown })?.departments)
+      ? (data as { departments: unknown[] }).departments
+      : [];
+    const cleaned = depts
+      .map((d, i) => {
+        if (!d || typeof d !== "object") return null;
+        const row = d as Record<string, unknown>;
+        const id = String(row.id || `dept-${i}`).slice(0, 120);
+        const name = String(row.name || id).slice(0, 200);
+        const emoji = String(row.emoji || "📘").slice(0, 16);
+        const examsRaw = Array.isArray(row.exams) ? row.exams : [];
+        const exams = examsRaw
+          .map((e, j) => {
+            if (!e || typeof e !== "object") return null;
+            const ex = e as Record<string, unknown>;
+            return {
+              id: String(ex.id || `exam-${j}`).slice(0, 120),
+              title: String(ex.title || "Untitled").slice(0, 400),
+              year: typeof ex.year === "number" ? ex.year : null,
+              pdfUrl: ex.pdfUrl == null ? null : String(ex.pdfUrl).slice(0, 2000),
+              telegramFileId:
+                ex.telegramFileId == null ? null : String(ex.telegramFileId).slice(0, 500),
+              note: ex.note == null ? undefined : String(ex.note).slice(0, 1000),
+            };
+          })
+          .filter(Boolean) as ServerCatalog["departments"][number]["exams"];
+        return { id, name, emoji, exams };
+      })
+      .filter(Boolean) as ServerCatalog["departments"];
+    return {
+      appUrl: String((data as { appUrl?: string })?.appUrl || "https://yeniexams.vercel.app"),
+      channelUrl: String((data as { channelUrl?: string })?.channelUrl || "https://t.me/exitexamto"),
+      channelUsername: String(
+        (data as { channelUsername?: string })?.channelUsername || "@exitexamto",
+      ),
+      updatedAt: String((data as { updatedAt?: string })?.updatedAt || new Date().toISOString()),
+      departments: cleaned.length ? cleaned : defaultCatalog().departments,
+    };
+  } catch (e) {
+    console.error("normalizeCatalogJson failed", e);
+    return defaultCatalog();
+  }
+}
+
 async function githubGetFile(): Promise<{ content: ServerCatalog; sha: string | null }> {
   const { token, owner, repo, branch } = getGithubConfig();
 
@@ -123,8 +172,7 @@ async function githubGetFile(): Promise<{ content: ServerCatalog; sha: string | 
   if (res.ok) {
     const json = (await res.json()) as { content?: string; sha?: string };
     const raw = Buffer.from(json.content || "", "base64").toString("utf8");
-    const parsed = CatalogSchema.parse(JSON.parse(raw));
-    return { content: parsed, sha: json.sha ?? null };
+    return { content: normalizeCatalogJson(raw), sha: json.sha ?? null };
   }
 
   const bust = Date.now();
@@ -133,15 +181,11 @@ async function githubGetFile(): Promise<{ content: ServerCatalog; sha: string | 
     { headers: { Accept: "application/json", "Cache-Control": "no-cache" }, ...noStore },
   );
   if (!rawRes.ok) {
-    if (res.status === 403 || res.status === 401) {
-      throw new Error(
-        "GitHub rate-limited catalog read. Set ADMIN_GITHUB_TOKEN on Vercel for reliable loads.",
-      );
-    }
-    throw new Error(`Catalog read failed (${res.status})`);
+    console.error(`Catalog read failed (${res.status}); using default catalog`);
+    return { content: defaultCatalog(), sha: null };
   }
-  const parsed = CatalogSchema.parse(await rawRes.json());
-  return { content: parsed, sha: null };
+  const text = await rawRes.text();
+  return { content: normalizeCatalogJson(text), sha: null };
 }
 
 async function githubPutFile(catalog: ServerCatalog, sha: string | null): Promise<void> {
@@ -200,13 +244,27 @@ export const verifyAdminPassword = createServerFn({ method: "POST" })
   });
 
 export const getAdminCatalog = createServerFn({ method: "GET" }).handler(async () => {
-  const { content } = await githubGetFile();
-  const { token } = getGithubConfig();
-  return {
-    catalog: content,
-    storage: token ? ("github" as const) : ("github-readonly" as const),
-    path: CATALOG_PATH,
-  };
+  try {
+    const { content } = await githubGetFile();
+    const { token } = getGithubConfig();
+    const catalog = {
+      ...content,
+      departments: Array.isArray(content?.departments) ? content.departments : [],
+    };
+    return {
+      catalog,
+      storage: token ? ("github" as const) : ("github-readonly" as const),
+      path: CATALOG_PATH,
+    };
+  } catch (e) {
+    console.error("getAdminCatalog failed", e);
+    const { token } = getGithubConfig();
+    return {
+      catalog: defaultCatalog(),
+      storage: token ? ("github" as const) : ("github-readonly" as const),
+      path: CATALOG_PATH,
+    };
+  }
 });
 
 export const saveAdminCatalog = createServerFn({ method: "POST" })
