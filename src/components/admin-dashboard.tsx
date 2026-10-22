@@ -11,12 +11,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { Catalog, Department, ExamEntry, TabId } from "@/components/admin-types";
-import {
-  ADMIN_SESSION_KEY, createSeed, loadCatalog, saveCatalog,
-  uniqueDeptId, exportDepartmentsJson, importCatalogFromText,
-} from "@/components/admin-catalog";
+
+const EMPTY_CATALOG: Catalog = { departments: [], updatedAt: new Date(0).toISOString() };
+const ADMIN_TOKEN_KEY = "exit-exam-admin-token-v2";
+import { uniqueDeptId, exportDepartmentsJson } from "@/components/admin-catalog";
 import { useServerFn } from "@tanstack/react-start";
-import { verifyAdminPassword } from "@/lib/admin.functions";
+import {
+  verifyAdminPassword,
+  getAdminCatalog,
+  saveAdminCatalog,
+  type ServerCatalog,
+} from "@/lib/admin.functions";
 
 export function AdminDashboard() {
   const [ready, setReady] = useState(false);
@@ -24,7 +29,7 @@ export function AdminDashboard() {
   const [pin, setPinInput] = useState("");
   const [pinError, setPinError] = useState("");
   const [tab, setTab] = useState<TabId>("overview");
-  const [catalog, setCatalog] = useState<Catalog>(() => createSeed());
+  const [catalog, setCatalog] = useState<Catalog>(EMPTY_CATALOG);
   const [search, setSearch] = useState("");
   const [editingDept, setEditingDept] = useState<Department | null>(null);
   const [editingExam, setEditingExam] = useState<{ deptId: string; exam: ExamEntry } | null>(null);
@@ -32,22 +37,74 @@ export function AdminDashboard() {
   const [saving, setSaving] = useState(false);
   const verifyFn = useServerFn(verifyAdminPassword);
   const [loggingIn, setLoggingIn] = useState(false);
+  const [adminToken, setAdminToken] = useState<string | null>(null);
+  const [storageMode, setStorageMode] = useState<"github" | "github-readonly" | "loading">("loading");
+  const getCatalogFn = useServerFn(getAdminCatalog);
+  const saveCatalogFn = useServerFn(saveAdminCatalog);
 
   useEffect(() => {
-    try { if (sessionStorage.getItem(ADMIN_SESSION_KEY) === "1") setAuthed(true); } catch {}
-    setCatalog(loadCatalog());
-    setReady(true);
-  }, []);
+    let cancelled = false;
+    (async () => {
+      try {
+        const token = sessionStorage.getItem(ADMIN_TOKEN_KEY);
+        if (token) {
+          setAdminToken(token);
+          setAuthed(true);
+        }
+      } catch { /* ignore */ }
+      try {
+        const res = await getCatalogFn();
+        if (cancelled) return;
+        setCatalog({
+          departments: res.catalog.departments as Catalog["departments"],
+          updatedAt: res.catalog.updatedAt || new Date().toISOString(),
+        });
+        setStorageMode(res.storage);
+      } catch (e) {
+        if (!cancelled) toast.error((e as Error).message || "Failed to load catalog");
+      } finally {
+        if (!cancelled) setReady(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [getCatalogFn]);
 
-  const persist = useCallback((next: Catalog) => {
-    try {
-      setCatalog(saveCatalog(next));
-      return true;
-    } catch (e) {
-      toast.error((e as Error).message || "Save failed");
+  const persist = useCallback(async (next: Catalog) => {
+    if (!adminToken) {
+      toast.error("Session expired — sign in again");
+      setAuthed(false);
       return false;
     }
-  }, []);
+    try {
+      const res = await saveCatalogFn({
+        data: {
+          token: adminToken,
+          catalog: {
+            departments: next.departments,
+            updatedAt: next.updatedAt,
+            appUrl: "https://yeniexams.vercel.app",
+            channelUrl: "https://t.me/exitexamto",
+            channelUsername: "@exitexamto",
+          },
+        },
+      });
+      setCatalog({
+        departments: res.catalog.departments as Catalog["departments"],
+        updatedAt: res.catalog.updatedAt || new Date().toISOString(),
+      });
+      setStorageMode("github");
+      return true;
+    } catch (e) {
+      const msg = (e as Error).message || "Save failed";
+      toast.error(msg);
+      if (msg.toLowerCase().includes("session")) {
+        setAuthed(false);
+        setAdminToken(null);
+        try { sessionStorage.removeItem(ADMIN_TOKEN_KEY); } catch {}
+      }
+      return false;
+    }
+  }, [adminToken, saveCatalogFn]);
 
   const stats = useMemo(() => {
     const depts = catalog.departments.length;
@@ -76,14 +133,20 @@ export function AdminDashboard() {
     setPinError("");
     try {
       const res = await verifyFn({ data: { password: entered } });
-      if (!res?.ok) {
+      if (!res?.ok || !res.token) {
         setPinError("Incorrect password");
         return;
       }
-      try { sessionStorage.setItem(ADMIN_SESSION_KEY, "1"); } catch {}
+      try { sessionStorage.setItem(ADMIN_TOKEN_KEY, res.token); } catch {}
+      setAdminToken(res.token);
       setAuthed(true);
       setPinInput("");
-      setCatalog(loadCatalog());
+      const cat = await getCatalogFn();
+      setCatalog({
+        departments: cat.catalog.departments as Catalog["departments"],
+        updatedAt: cat.catalog.updatedAt || new Date().toISOString(),
+      });
+      setStorageMode(cat.storage);
       toast.success("Signed in");
     } catch (err) {
       setPinError((err as Error)?.message || "Login failed");
@@ -93,34 +156,36 @@ export function AdminDashboard() {
   };
 
   const logout = () => {
-    try { sessionStorage.removeItem(ADMIN_SESSION_KEY); } catch {}
+    try { sessionStorage.removeItem(ADMIN_TOKEN_KEY); } catch {}
+    setAdminToken(null);
     setAuthed(false);
     toast.message("Signed out");
   };
 
-  const addDepartment = () => {
+  const addDepartment = async () => {
     const name = newDeptName.trim();
     if (!name) return toast.error("Enter a department name");
     const id = uniqueDeptId(name, catalog.departments);
-    if (persist({ ...catalog, departments: [...catalog.departments, { id, name, emoji: "📘", exams: [] }] })) {
+    const ok = await persist({ ...catalog, departments: [...catalog.departments, { id, name, emoji: "📘", exams: [] }] });
+    if (ok) {
       setNewDeptName("");
       toast.success(`Added "${name}"`);
     }
   };
 
-  const removeDepartment = (id: string) => {
+  const removeDepartment = async (id: string) => {
     const dept = catalog.departments.find((d) => d.id === id);
     if (!dept || !confirm(`Delete "${dept.name}" and ${dept.exams.length} exam(s)?`)) return;
-    if (persist({ ...catalog, departments: catalog.departments.filter((d) => d.id !== id) }))
+    if (await persist({ ...catalog, departments: catalog.departments.filter((d) => d.id !== id) }))
       toast.success("Department deleted");
   };
 
-  const saveDepartment = () => {
+  const saveDepartment = async () => {
     if (!editingDept) return;
     const name = editingDept.name.trim();
     if (!name) return toast.error("Department name is required");
     const emoji = (editingDept.emoji || "📘").trim() || "📘";
-    if (persist({
+    if (await persist({
       ...catalog,
       departments: catalog.departments.map((d) =>
         d.id === editingDept.id ? { ...d, name, emoji } : d),
@@ -130,7 +195,7 @@ export function AdminDashboard() {
     }
   };
 
-  const addExam = (deptId: string) => {
+  const addExam = async (deptId: string) => {
     const exam: ExamEntry = {
       id: `${deptId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       title: "New exam PDF",
@@ -138,14 +203,14 @@ export function AdminDashboard() {
       pdfUrl: null,
       telegramFileId: null,
     };
-    if (persist({
+    if (await persist({
       ...catalog,
       departments: catalog.departments.map((d) =>
         d.id === deptId ? { ...d, exams: [...d.exams, exam] } : d),
     })) setEditingExam({ deptId, exam: { ...exam } });
   };
 
-  const saveExam = () => {
+  const saveExam = async () => {
     if (!editingExam) return;
     const title = editingExam.exam.title.trim();
     if (!title) return toast.error("Exam title is required");
@@ -157,7 +222,7 @@ export function AdminDashboard() {
       year: editingExam.exam.year == null || Number.isNaN(Number(editingExam.exam.year))
         ? null : Number(editingExam.exam.year),
     };
-    if (persist({
+    if (await persist({
       ...catalog,
       departments: catalog.departments.map((d) =>
         d.id === editingExam.deptId
@@ -171,9 +236,9 @@ export function AdminDashboard() {
     }
   };
 
-  const removeExam = (deptId: string, examId: string) => {
+  const removeExam = async (deptId: string, examId: string) => {
     if (!confirm("Delete this exam entry?")) return;
-    if (persist({
+    if (await persist({
       ...catalog,
       departments: catalog.departments.map((d) =>
         d.id === deptId ? { ...d, exams: d.exams.filter((e) => e.id !== examId) } : d),
@@ -184,9 +249,13 @@ export function AdminDashboard() {
     if (!file) return;
     setSaving(true);
     try {
-      const next = importCatalogFromText(await file.text());
-      setCatalog(next);
-      toast.success(`Imported ${next.departments.length} department(s)`);
+      const parsed = JSON.parse(await file.text()) as { departments?: Catalog["departments"] };
+      if (!Array.isArray(parsed.departments)) throw new Error("Invalid JSON — need departments array");
+      const ok = await persist({
+        departments: parsed.departments,
+        updatedAt: new Date().toISOString(),
+      });
+      if (ok) toast.success(`Saved ${parsed.departments.length} department(s) to server`);
     } catch (e) {
       toast.error((e as Error).message || "Import failed");
     } finally {
@@ -194,9 +263,18 @@ export function AdminDashboard() {
     }
   };
 
-  const resetCatalog = () => {
-    if (!confirm("Reset catalog to default sample data?")) return;
-    if (persist(createSeed())) toast.success("Catalog reset");
+  const reloadFromServer = async () => {
+    try {
+      const res = await getCatalogFn();
+      setCatalog({
+        departments: res.catalog.departments as Catalog["departments"],
+        updatedAt: res.catalog.updatedAt || new Date().toISOString(),
+      });
+      setStorageMode(res.storage);
+      toast.success("Reloaded from server");
+    } catch (e) {
+      toast.error((e as Error).message || "Reload failed");
+    }
   };
 
   if (!ready) {
@@ -313,6 +391,7 @@ export function AdminDashboard() {
                     <li><a className="inline-flex items-center gap-1 text-[#0b6bcb] hover:underline" href="https://yeniexams.vercel.app" target="_blank" rel="noreferrer">Practice app <ExternalLink className="h-3 w-3" /></a></li>
                     <li><a className="inline-flex items-center gap-1 text-[#229ED9] hover:underline" href="https://t.me/exitexamto" target="_blank" rel="noreferrer">Telegram @exitexamto <ExternalLink className="h-3 w-3" /></a></li>
                     <li className="text-xs text-muted-foreground">Last saved: {new Date(catalog.updatedAt).toLocaleString()}</li>
+                    <li className="text-xs text-muted-foreground">Storage: {storageMode === "github" ? "Server (GitHub)" : storageMode === "github-readonly" ? "Server read-only" : "…"}</li>
                   </ul>
                 </div>
               </div>
@@ -333,8 +412,8 @@ export function AdminDashboard() {
               </div>
               <div className="flex flex-wrap gap-2 rounded-2xl border border-dashed border-border bg-muted/20 p-3">
                 <Input value={newDeptName} onChange={(e) => setNewDeptName(e.target.value)} placeholder="New department name"
-                  className="h-10 max-w-xs rounded-xl" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addDepartment(); } }} />
-                <Button type="button" className="h-10 rounded-xl" onClick={addDepartment}><Plus className="mr-1 h-4 w-4" /> Add</Button>
+                  className="h-10 max-w-xs rounded-xl" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void addDepartment(); } }} />
+                <Button type="button" className="h-10 rounded-xl" onClick={() => void addDepartment()}><Plus className="mr-1 h-4 w-4" /> Add</Button>
               </div>
               <div className="overflow-x-auto rounded-2xl border border-border/70 bg-card shadow-sm">
                 <table className="w-full text-left text-sm">
@@ -354,7 +433,7 @@ export function AdminDashboard() {
                         <td className="px-4 py-3 tabular-nums">{d.exams.length}</td>
                         <td className="px-4 py-3 text-right">
                           <Button type="button" variant="ghost" size="sm" className="h-8 rounded-lg" onClick={() => setEditingDept({ ...d })}><Pencil className="h-3.5 w-3.5" /></Button>
-                          <Button type="button" variant="ghost" size="sm" className="h-8 rounded-lg text-destructive" onClick={() => removeDepartment(d.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                          <Button type="button" variant="ghost" size="sm" className="h-8 rounded-lg text-destructive" onClick={() => void removeDepartment(d.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                         </td>
                       </tr>
                     ))}
@@ -377,7 +456,7 @@ export function AdminDashboard() {
                 <div key={d.id} className="rounded-2xl border border-border/70 bg-card shadow-sm">
                   <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
                     <h2 className="font-display text-sm font-semibold">{d.emoji} {d.name}</h2>
-                    <Button type="button" size="sm" className="h-8 rounded-lg" onClick={() => addExam(d.id)}><Plus className="mr-1 h-3.5 w-3.5" /> Add exam</Button>
+                    <Button type="button" size="sm" className="h-8 rounded-lg" onClick={() => void addExam(d.id)}><Plus className="mr-1 h-3.5 w-3.5" /> Add exam</Button>
                   </div>
                   <ul className="divide-y divide-border/40">
                     {d.exams.length === 0 && <li className="px-4 py-6 text-center text-xs text-muted-foreground">No exams</li>}
@@ -390,7 +469,7 @@ export function AdminDashboard() {
                           </p>
                         </div>
                         <Button type="button" variant="outline" size="sm" className="h-8 rounded-lg" onClick={() => setEditingExam({ deptId: d.id, exam: { ...exam } })}>Edit</Button>
-                        <Button type="button" variant="ghost" size="sm" className="h-8 rounded-lg text-destructive" onClick={() => removeExam(d.id, exam.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                        <Button type="button" variant="ghost" size="sm" className="h-8 rounded-lg text-destructive" onClick={() => void removeExam(d.id, exam.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
                       </li>
                     ))}
                   </ul>
@@ -423,12 +502,13 @@ export function AdminDashboard() {
                     <input type="file" accept="application/json,.json" className="sr-only" disabled={saving}
                       onChange={(e) => { void onImportFile(e.target.files?.[0] ?? null); e.target.value = ""; }} />
                   </label>
-                  <Button type="button" variant="outline" className="rounded-xl" onClick={resetCatalog}>
-                    <RotateCcw className="mr-1 h-4 w-4" /> Reset sample
+                  <Button type="button" variant="outline" className="rounded-xl" onClick={() => void reloadFromServer()}>
+                    <RotateCcw className="mr-1 h-4 w-4" /> Reload from server
                   </Button>
                 </div>
                 <p className="text-[11px] text-muted-foreground">
-                  Stored in this browser only. Export JSON into <code className="rounded bg-muted px-1">telegram-bot/departments.json</code> for the bot.
+                  Catalog is stored on the server in <code className="rounded bg-muted px-1">telegram-bot/departments.json</code>
+                  {" "}({storageMode === "github" ? "read/write via GitHub" : storageMode === "github-readonly" ? "read-only — set ADMIN_GITHUB_TOKEN to enable saves" : "…"}).
                 </p>
               </div>
             </div>
@@ -450,7 +530,7 @@ export function AdminDashboard() {
             <div className="space-y-2"><Label>Emoji</Label>
               <Input value={editingDept.emoji} onChange={(e) => setEditingDept({ ...editingDept, emoji: e.target.value })} className="h-10 rounded-xl" />
             </div>
-            <Button className="w-full rounded-xl" onClick={saveDepartment}><Save className="mr-2 h-4 w-4" /> Save</Button>
+            <Button className="w-full rounded-xl" onClick={() => void saveDepartment()}><Save className="mr-2 h-4 w-4" /> Save</Button>
           </div>
         </div>
       )}
@@ -475,7 +555,7 @@ export function AdminDashboard() {
             <div className="space-y-2"><Label>Telegram file_id</Label>
               <Input value={editingExam.exam.telegramFileId ?? ""} onChange={(e) => setEditingExam({ ...editingExam, exam: { ...editingExam.exam, telegramFileId: e.target.value || null } })} placeholder="BQACAg…" className="h-10 rounded-xl" />
             </div>
-            <Button className="w-full rounded-xl" onClick={saveExam}><Save className="mr-2 h-4 w-4" /> Save</Button>
+            <Button className="w-full rounded-xl" onClick={() => void saveExam()}><Save className="mr-2 h-4 w-4" /> Save</Button>
           </div>
         </div>
       )}
