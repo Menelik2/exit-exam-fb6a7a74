@@ -1,17 +1,17 @@
 import { useMutation } from "@tanstack/react-query";
-import { useCallback, useEffect, useMemo, useState } from "react";
-
+import { Link } from "@tanstack/react-router";
+import { useCallback, useEffect, useRef, useState } from "react";
 /** Match Tailwind lg breakpoint — Setup sheet is mobile-only below this. */
 function useIsLgUp() {
-  const [lgUp, setLgUp] = useState(true);
+  const [isLg, setIsLg] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)");
-    const apply = () => setLgUp(mq.matches);
+    const apply = () => setIsLg(mq.matches);
     apply();
     mq.addEventListener("change", apply);
     return () => mq.removeEventListener("change", apply);
   }, []);
-  return lgUp;
+  return isLg;
 }
 import type { ExamQuestion } from "@/lib/exam.functions";
 import { extractDocumentText } from "@/lib/extract-document";
@@ -24,143 +24,95 @@ import { ApiKeyPanel, type AiProvider } from "@/components/api-key-panel";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import type { MoodleNavState } from "@/components/moodle-quiz-ui";
 import {
-  loadWrongQuestions, saveWrongQuestions, loadSeenQuestions, saveSeenQuestions,
-  isSimilarQuestion, isSimilarToAny, isOptionCorrect, MAX_SEEN_QUESTIONS,
+  isOptionCorrect,
 } from "@/lib/exam-page-helpers";
 import { toast } from "sonner";
 import { ExamQuizBody } from "@/components/ExamQuizBody";
 
-type Difficulty = "Beginner" | "Intermediate" | "Advanced";
-type QuizPhase = "setup" | "attempt" | "summary" | "review";
-
 export function ExamGeneratorPage() {
+  const isLgUp = useIsLgUp();
   const [topic, setTopic] = useState("");
-  const [difficulty, setDifficulty] = useState<Difficulty>("Beginner");
-  const [numQuestionsText, setNumQuestionsText] = useState("5");
-  const [docName, setDocName] = useState("");
-  const [docText, setDocText] = useState("");
-  const [docExtracting, setDocExtracting] = useState(false);
-  const [docError, setDocError] = useState<string | null>(null);
+  const [difficulty, setDifficulty] = useState("Intermediate");
+  const [numQuestions, setNumQuestions] = useState(10);
   const [apiKey, setApiKey] = useState("");
   const [aiProvider, setAiProvider] = useState<AiProvider>("gemini");
+  const [docText, setDocText] = useState("");
+  const [docName, setDocName] = useState("");
+  const [docError, setDocError] = useState("");
+  const [docExtracting, setDocExtracting] = useState(false);
+  const [questions, setQuestions] = useState<ExamQuestion[]>([]);
   const [answers, setAnswers] = useState<Record<number, string>>({});
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [phase, setPhase] = useState<QuizPhase>("setup");
-  const [settingsOpen, setSettingsOpen] = useState(true);
-  const isLgUp = useIsLgUp();
-  const [navOpen, setNavOpen] = useState(false);
+  const [phase, setPhase] = useState<"setup" | "attempt" | "summary" | "review">("setup");
   const [flagged, setFlagged] = useState<Record<number, boolean>>({});
-  const [seenQuestions, setSeenQuestions] = useState<string[]>([]);
+  const [navOpen, setNavOpen] = useState(false);
   const [confirmSubmit, setConfirmSubmit] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(true);
+  const fileRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => { setSeenQuestions(loadSeenQuestions()); }, []);
-
-  const docMode = docText.length > 0;
+  const docMode = docText.trim().length > 40;
 
   const mutation = useMutation({
-    mutationFn: async (arg: number | { count: number; documentText?: string; documentName?: string; topicOverride?: string }) => {
-      const count = typeof arg === "number" ? arg : arg.count;
-      const overrideText = typeof arg === "object" ? arg.documentText : undefined;
-      const overrideName = typeof arg === "object" ? arg.documentName : undefined;
-      const topicOverride = typeof arg === "object" ? arg.topicOverride : undefined;
-      const avoid = seenQuestions.slice(-60);
-      const text = (overrideText ?? docText).trim();
-      const name = overrideName || docName || "Uploaded document";
-      const topicValue = (topicOverride ?? topic).trim();
-
-      if (!text && !topicValue) {
-        throw new Error("Enter a topic or upload a document first.");
+    mutationFn: async () => {
+      const body: Record<string, unknown> = {
+        topic: topic.trim() || undefined,
+        difficulty,
+        numQuestions,
+        documentText: docMode ? docText : undefined,
+      };
+      if (apiKey) {
+        body.apiKey = apiKey;
+        body.provider = aiProvider;
       }
-
       const res = await fetch("/api/generate-exam", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          apiKey,
-          difficulty,
-          numQuestions: count,
-          nonce: `${Date.now()}`,
-          avoid,
-          topic: topicValue || name,
-          documentName: text ? name : undefined,
-          documentText: text || undefined,
-        }),
-        cache: "no-store",
+        body: JSON.stringify(body),
       });
-
-      const data = (await res.json().catch(() => ({}))) as {
-        ok?: boolean;
-        questions?: ExamQuestion[];
-        error?: string;
-      };
-
-      if (!res.ok || data.ok === false) {
-        throw new Error(data.error || `Generation failed (${res.status})`);
-      }
-      if (!Array.isArray(data.questions) || data.questions.length === 0) {
-        throw new Error("No questions returned. Try again or check your Gemini API key.");
-      }
-      return { questions: data.questions };
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data?.error || data?.message || "Failed to generate exam");
+      const qs = data?.questions || data?.exam?.questions;
+      if (!Array.isArray(qs) || qs.length === 0) throw new Error("No questions returned");
+      return qs as ExamQuestion[];
     },
-    onSuccess: (data) => {
+    onSuccess: (qs) => {
+      setQuestions(qs.map((q, i) => ({ ...q, question_number: q.question_number ?? i + 1 })));
       setAnswers({});
       setCurrentIndex(0);
+      setPhase("attempt");
       setFlagged({});
       setConfirmSubmit(false);
-      if (data?.questions?.length) {
-        setPhase("attempt");
-        setSettingsOpen(false);
-        setNavOpen(false);
-        setSeenQuestions((prev) => {
-          const merged = [...prev];
-          for (const q of data.questions) {
-            const t = (q.question ?? "").trim();
-            if (!t || isSimilarToAny(t, merged)) continue;
-            merged.push(t);
-          }
-          const trimmed = merged.slice(-MAX_SEEN_QUESTIONS);
-          saveSeenQuestions(trimmed);
-          return trimmed;
-        });
-        toast.success(`Generated ${data.questions.length} questions`);
-      }
+      setSettingsOpen(false);
+      toast.success(`Generated ${qs.length} questions`);
     },
-    onError: (err) => {
-      toast.error((err as Error)?.message || "Failed to generate quiz");
-    },
+    onError: (e: Error) => toast.error(e.message || "Generation failed"),
   });
-
-  const questions: ExamQuestion[] = useMemo(
-    () => (mutation.data?.questions ?? []).map((q, i) => ({ ...q, question_number: i + 1 })),
-    [mutation.data?.questions],
-  );
 
   const handleFile = async (file: File | null) => {
     if (!file) return;
-    setDocError(null);
+    setDocError("");
     setDocExtracting(true);
     try {
       const text = await extractDocumentText(file);
-      if (!text || text.length < 20) throw new Error("Couldn't extract readable text from this file.");
-      setDocText(text.length > 190000 ? text.slice(0, 190000) : text);
+      if (!text || text.trim().length < 40) throw new Error("Could not extract enough text from this file");
+      setDocText(text);
       setDocName(file.name);
-      toast.success(`Loaded ${file.name}`);
+      toast.success("Document loaded");
     } catch (e) {
-      setDocError((e as Error).message || "Failed to read document.");
+      setDocError((e as Error).message || "Failed to read file");
       setDocText("");
       setDocName("");
     } finally {
       setDocExtracting(false);
+      if (fileRef.current) fileRef.current.value = "";
     }
   };
 
-  const run = useCallback(() => {
-    if (!docMode && !topic.trim()) return;
-    let n = parseInt(numQuestionsText, 10);
-    if (Number.isNaN(n) || n < 1) n = 1;
-    if (n > 200) n = 200;
-    mutation.mutate(n);
-  }, [docMode, topic, numQuestionsText, mutation]);
+  const clearDoc = () => {
+    setDocText("");
+    setDocName("");
+    setDocError("");
+  };
 
   const selectAnswer = (q: ExamQuestion, opt: string) => {
     if (phase !== "attempt") return;
@@ -170,31 +122,18 @@ export function ExamGeneratorPage() {
   const finishAttempt = () => {
     setPhase("summary");
     setConfirmSubmit(false);
-    setSettingsOpen(false);
   };
 
   const submitAllAndFinish = () => {
-    const wrong: ExamQuestion[] = [];
-    for (const q of questions) {
-      const selected = answers[q.question_number];
-      if (!selected || !isOptionCorrect(q, selected)) wrong.push(q);
-    }
-    if (wrong.length) {
-      const prev = loadWrongQuestions();
-      const merged = [...prev];
-      for (const q of wrong) {
-        if (!merged.some((w) => isSimilarQuestion(w.question, q.question))) merged.push(q);
-      }
-      saveWrongQuestions(merged.map((q, i) => ({ ...q, question_number: i + 1 })));
-    }
     setPhase("review");
     setConfirmSubmit(false);
     setCurrentIndex(0);
-    setSettingsOpen(false);
     toast.success("Quiz submitted");
   };
 
-  const correctCount = questions.filter((q) => answers[q.question_number] != null && isOptionCorrect(q, answers[q.question_number])).length;
+  const correctCount = questions.filter(
+    (q) => answers[q.question_number] != null && isOptionCorrect(q, answers[q.question_number]),
+  ).length;
   const answeredCount = questions.filter((q) => answers[q.question_number] != null).length;
   const notAnsweredCount = questions.length - answeredCount;
   const incorrectCount = questions.length - correctCount;
@@ -230,7 +169,7 @@ export function ExamGeneratorPage() {
             <input type="file" className="sr-only" accept=".pdf,.docx,.doc,.txt,.md,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" disabled={docExtracting} onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
           </label>
           {docName && (
-            <Button type="button" variant="outline" className="h-11 rounded-2xl text-xs" onClick={() => { setDocText(""); setDocName(""); setDocError(null); }}>
+            <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={clearDoc}>
               <X className="mr-1 h-3.5 w-3.5" /> Clear
             </Button>
           )}
@@ -241,7 +180,7 @@ export function ExamGeneratorPage() {
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-2">
           <Label>Difficulty</Label>
-          <Select value={difficulty} onValueChange={(v) => setDifficulty(v as Difficulty)}>
+          <Select value={difficulty} onValueChange={setDifficulty}>
             <SelectTrigger className="h-11 rounded-2xl border-border/80 bg-background shadow-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="Beginner">Beginner</SelectItem>
@@ -251,21 +190,25 @@ export function ExamGeneratorPage() {
           </Select>
         </div>
         <div className="space-y-2">
-          <Label htmlFor="nq">Questions</Label>
-          <Input id="nq" value={numQuestionsText} onChange={(e) => setNumQuestionsText(e.target.value)} className="h-11 rounded-2xl border-border/80 bg-background text-base shadow-sm" inputMode="numeric" />
+          <Label>Questions</Label>
+          <Select value={String(numQuestions)} onValueChange={(v) => setNumQuestions(Number(v))}>
+            <SelectTrigger className="h-11 rounded-2xl border-border/80 bg-background shadow-sm"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              {[5, 10, 15, 20, 25, 30, 40, 50].map((n) => (
+                <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
-      <Button type="button" className="h-12 w-full rounded-2xl text-[15px] font-semibold shadow-md shadow-primary/15 transition active:scale-[0.99]" disabled={mutation.isPending || (!docMode && !topic.trim())} onClick={() => { run(); setSettingsOpen(false); }}>
+      <Button
+        type="button"
+        className="h-12 w-full rounded-2xl text-sm font-semibold"
+        disabled={mutation.isPending || (!docMode && !topic.trim())}
+        onClick={() => mutation.mutate()}
+      >
         {mutation.isPending ? (<><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Generating…</>) : questions.length > 0 ? (<><RefreshCw className="mr-2 h-4 w-4" /> Start new attempt</>) : (<><Sparkles className="mr-2 h-4 w-4" /> Attempt quiz now</>)}
       </Button>
-      {mutation.isError && <p className="text-xs text-destructive">{(mutation.error as Error)?.message || "Failed"}</p>}
-      <a href="https://t.me/exitexamto" target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 rounded-2xl border border-[#229ED9]/30 bg-[#229ED9]/8 px-4 py-3.5 transition hover:bg-[#229ED9]/14 active:scale-[0.99]">
-        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#229ED9] text-white shadow-sm"><MessageCircle className="h-5 w-5" /></span>
-        <span className="min-w-0 text-left">
-          <span className="block text-sm font-semibold tracking-tight text-foreground">Join Telegram for support</span>
-          <span className="block text-[11px] text-muted-foreground">@exitexamto — help, tips & updates</span>
-        </span>
-      </a>
     </div>
   );
 
@@ -273,7 +216,11 @@ export function ExamGeneratorPage() {
     <div className="min-h-dvh w-full bg-background text-foreground selection:bg-primary/15">
       <header className="sticky top-0 z-50 border-b border-border/60 bg-card/80 pt-[env(safe-area-inset-top)] shadow-[0_1px_0_0_rgba(0,0,0,0.03)] backdrop-blur-2xl supports-[backdrop-filter]:bg-card/70">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-3 py-3 sm:px-5 lg:px-6">
-          <div className="flex min-w-0 items-center gap-3">
+          <Link
+            to="/"
+            className="flex min-w-0 items-center gap-3 rounded-2xl outline-none transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring"
+            aria-label="Back to homepage"
+          >
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md shadow-primary/20 ring-1 ring-black/5">
               <ListChecks className="h-[18px] w-[18px]" />
             </span>
@@ -285,7 +232,7 @@ export function ExamGeneratorPage() {
                 {phase === "attempt" ? `${difficulty} · Q${currentIndex + 1}/${questions.length}` : phase === "summary" ? "Summary of attempt" : phase === "review" ? `Review · ${correctCount}/${questions.length}` : "Moodle-style quiz"}
               </p>
             </div>
-          </div>
+          </Link>
           <div className="flex shrink-0 items-center gap-1.5">
             {hasActiveQuiz && (
               <button type="button" className="inline-flex h-10 items-center gap-1.5 rounded-full border border-border/80 bg-card/90 px-3.5 text-xs font-medium shadow-sm transition active:scale-[0.97] hover:bg-muted lg:hidden" onClick={() => setNavOpen(true)}>
@@ -323,11 +270,11 @@ export function ExamGeneratorPage() {
       </header>
 
       <div className="mx-auto w-full max-w-6xl px-3 py-5 sm:px-5 sm:py-6 lg:px-6 lg:py-8">
-        {settingsOpen && !hasActiveQuiz && !showSummary && (
-          <section id="quiz-setup-panel" className="mb-5 overflow-hidden rounded-3xl border border-border/70 bg-card p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.02] sm:p-6 lg:p-8">
+        {!hasActiveQuiz && !showSummary && settingsOpen && (
+          <section id="quiz-setup-panel" className="mb-5 overflow-hidden rounded-3xl border border-border/70 bg-card p-5 shadow-[0_8px_30px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.02] sm:p-6">
             <div className="mb-5">
               <h2 className="font-display text-lg font-semibold tracking-tight">Quiz setup</h2>
-              <p className="mt-1 text-xs text-muted-foreground">Moodle deferred feedback — answer all, then submit.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Pick a topic or upload a document, then generate questions</p>
             </div>
             {setupFields}
           </section>
@@ -390,7 +337,7 @@ export function ExamGeneratorPage() {
             isFirst={isFirst}
             isLast={isLast}
             setConfirmSubmit={setConfirmSubmit}
-            setPhase={setPhase}
+            setPhase={(p) => setPhase(p as "attempt" | "summary" | "review")}
             setCurrentIndex={setCurrentIndex}
             setNavOpen={setNavOpen}
             setFlagged={setFlagged}
