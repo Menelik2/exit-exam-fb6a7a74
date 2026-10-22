@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-22T17:12:27.089Z",
+  "updatedAt": "2026-10-22T17:14:42.470Z",
   "departments": [
     {
       "id": "computer-science",
@@ -15,7 +15,309 @@
           "year": null,
           "pdfUrl": "https://docs.google.com/document/d/1BZNUN_xnhgNbm91qD9Av3VQomfrD7FaD/edit?usp=drivesdk&ouid=105723339689957248808&rtpof=true&sd=true",
           "telegramFileId": null,
-          "note": "Add your PDF URL or Telegram file_id here"
+          "note": "Add your PDF URL or Telegram file_id here",
+          "questions": [
+            {
+              "question_number": 1,
+              "question": "What term determines the extent to which individual nodes or databases in a connected Distributed Database (DDB) can operate independently?",
+              "options": [
+                "Transparency",
+                "Tolerance",
+                "Autonomy",
+                "Scalability"
+              ],
+              "correct_answer": "Autonomy",
+              "explanation": "Autonomy refers to the degree of independence of nodes in a distributed system. High autonomy means nodes can function largely on their own, even if other parts of the system are unavailable."
+            },
+            {
+              "question_number": 2,
+              "question": "In relational databases, what values are used to indicate unknown, missing, or nonapplicable data?",
+              "options": [
+                "Primary key",
+                "Foreign key",
+                "Default",
+                "Null"
+              ],
+              "correct_answer": "Null",
+              "explanation": "Null values in relational databases are special markers used to represent the absence of a value. They are distinct from zero or an empty string, signifying that the data is either unknown, missing, or not applicable."
+            },
+            {
+              "question_number": 3,
+              "question": "What is the term for the process of assigning each fragment or copy of a fragment to a particular site in a distributed database system?",
+              "options": [
+                "Data normalization",
+                "Data distribution (or data allocation)",
+                "Replication schema",
+                "Partial replication"
+              ],
+              "correct_answer": "Data distribution (or data allocation)",
+              "explanation": "Data distribution, also known as data allocation, is the process of deciding where to store data fragments or their copies across different sites in a distributed database. This decision impacts performance, availability, and reliability."
+            },
+            {
+              "question_number": 4,
+              "question": "In distributed concurrency control, which technique based on a distinguished copy of a data item keeps all distinguished copies at the same site?",
+              "options": [
+                "Particular copy of each data item designated as distinguished copy",
+                "Primary site technique",
+                "Primary site with backup site",
+                "Primary copy method"
+              ],
+              "correct_answer": "Primary site technique",
+              "explanation": "The Primary Site technique in distributed concurrency control designates one site as the 'primary' for all distinguished copies of data items. This simplifies coordination as all distinguished copies are managed centrally at that site."
+            },
+            {
+              "question_number": 5,
+              "question": "Which concept is used to interpret the meaning of the data elements corresponding to a specific attribute in a database?",
+              "options": [
+                "Relation",
+                "Domain",
+                "Tuple",
+                "Schema"
+              ],
+              "correct_answer": "Domain",
+              "explanation": "A domain defines the set of all possible values that an attribute can take. It specifies the type and range of values, thereby interpreting the meaning of the data elements for that attribute."
+            },
+            {
+              "question_number": 6,
+              "question": "Which type of constraint is not explicit schema-based and cannot be directly expressed within the relational model's standard definitions?",
+              "options": [
+                "Key constraints",
+                "Entity integrity constraints",
+                "Referential integrity constraints",
+                "Application base constraint"
+              ],
+              "correct_answer": "Application base constraint",
+              "explanation": "Application-base constraints are rules that are specific to the business logic or application, rather than being inherent to the relational data model's schema. These are typically enforced by the application layer rather than the database itself."
+            },
+            {
+              "question_number": 7,
+              "question": "Which problem occurs when two transactions accessing the same database items have their operations interleaved, leading to one transaction's update being overwritten by another?",
+              "options": [
+                "The lost update problem.",
+                "The temporary update problem.",
+                "The incorrect summary problem.",
+                "The unrepeatable read problem"
+              ],
+              "correct_answer": "The lost update problem.",
+              "explanation": "The lost update problem happens when two transactions read the same data, and then both update it, with the second update overwriting the first. This results in the first transaction's changes being 'lost.'"
+            },
+            {
+              "question_number": 8,
+              "question": "What mechanism involves removing all previous logs from the system and storing them permanently in a storage disk?",
+              "options": [
+                "Abort",
+                "Commit",
+                "Checkpoint",
+                "Rollback"
+              ],
+              "correct_answer": "Checkpoint",
+              "explanation": "A checkpoint is a point in time where the database system ensures that all updates up to that point are recorded on stable storage. It helps to reduce the amount of work needed during recovery after a system crash by making older log records unnecessary for recovery."
+            },
+            {
+              "question_number": 9,
+              "question": "Who is responsible for determining the requirements of end-users and developing specifications for those requirements?",
+              "options": [
+                "Database administrators",
+                "Application programmers",
+                "System analyst",
+                "Auditors"
+              ],
+              "correct_answer": "System analyst",
+              "explanation": "A system analyst bridges the gap between business problems and technological solutions. They gather and analyze user requirements and translate them into detailed specifications for software development."
+            },
+            {
+              "question_number": 10,
+              "question": "Which of the following is the primary purpose of the SQL ALTER statement?",
+              "options": [
+                "Change the table structure",
+                "Change the table data",
+                "Add rows to the table",
+                "Delete rows from the table"
+              ],
+              "correct_answer": "Change the table structure",
+              "explanation": "The SQL ALTER statement is used to modify the structure of an existing database object, such as adding, deleting, or modifying columns in a table, or adding constraints. It is not used to change table data or add/delete rows, which are handled by UPDATE, INSERT, and DELETE statements respectively."
+            },
+            {
+              "question_number": 11,
+              "question": "A typical DBMS security function aims to protect databases from what?",
+              "options": [
+                "Data Visualization",
+                "Unauthorized access",
+                "Data loss",
+                "A and B"
+              ],
+              "correct_answer": "Unauthorized access",
+              "explanation": "Database management system (DBMS) security features are primarily designed to prevent unauthorized users from accessing, modifying, or deleting sensitive data, ensuring data confidentiality and integrity."
+            },
+            {
+              "question_number": 12,
+              "question": "In which SQL isolation level do transactions acquire long-duration read locks on individual data items they read, preventing other transactions from modifying those items?",
+              "options": [
+                "Serializability",
+                "Read committed",
+                "Read uncommitted",
+                "Repeatable read"
+              ],
+              "correct_answer": "Repeatable read",
+              "explanation": "The Repeatable Read isolation level ensures that if a transaction reads a row multiple times, it will always see the same data. This is achieved by acquiring long-duration read locks on the data items, preventing other transactions from making changes."
+            },
+            {
+              "question_number": 13,
+              "question": "Which statement best describes a class in object-oriented programming?",
+              "options": [
+                "A specific instance of an object with its own data and behavior.",
+                "A blueprint that defines the properties and methods of similar objects.",
+                "A function that performs a specific task on an object.",
+                "A collection of variables that store data used by the program."
+              ],
+              "correct_answer": "A blueprint that defines the properties and methods of similar objects.",
+              "explanation": "A class serves as a template or blueprint for creating objects. It defines the common attributes (properties) and behaviors (methods) that all objects of that class will possess."
+            },
+            {
+              "question_number": 14,
+              "question": "What object-oriented programming principle hides the internal implementation details of a class and exposes only its functionalities through methods?",
+              "options": [
+                "Inheritance",
+                "Polymorphism",
+                "Encapsulation",
+                "Abstraction"
+              ],
+              "correct_answer": "Encapsulation",
+              "explanation": "Encapsulation is the bundling of data and methods that operate on the data into a single unit or class. It also restricts direct access to some of an object's components, promoting data hiding and modularity."
+            },
+            {
+              "question_number": 15,
+              "question": "During a system analysis project, if a team creates multiple models, each focusing on a specific aspect of the system, what is the primary benefit of this approach?",
+              "options": [
+                "It simplifies the modeling process by focusing on a single technique.",
+                "It provides a more comprehensive view of the system by using different perspectives.",
+                "It reduces the time required to develop the system model.",
+                "It introduces unnecessary complexity and confusion for stakeholders."
+              ],
+              "correct_answer": "It provides a more comprehensive view of the system by using different perspectives.",
+              "explanation": "Creating multiple models allows analysts to examine the system from various angles, such as functional, structural, and behavioral perspectives. This multi-faceted view leads to a more complete and accurate understanding of the system's requirements and design."
+            },
+            {
+              "question_number": 16,
+              "question": "Which modeling technique is most appropriate for an analyst documenting the different states a 'Product Order' can go through (e.g., Submitted, Processing, Shipped)?",
+              "options": [
+                "Class diagram",
+                "Use case diagram",
+                "State diagram",
+                "Sequence diagram"
+              ],
+              "correct_answer": "State diagram",
+              "explanation": "A state diagram, also known as a state machine diagram, is specifically designed to model the dynamic behavior of an object or system. It illustrates the sequence of states an object goes through in response to events, making it ideal for showing order lifecycles."
+            },
+            {
+              "question_number": 17,
+              "question": "In a use case diagram for an online shopping system, if 'Checkout' is an optional step that can follow 'Add to Cart,' which UML relationship best represents the interaction between 'Add to Cart' and 'Checkout' use cases?",
+              "options": [
+                "Generalization",
+                "Include",
+                "Extend",
+                "Association"
+              ],
+              "correct_answer": "Extend",
+              "explanation": "The 'extend' relationship in UML use case diagrams indicates that an extending use case adds functionality to a base use case under specific conditions. 'Checkout' extending 'Add to Cart' means checkout is an optional, alternative path after adding items."
+            },
+            {
+              "question_number": 18,
+              "question": "Which UML diagram is MOST suitable for capturing the high-level interactions between users and a system, representing user requirements in object-oriented systems?",
+              "options": [
+                "Class Diagram",
+                "Sequence Diagram",
+                "Activity Diagram",
+                "Use Case Diagram"
+              ],
+              "correct_answer": "Use Case Diagram",
+              "explanation": "Use Case Diagrams are excellent for illustrating the functional requirements of a system from the user's perspective. They show how different types of users (actors) interact with the system to achieve specific goals (use cases)."
+            },
+            {
+              "question_number": 19,
+              "question": "In a state diagram for a 'Book' class, which UML element represents the change from the 'Available' state to the 'Borrowed' state when a member successfully borrows the book?",
+              "options": [
+                "State",
+                "Event",
+                "Guard condition",
+                "Action"
+              ],
+              "correct_answer": "Event",
+              "explanation": "In a state diagram, an event is an occurrence that triggers a transition from one state to another. When a member successfully borrows a book, that action (the borrowing) acts as an event causing the book's state to change from 'Available' to 'Borrowed.'"
+            },
+            {
+              "question_number": 20,
+              "question": "What type of UML relationship in a class diagram would show that a 'Book' can be borrowed by a 'Member' in a library management system?",
+              "options": [
+                "Generalization",
+                "Association",
+                "Aggregation",
+                "Composition"
+              ],
+              "correct_answer": "Association",
+              "explanation": "An association represents a structural relationship between two classes, indicating that objects of one class are connected to objects of another. In this case, a 'Book' and a 'Member' are associated through the act of borrowing."
+            },
+            {
+              "question_number": 21,
+              "question": "Regarding a class hierarchy with interfaces and abstract classes, which statement about implementing polymorphism is correct?",
+              "options": [
+                "All concrete subclasses must override methods declared in abstract classes.",
+                "Interfaces can only define abstract methods, while abstract classes can have concrete implementations.",
+                "Polymorphism is achieved solely through method overloading within the same class.",
+                "Interfaces promote tight coupling, allowing unrelated classes to share functionality."
+              ],
+              "correct_answer": "Interfaces can only define abstract methods, while abstract classes can have concrete implementations.",
+              "explanation": "Interfaces primarily define a contract of abstract methods that implementing classes must fulfill. Abstract classes, while also defining abstract methods, can include concrete (implemented) methods and even instance variables, providing a partial implementation."
+            },
+            {
+              "question_number": 22,
+              "question": "At what stage is method overloading determined in object-oriented programming?",
+              "options": [
+                "At run time",
+                "At compile time",
+                "At coding time",
+                "At execution time"
+              ],
+              "correct_answer": "At compile time",
+              "explanation": "Method overloading is a compile-time polymorphism feature. The compiler determines which overloaded method to call based on the number, type, and order of arguments passed during the method call."
+            },
+            {
+              "question_number": 23,
+              "question": "What is a major emphasis of the Structural programming paradigm?",
+              "options": [
+                "Data structures and their manipulation.",
+                "Encapsulating data and behavior within objects.",
+                "Procedures and functions as the building blocks of programs.",
+                "Inheritance and polymorphism for code reuse."
+              ],
+              "correct_answer": "Procedures and functions as the building blocks of programs.",
+              "explanation": "Structural programming, often characterized by procedural programming, focuses on breaking down a program into a collection of procedures or functions. These functions operate on data that is often passed as arguments or accessed globally."
+            },
+            {
+              "question_number": 24,
+              "question": "When designing complex software systems with multiple interacting objects, which design principle is crucial for maintainability and scalability?",
+              "options": [
+                "Loose coupling, where objects interact through well-defined interfaces",
+                "Code duplication to avoid unnecessary complexity.",
+                "Tight coupling between objects, creating dependencies.",
+                "Global variables for easy access to data across different parts of the system."
+              ],
+              "correct_answer": "Loose coupling, where objects interact through well-defined interfaces",
+              "explanation": "Loose coupling means that components are largely independent and have minimal dependencies on each other's internal implementations. This makes systems easier to maintain, modify, and scale, as changes in one component have less impact on others."
+            },
+            {
+              "question_number": 25,
+              "question": "The provided code snippet, showing `Topper` extending `Student`, primarily demonstrates which feature of Object-Oriented Programming?",
+              "options": [
+                "Encapsulation and Inheritance",
+                "Inheritance and polymorphism",
+                "Polymorphism",
+                "Inheritance"
+              ],
+              "correct_answer": "Inheritance",
+              "explanation": "The `extends` keyword in Java signifies that one class (`Topper`) is inheriting properties and behaviors from another class (`Student`). This is a direct example of inheritance, a core OOP principle for code reuse and establishing an 'is-a' relationship."
+            }
+          ]
         }
       ]
     },
