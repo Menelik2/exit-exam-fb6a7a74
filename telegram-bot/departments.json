@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-22T17:12:17.610Z",
+  "updatedAt": "2026-10-22T17:12:27.089Z",
   "departments": [
     {
       "id": "computer-science",
@@ -11,7 +11,7 @@
       "exams": [
         {
           "id": "cs-sample",
-          "title": "CS Exit Exam",
+          "title": "CS",
           "year": null,
           "pdfUrl": "https://docs.google.com/document/d/1BZNUN_xnhgNbm91qD9Av3VQomfrD7FaD/edit?usp=drivesdk&ouid=105723339689957248808&rtpof=true&sd=true",
           "telegramFileId": null,
