@@ -1,29 +1,49 @@
-/** Browser client for Vercel /api admin routes (works when SPA has no TanStack server fns). */
+/** Browser client for Vercel /api admin routes. */
+
+export type AdminQuestion = {
+  question_number: number;
+  question: string;
+  options: string[];
+  correct_answer: string;
+  explanation?: string;
+};
+
+export type AdminExam = {
+  id: string;
+  title: string;
+  year?: number | null;
+  pdfUrl?: string | null;
+  telegramFileId?: string | null;
+  note?: string;
+  questions?: AdminQuestion[];
+};
+
+export type AdminDepartment = {
+  id: string;
+  name: string;
+  emoji?: string;
+  exams: AdminExam[];
+};
 
 export type AdminCatalog = {
-  departments: Array<{
-    id: string;
-    name: string;
-    emoji?: string;
-    exams: Array<{
-      id: string;
-      title: string;
-      year?: number | null;
-      pdfUrl?: string | null;
-      telegramFileId?: string | null;
-      note?: string;
-    }>;
-  }>;
+  departments: AdminDepartment[];
   updatedAt?: string;
   appUrl?: string;
   channelUrl?: string;
   channelUsername?: string;
 };
 
-async function parseJson(res: Response) {
+async function parseJson(res: Response): Promise<Record<string, unknown>> {
   const text = await res.text();
+  if (!text) {
+    throw new Error(
+      res.ok
+        ? "Empty response from server"
+        : `Server error (${res.status}). Try again in a minute.`,
+    );
+  }
   try {
-    return JSON.parse(text);
+    return JSON.parse(text) as Record<string, unknown>;
   } catch {
     throw new Error(
       res.ok
@@ -45,7 +65,16 @@ export async function apiAdminLogin(password: string): Promise<{
     body: JSON.stringify({ password }),
     cache: "no-store",
   });
-  return parseJson(res);
+  const data = await parseJson(res);
+  if (res.status >= 500) {
+    throw new Error(String(data.error || `Login server error (${res.status})`));
+  }
+  return {
+    ok: Boolean(data.ok),
+    token: typeof data.token === "string" ? data.token : null,
+    usingEnvPassword: Boolean(data.usingEnvPassword),
+    error: typeof data.error === "string" ? data.error : undefined,
+  };
 }
 
 export async function apiGetCatalog(): Promise<{
@@ -55,16 +84,30 @@ export async function apiGetCatalog(): Promise<{
 }> {
   const res = await fetch("/api/admin-catalog", { method: "GET", cache: "no-store" });
   const data = await parseJson(res);
-  if (!data?.catalog) {
-    throw new Error(data?.error || "Could not load catalog");
+  if (!res.ok) {
+    throw new Error(String(data.error || `Could not load catalog (${res.status})`));
   }
-  return data;
+  const catalog = data.catalog as AdminCatalog | undefined;
+  if (!catalog || typeof catalog !== "object") {
+    throw new Error(String(data.error || "Could not load catalog"));
+  }
+  return {
+    catalog: {
+      ...catalog,
+      departments: Array.isArray(catalog.departments) ? catalog.departments : [],
+    },
+    storage: data.storage === "github" ? "github" : "github-readonly",
+    path: typeof data.path === "string" ? data.path : undefined,
+  };
 }
 
-export async function apiSaveCatalog(token: string, catalog: AdminCatalog): Promise<{
-  ok: boolean;
-  catalog: AdminCatalog;
-}> {
+export async function apiSaveCatalog(
+  token: string,
+  catalog: AdminCatalog,
+): Promise<{ ok: boolean; catalog: AdminCatalog }> {
+  if (!token || token.length < 10) {
+    throw new Error("Admin session expired. Please sign in again.");
+  }
   const res = await fetch("/api/admin-catalog", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -72,8 +115,18 @@ export async function apiSaveCatalog(token: string, catalog: AdminCatalog): Prom
     cache: "no-store",
   });
   const data = await parseJson(res);
-  if (!res.ok || !data?.ok) {
-    throw new Error(data?.error || `Save failed (${res.status})`);
+  if (!res.ok || !data.ok) {
+    throw new Error(String(data.error || `Save failed (${res.status})`));
   }
-  return data;
+  const next = data.catalog as AdminCatalog | undefined;
+  if (!next || typeof next !== "object") {
+    throw new Error("Save succeeded but server returned no catalog");
+  }
+  return {
+    ok: true,
+    catalog: {
+      ...next,
+      departments: Array.isArray(next.departments) ? next.departments : [],
+    },
+  };
 }
