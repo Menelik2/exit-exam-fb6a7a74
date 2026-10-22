@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "@tanstack/react-router";
 import { apiGetCatalog } from "@/lib/admin-api";
 import type { Catalog, Department, ExamEntry, StoredQuestion } from "@/components/admin-types";
 import type { ExamQuestion } from "@/lib/exam.functions";
@@ -12,6 +13,7 @@ import {
   Loader2,
   MessageCircle,
   Search,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ExamQuizBody } from "@/components/ExamQuizBody";
@@ -344,16 +346,25 @@ export function PracticeHome() {
               <p className="text-[11px] text-muted-foreground">Choose department → exam → start quiz</p>
             </div>
           </div>
-          <a
-            href="https://t.me/exitexamto"
-            target="_blank"
-            rel="noreferrer"
-            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-[#229ED9]/35 bg-[#229ED9]/10 px-3.5 text-xs font-medium transition hover:bg-[#229ED9]/18 active:scale-[0.97]"
-            aria-label="Telegram support"
-          >
-            <MessageCircle className="h-4 w-4 text-[#229ED9]" />
-            <span className="hidden sm:inline">Help</span>
-          </a>
+          <nav className="flex shrink-0 items-center gap-1.5" aria-label="Main">
+            <Link
+              to="/generate"
+              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-primary/25 bg-primary px-3.5 text-xs font-semibold text-primary-foreground shadow-sm shadow-primary/20 transition hover:bg-primary/90 active:scale-[0.97]"
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Exam Generator</span>
+            </Link>
+            <a
+              href="https://t.me/exitexamto"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-[#229ED9]/35 bg-[#229ED9]/10 px-3 text-xs font-medium transition hover:bg-[#229ED9]/18 active:scale-[0.97]"
+              aria-label="Telegram support"
+            >
+              <MessageCircle className="h-4 w-4 text-[#229ED9]" />
+              <span className="hidden sm:inline">Help</span>
+            </a>
+          </nav>
         </div>
       </header>
 
