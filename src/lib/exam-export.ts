@@ -89,8 +89,11 @@ export function buildShareCode(questions: ExamQuestion[], meta: ExportMeta): str
 
 export function parseShareCode(code: string): SharePayload | null {
   try {
-    let b64 = code.trim().replace(/-/g, "+").replace(/_/g, "/");
+    let b64 = String(code ?? "").trim();
+    if (!b64) return null;
+    b64 = b64.replace(/[\s\n\r]/g, "").replace(/-/g, "+").replace(/_/g, "/");
     while (b64.length % 4) b64 += "=";
+    if (!/^[A-Za-z0-9+/]*={0,2}$/.test(b64)) return null;
     const json = decodeURIComponent(escape(atob(b64)));
     const data = JSON.parse(json) as SharePayload;
     if (data?.v !== 1 || !Array.isArray(data.questions) || data.questions.length === 0) {
