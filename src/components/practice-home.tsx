@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "@tanstack/react-router";
 import { apiGetCatalog } from "@/lib/admin-api";
 import type { Catalog, Department, ExamEntry, StoredQuestion } from "@/components/admin-types";
 import type { ExamQuestion } from "@/lib/exam.functions";
@@ -13,7 +12,6 @@ import {
   Loader2,
   MessageCircle,
   Search,
-  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ExamQuizBody } from "@/components/ExamQuizBody";
@@ -255,6 +253,7 @@ export function PracticeHome() {
               type="button"
               onClick={backToDepts}
               className="flex h-10 w-10 items-center justify-center rounded-2xl border border-border/80 hover:bg-muted"
+              aria-label="Back to departments"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
@@ -264,7 +263,7 @@ export function PracticeHome() {
                 {selectedDept.name}
               </p>
               <p className="text-[11px] text-muted-foreground">
-                {exams.length} exam{exams.length === 1 ? "" : "s"} — start stored quiz (no AI needed)
+                {exams.length} exam{exams.length === 1 ? "" : "s"} — start practice quiz
               </p>
             </div>
           </div>
@@ -283,7 +282,7 @@ export function PracticeHome() {
 
           {list.length === 0 ? (
             <p className="rounded-2xl border border-border/60 bg-card px-4 py-12 text-center text-sm text-muted-foreground">
-              No exams in this department yet. Admin can add PDF/DOCX and store questions.
+              No exams in this department yet. Check back soon.
             </p>
           ) : (
             <ul className="space-y-3">
@@ -316,7 +315,7 @@ export function PracticeHome() {
                             </Button>
                           ) : (
                             <span className="text-[11px] text-muted-foreground">
-                              Quiz not ready yet — admin will store questions soon
+                              Quiz not ready yet — check back soon
                             </span>
                           )}
                         </div>
@@ -345,24 +344,16 @@ export function PracticeHome() {
               <p className="text-[11px] text-muted-foreground">Choose department → exam → start quiz</p>
             </div>
           </div>
-          <div className="flex shrink-0 items-center gap-1.5">
-            <a
-              href="https://t.me/exitexamto"
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-[#229ED9]/35 bg-[#229ED9]/10 px-3 text-xs font-medium"
-            >
-              <MessageCircle className="h-4 w-4 text-[#229ED9]" />
-              <span className="hidden sm:inline">Support</span>
-            </a>
-            <Link
-              to="/generate"
-              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-border/80 bg-card px-3 text-xs font-medium hover:bg-muted"
-            >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">AI generate</span>
-            </Link>
-          </div>
+          <a
+            href="https://t.me/exitexamto"
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border border-[#229ED9]/35 bg-[#229ED9]/10 px-3.5 text-xs font-medium transition hover:bg-[#229ED9]/18 active:scale-[0.97]"
+            aria-label="Telegram support"
+          >
+            <MessageCircle className="h-4 w-4 text-[#229ED9]" />
+            <span className="hidden sm:inline">Help</span>
+          </a>
         </div>
       </header>
 
@@ -372,7 +363,7 @@ export function PracticeHome() {
             Select a department
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Admin stores questions from PDFs. You only select department → exam → start quiz.
+            Choose your department, open an exam, and start the practice quiz.
           </p>
         </div>
 
@@ -388,11 +379,7 @@ export function PracticeHome() {
 
         {filteredDepts.length === 0 ? (
           <p className="rounded-2xl border border-border/60 bg-card px-4 py-12 text-center text-sm text-muted-foreground">
-            No departments yet. Add them in{" "}
-            <Link to="/admin" className="text-primary underline">
-              Admin
-            </Link>
-            .
+            No departments available yet. Check back soon.
           </p>
         ) : (
           <div className="grid gap-2 sm:grid-cols-2">
@@ -420,16 +407,6 @@ export function PracticeHome() {
             })}
           </div>
         )}
-
-        <p className="pt-2 text-center text-[11px] text-muted-foreground">
-          <Link to="/admin" className="underline hover:text-foreground">
-            Admin
-          </Link>
-          {" · "}
-          <Link to="/generate" className="underline hover:text-foreground">
-            AI exam generator
-          </Link>
-        </p>
       </main>
     </div>
   );
