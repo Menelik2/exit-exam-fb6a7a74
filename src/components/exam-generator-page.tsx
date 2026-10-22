@@ -62,15 +62,21 @@ export function ExamGeneratorPage() {
   const docMode = docText.length > 0;
 
   const mutation = useMutation({
-    mutationFn: async (count: number) => {
+    mutationFn: async (arg: number | { count: number; documentText?: string; documentName?: string; topicOverride?: string }) => {
+      const count = typeof arg === "number" ? arg : arg.count;
+      const overrideText = typeof arg === "object" ? arg.documentText : undefined;
+      const overrideName = typeof arg === "object" ? arg.documentName : undefined;
+      const topicOverride = typeof arg === "object" ? arg.topicOverride : undefined;
       const avoid = seenQuestions.slice(-60);
-      if (docMode) {
+      const text = (overrideText ?? docText).trim();
+      const name = overrideName || docName || "Uploaded document";
+      if (text.length > 0) {
         return generateDocFn({
-          data: { apiKey, provider: aiProvider, documentName: docName || "Uploaded document", documentText: docText, difficulty, numQuestions: count, nonce: `${Date.now()}`, avoid },
+          data: { apiKey, provider: aiProvider, documentName: name, documentText: text, difficulty, numQuestions: count, nonce: `${Date.now()}`, avoid },
         });
       }
       return generateFn({
-        data: { apiKey, provider: aiProvider, topic: topic.trim(), difficulty, numQuestions: count, nonce: `${Date.now()}`, avoid },
+        data: { apiKey, provider: aiProvider, topic: (topicOverride ?? topic).trim(), difficulty, numQuestions: count, nonce: `${Date.now()}`, avoid },
       });
     },
     onSuccess: (data) => {
@@ -183,7 +189,27 @@ export function ExamGeneratorPage() {
 
   const setupFields = (
     <div className="space-y-4">
-      <DepartmentBrowser onUseTopic={(name) => setTopic(name)} />
+      <DepartmentBrowser
+        onUseTopic={(name) => setTopic(name)}
+        onLoadExamDocument={({ name, text, topic: deptTopic }) => {
+          const clipped = text.length > 190000 ? text.slice(0, 190000) : text;
+          setDocName(name);
+          setDocText(clipped);
+          setDocError(null);
+          setTopic(deptTopic || name);
+          let n = parseInt(numQuestionsText, 10);
+          if (Number.isNaN(n) || n < 10) n = 25;
+          if (n > 100) n = 100;
+          setNumQuestionsText(String(n));
+          setSettingsOpen(false);
+          mutation.mutate({
+            count: n,
+            documentText: clipped,
+            documentName: name,
+            topicOverride: deptTopic || name,
+          });
+        }}
+      />
       <ApiKeyPanel onKeyChange={(k, p) => { setApiKey(k); setAiProvider(p); }} />
       <div className="space-y-2">
         <Label htmlFor="topic">Topic</Label>
@@ -347,7 +373,7 @@ export function ExamGeneratorPage() {
             </span>
             <p className="mt-4 font-display text-base font-semibold tracking-tight">No active attempt</p>
             <p className="mx-auto mt-1.5 max-w-[220px] text-xs leading-relaxed text-muted-foreground">
-              Open Setup, choose a topic or document, then start your quiz.
+              Open Setup, choose a department exam PDF, then generate questions.
             </p>
           </div>
         )}
