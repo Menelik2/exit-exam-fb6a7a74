@@ -107,38 +107,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
     ],
   }),
-  shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
   errorComponent: ErrorComponent,
 });
-
-function RootShell({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <HeadContent />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var t=localStorage.getItem("exam-generator-theme-v1");var desk=window.matchMedia("(min-width:1024px)").matches;var d=t==="dark"||(t==="system"&&!desk&&window.matchMedia("(prefers-color-scheme: dark)").matches);if(d)document.documentElement.classList.add("dark");else document.documentElement.classList.remove("dark");}catch(e){document.documentElement.classList.remove("dark");}})();`,
-          }}
-        />
-      </head>
-      <body className="min-h-screen bg-background text-foreground antialiased">
-        {children}
-        <Scripts />
-      </body>
-    </html>
-  );
-}
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <HeadContent />
+      <div className="min-h-screen bg-background text-foreground antialiased">
+        <Outlet />
+      </div>
       <Toaster />
+      <Scripts />
     </QueryClientProvider>
   );
 }
