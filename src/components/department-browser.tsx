@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { apiGetCatalog } from "@/lib/admin-api";
 import { fetchExamDocument } from "@/lib/exam-source.functions";
-import { extractDocumentText } from "@/lib/extract-document";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -35,34 +34,47 @@ type Dept = {
 
 type View = "list" | "dept";
 
-/** Decode standard or base64url payloads; strip data-URL prefix and whitespace. */
-function base64ToUint8Array(input: string): Uint8Array {
-  let s = String(input ?? "").trim();
-  if (!s) throw new Error("Empty document payload from server");
+type DocPayload = {
+  kind?: string;
+  text?: string;
+  filename?: string;
+  mimeType?: string;
+  size?: number;
+  base64?: string;
+  error?: string;
+  message?: string;
+};
 
-  // data:application/pdf;base64,....
-  const dataUrl = /^data:[^;]+;base64,/i.exec(s);
-  if (dataUrl) s = s.slice(dataUrl[0].length);
+/** Normalize whatever shape TanStack server-fn returns. */
+function unwrapDoc(raw: unknown): DocPayload {
+  if (!raw || typeof raw !== "object") return {};
+  const o = raw as Record<string, unknown>;
+  // Nested under data / result / payload (RPC wrappers)
+  for (const key of ["data", "result", "payload", "document"] as const) {
+    const inner = o[key];
+    if (inner && typeof inner === "object" && ("text" in (inner as object) || "kind" in (inner as object))) {
+      return unwrapDoc(inner);
+    }
+  }
+  return o as DocPayload;
+}
 
-  s = s.replace(/[\s\n\r]/g, "").replace(/-/g, "+").replace(/_/g, "/");
-  while (s.length % 4) s += "=";
-
-  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(s)) {
+function pickText(file: DocPayload): string {
+  if (typeof file.text === "string" && file.text.trim().length > 0) {
+    return file.text.trim();
+  }
+  // Legacy binary responses should no longer appear; surface a clear error.
+  if (file.kind === "binary" || typeof file.base64 === "string") {
     throw new Error(
-      "Document data from server was corrupted. Try again, or open the file link and upload it manually.",
+      "Server still returned a binary PDF. Redeploy may still be rolling out — wait a minute and retry, or upload the file in Setup.",
     );
   }
-
-  try {
-    const binary = atob(s);
-    const out = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) out[i] = binary.charCodeAt(i);
-    return out;
-  } catch {
-    throw new Error(
-      "Could not decode exam document. The file may be too large or the download failed — try a smaller PDF or a direct public link.",
-    );
+  if (file.error || file.message) {
+    throw new Error(String(file.error || file.message));
   }
+  throw new Error(
+    "Server did not return exam text. Check the document link is public, or upload the file manually in Setup.",
+  );
 }
 
 export function DepartmentBrowser({
@@ -132,7 +144,7 @@ export function DepartmentBrowser({
     setBusyExamId(exam.id);
     try {
       toast.message("Loading exam document…");
-      const file = await fetchDocFn({
+      const raw = await fetchDocFn({
         data: {
           title: exam.title,
           pdfUrl: exam.pdfUrl ?? null,
@@ -140,26 +152,15 @@ export function DepartmentBrowser({
         },
       });
 
-      let text = "";
-      if (file.kind === "text") {
-        text = file.text;
-      } else if (file.kind === "binary" && typeof file.base64 === "string") {
-        toast.message("Extracting text…");
-        const bin = base64ToUint8Array(file.base64);
-        const blob = new Blob([bin], { type: file.mimeType || "application/pdf" });
-        const f = new File([blob], file.filename || `${exam.title}.pdf`, {
-          type: file.mimeType || "application/pdf",
-        });
-        text = await extractDocumentText(f);
-      } else {
-        throw new Error("Server returned an unexpected document format. Try uploading the file manually in Setup.");
-      }
+      const file = unwrapDoc(raw);
+      const text = pickText(file);
 
-      if (!text || text.trim().length < 40) {
+      if (text.length < 40) {
         throw new Error(
           "Could not read enough text from this file (scanned PDFs need OCR; try DOCX/PDF with real text).",
         );
       }
+
       onLoadExamDocument({
         name: exam.title,
         text,
@@ -168,7 +169,6 @@ export function DepartmentBrowser({
       toast.success("Document loaded — generating quiz questions");
     } catch (e) {
       const msg = (e as Error)?.message || "Failed to load exam document";
-      // Avoid dumping raw atob / DOMException text to the user
       if (/atob|not correctly encoded|InvalidCharacterError/i.test(msg)) {
         toast.error(
           "Could not decode exam document. Try a smaller PDF, a public direct link, or upload the file in Setup.",
