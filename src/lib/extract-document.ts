@@ -23,22 +23,39 @@ export async function extractDocumentText(file: File): Promise<string> {
   }
 
   if (name.endsWith(".pdf") || type === "application/pdf") {
-    const pdfjs = await import("pdfjs-dist");
-    const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
-    (pdfjs as unknown as { GlobalWorkerOptions: { workerSrc: string } }).GlobalWorkerOptions.workerSrc =
-      workerUrl;
-    const buf = await file.arrayBuffer();
-    const doc = await pdfjs.getDocument({ data: buf }).promise;
-    const parts: string[] = [];
-    for (let i = 1; i <= doc.numPages; i++) {
-      const page = await doc.getPage(i);
-      const content = await page.getTextContent();
-      const pageText = content.items
-        .map((it) => ("str" in it ? (it as { str: string }).str : ""))
-        .join(" ");
-      parts.push(pageText);
+    const head = new Uint8Array(await file.slice(0, 5).arrayBuffer());
+    const magic = String.fromCharCode(...head);
+    if (magic !== "%PDF-") {
+      throw new Error(
+        "Invalid PDF structure — this file is not a real PDF (often a Google Drive preview page). Use a public direct link or Telegram upload.",
+      );
     }
-    return parts.join("\n\n").trim();
+    try {
+      const pdfjs = await import("pdfjs-dist");
+      const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+      (pdfjs as unknown as { GlobalWorkerOptions: { workerSrc: string } }).GlobalWorkerOptions.workerSrc =
+        workerUrl;
+      const buf = await file.arrayBuffer();
+      const doc = await pdfjs.getDocument({ data: buf }).promise;
+      const parts: string[] = [];
+      for (let i = 1; i <= doc.numPages; i++) {
+        const page = await doc.getPage(i);
+        const content = await page.getTextContent();
+        const pageText = content.items
+          .map((it) => ("str" in it ? (it as { str: string }).str : ""))
+          .join(" ");
+        parts.push(pageText);
+      }
+      return parts.join("\n\n").trim();
+    } catch (e) {
+      const msg = (e as Error)?.message || String(e);
+      if (/invalid pdf/i.test(msg)) {
+        throw new Error(
+          "Invalid PDF structure. For Google Drive files: Share → Anyone with the link, then paste the link again (or use Telegram).",
+        );
+      }
+      throw e;
+    }
   }
 
   throw new Error("Unsupported file type. Please use PDF, DOCX, DOC, or TXT.");
