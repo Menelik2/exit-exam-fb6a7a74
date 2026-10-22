@@ -1,0 +1,230 @@
+import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { getAdminCatalog } from "@/lib/admin.functions";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Building2,
+  ChevronLeft,
+  ExternalLink,
+  FileText,
+  Loader2,
+  MessageCircle,
+  Search,
+} from "lucide-react";
+import { toast } from "sonner";
+
+type Exam = {
+  id: string;
+  title: string;
+  year?: number | null;
+  pdfUrl?: string | null;
+  telegramFileId?: string | null;
+  note?: string;
+};
+
+type Dept = {
+  id: string;
+  name: string;
+  emoji?: string;
+  exams: Exam[];
+};
+
+type View = "list" | "dept";
+
+/**
+ * Public department → exam picker.
+ * Users select a department, then open a PDF or get Telegram delivery.
+ */
+export function DepartmentBrowser({
+  onUseTopic,
+}: {
+  /** Optional: fill quiz topic with department name */
+  onUseTopic?: (topic: string) => void;
+}) {
+  const getCatalogFn = useServerFn(getAdminCatalog);
+  const [loading, setLoading] = useState(true);
+  const [departments, setDepartments] = useState<Dept[]>([]);
+  const [search, setSearch] = useState("");
+  const [view, setView] = useState<View>("list");
+  const [selected, setSelected] = useState<Dept | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await getCatalogFn();
+        if (cancelled) return;
+        setDepartments((res.catalog.departments || []) as Dept[]);
+      } catch (e) {
+        if (!cancelled) toast.error((e as Error).message || "Could not load departments");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [getCatalogFn]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return departments;
+    return departments.filter(
+      (d) =>
+        d.name.toLowerCase().includes(q) ||
+        d.id.includes(q) ||
+        d.exams.some((e) => e.title.toLowerCase().includes(q)),
+    );
+  }, [departments, search]);
+
+  const openDept = (d: Dept) => {
+    setSelected(d);
+    setView("dept");
+  };
+
+  const back = () => {
+    setView("list");
+    setSelected(null);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center gap-2 rounded-2xl border border-border/60 bg-card px-4 py-10 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin" /> Loading departments…
+      </div>
+    );
+  }
+
+  if (view === "dept" && selected) {
+    return (
+      <div className="space-y-3 rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="ghost" size="sm" className="h-8 rounded-lg px-2" onClick={back}>
+            <ChevronLeft className="mr-0.5 h-4 w-4" /> All departments
+          </Button>
+        </div>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="font-display text-lg font-semibold tracking-tight">
+              <span className="mr-2">{selected.emoji || "📘"}</span>
+              {selected.name}
+            </h3>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {selected.exams.length} exam{selected.exams.length === 1 ? "" : "s"}
+            </p>
+          </div>
+          {onUseTopic && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 rounded-xl"
+              onClick={() => {
+                onUseTopic(selected.name);
+                toast.success(`Topic set to “${selected.name}”`);
+              }}
+            >
+              Practice this department
+            </Button>
+          )}
+        </div>
+
+        {selected.exams.length === 0 ? (
+          <p className="rounded-xl bg-muted/40 px-4 py-6 text-center text-sm text-muted-foreground">
+            No exam PDFs linked yet for this department.
+          </p>
+        ) : (
+          <ul className="divide-y divide-border/50 rounded-xl border border-border/60">
+            {selected.exams.map((exam) => {
+              const hasPdf = Boolean(exam.pdfUrl);
+              const hasTg = Boolean(exam.telegramFileId);
+              return (
+                <li key={exam.id} className="flex flex-wrap items-center gap-3 px-3 py-3 sm:px-4">
+                  <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium leading-snug">{exam.title}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {exam.year ?? "Year —"}
+                      {hasPdf ? " · PDF link" : ""}
+                      {hasTg ? " · Telegram" : ""}
+                      {!hasPdf && !hasTg ? " · Not linked yet" : ""}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {hasPdf && (
+                      <Button type="button" size="sm" className="h-8 rounded-lg" asChild>
+                        <a href={exam.pdfUrl!} target="_blank" rel="noreferrer">
+                          Open PDF <ExternalLink className="ml-1 h-3 w-3" />
+                        </a>
+                      </Button>
+                    )}
+                    {hasTg && (
+                      <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg" asChild>
+                        <a href="https://t.me/exitexamto" target="_blank" rel="noreferrer">
+                          <MessageCircle className="mr-1 h-3.5 w-3.5 text-[#229ED9]" />
+                          Get on Telegram
+                        </a>
+                      </Button>
+                    )}
+                    {!hasPdf && !hasTg && (
+                      <span className="text-[11px] text-muted-foreground">Coming soon</span>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3 rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <Building2 className="h-4 w-4" />
+          </span>
+          <div>
+            <h3 className="font-display text-base font-semibold tracking-tight">Select by department</h3>
+            <p className="text-[11px] text-muted-foreground">Choose a department to view exam PDFs</p>
+          </div>
+        </div>
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search…"
+            className="h-9 w-40 rounded-xl pl-8 text-sm sm:w-48"
+          />
+        </div>
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">No departments found</p>
+      ) : (
+        <div className="grid gap-2 sm:grid-cols-2">
+          {filtered.map((d) => (
+            <button
+              key={d.id}
+              type="button"
+              onClick={() => openDept(d)}
+              className="flex items-center gap-3 rounded-xl border border-border/60 bg-background px-3 py-3 text-left transition hover:border-primary/40 hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <span className="text-xl leading-none">{d.emoji || "📘"}</span>
+              <span className="min-w-0 flex-1">
+                <span className="block truncate text-sm font-medium">{d.name}</span>
+                <span className="block text-[11px] text-muted-foreground">
+                  {d.exams.length} exam{d.exams.length === 1 ? "" : "s"}
+                </span>
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
