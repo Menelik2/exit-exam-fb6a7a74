@@ -1,4 +1,4 @@
-const { createHmac, timingSafeEqual } = require("crypto");
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 const CATALOG_PATH = "telegram-bot/departments.json";
 
@@ -208,7 +208,29 @@ async function githubPutCatalog(catalog, sha) {
   }
 }
 
-module.exports = async function handler(req, res) {
+async function readBody(req) {
+  if (req.body != null) {
+    if (typeof req.body === "string") {
+      try {
+        return JSON.parse(req.body || "{}");
+      } catch {
+        return {};
+      }
+    }
+    if (typeof req.body === "object") return req.body;
+  }
+  try {
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    const raw = Buffer.concat(chunks).toString("utf8");
+    if (!raw) return {};
+    return JSON.parse(raw);
+  } catch {
+    return {};
+  }
+}
+
+export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("Content-Type", "application/json");
 
@@ -226,15 +248,7 @@ module.exports = async function handler(req, res) {
     }
 
     if (req.method === "POST") {
-      let body = req.body;
-      if (typeof body === "string") {
-        try {
-          body = JSON.parse(body || "{}");
-        } catch {
-          body = {};
-        }
-      }
-      body = body || {};
+      const body = await readBody(req);
       const token = String(body.token ?? (body.data && body.data.token) ?? "");
       if (!verifySessionToken(token)) {
         res.statusCode = 401;
@@ -263,4 +277,4 @@ module.exports = async function handler(req, res) {
       }),
     );
   }
-};
+}
