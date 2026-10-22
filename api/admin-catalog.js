@@ -67,6 +67,34 @@ function defaultCatalog() {
   };
 }
 
+function normalizeQuestions(raw) {
+  if (!Array.isArray(raw) || raw.length === 0) return undefined;
+  const out = [];
+  for (let i = 0; i < Math.min(raw.length, 300); i++) {
+    const q = raw[i];
+    if (!q || typeof q !== "object") continue;
+    const question = String(q.question || "").trim().slice(0, 2000);
+    if (!question) continue;
+    let options = Array.isArray(q.options)
+      ? q.options.map((o) => String(o ?? "").trim()).filter(Boolean).slice(0, 6)
+      : [];
+    if (options.length < 2) continue;
+    let correct = String(q.correct_answer || "").trim();
+    if (!options.includes(correct)) {
+      const found = options.find((o) => o.toLowerCase() === correct.toLowerCase());
+      correct = found || options[0];
+    }
+    out.push({
+      question_number: out.length + 1,
+      question,
+      options,
+      correct_answer: correct,
+      explanation: q.explanation == null ? undefined : String(q.explanation).slice(0, 2000),
+    });
+  }
+  return out.length ? out : undefined;
+}
+
 function normalizeCatalog(data) {
   try {
     const obj = data && typeof data === "object" ? data : {};
@@ -78,7 +106,7 @@ function normalizeCatalog(data) {
         const exams = examsRaw
           .map(function (e, j) {
             if (!e || typeof e !== "object") return null;
-            return {
+            const entry = {
               id: String(e.id || "exam-" + j).slice(0, 120),
               title: String(e.title || "Untitled").slice(0, 400),
               year: typeof e.year === "number" ? e.year : null,
@@ -86,6 +114,9 @@ function normalizeCatalog(data) {
               telegramFileId: e.telegramFileId == null ? null : String(e.telegramFileId).slice(0, 500),
               note: e.note == null ? undefined : String(e.note).slice(0, 1000),
             };
+            const qs = normalizeQuestions(e.questions);
+            if (qs) entry.questions = qs;
+            return entry;
           })
           .filter(Boolean);
         return {
