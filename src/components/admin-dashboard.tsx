@@ -3,127 +3,194 @@ import { Link } from "@tanstack/react-router";
 import {
   LayoutDashboard, Building2, FileText, Settings, LogOut, Plus, Trash2,
   ExternalLink, MessageCircle, BookOpen, Shield, Search, Pencil, X, Save,
+  Upload, RotateCcw,
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { Catalog, Department, ExamEntry, TabId } from "@/components/admin-types";
 import {
-  ADMIN_SESSION_KEY, SEED, loadCatalog, saveCatalog, getPin, slugify, exportDepartmentsJson,
+  ADMIN_SESSION_KEY, createSeed, loadCatalog, saveCatalog, getPin, setPin,
+  uniqueDeptId, exportDepartmentsJson, importCatalogFromText,
 } from "@/components/admin-catalog";
 
 export function AdminDashboard() {
+  const [ready, setReady] = useState(false);
   const [authed, setAuthed] = useState(false);
-  const [pin, setPin] = useState("");
+  const [pin, setPinInput] = useState("");
   const [pinError, setPinError] = useState("");
   const [tab, setTab] = useState<TabId>("overview");
-  const [catalog, setCatalog] = useState<Catalog>(SEED);
+  const [catalog, setCatalog] = useState<Catalog>(() => createSeed());
   const [search, setSearch] = useState("");
   const [editingDept, setEditingDept] = useState<Department | null>(null);
   const [editingExam, setEditingExam] = useState<{ deptId: string; exam: ExamEntry } | null>(null);
   const [newDeptName, setNewDeptName] = useState("");
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    try {
-      if (sessionStorage.getItem(ADMIN_SESSION_KEY) === "1") setAuthed(true);
-    } catch { /* ignore */ }
+    try { if (sessionStorage.getItem(ADMIN_SESSION_KEY) === "1") setAuthed(true); } catch {}
     setCatalog(loadCatalog());
+    setReady(true);
   }, []);
 
-  const persist = useCallback((next: Catalog) => setCatalog(saveCatalog(next)), []);
+  const persist = useCallback((next: Catalog) => {
+    try {
+      setCatalog(saveCatalog(next));
+      return true;
+    } catch (e) {
+      toast.error((e as Error).message || "Save failed");
+      return false;
+    }
+  }, []);
 
   const stats = useMemo(() => {
     const depts = catalog.departments.length;
     const exams = catalog.departments.reduce((n, d) => n + d.exams.length, 0);
     const withPdf = catalog.departments.reduce(
-      (n, d) => n + d.exams.filter((e) => e.pdfUrl || e.telegramFileId).length, 0,
-    );
-    return { depts, exams, withPdf, missing: exams - withPdf };
+      (n, d) => n + d.exams.filter((e) => !!(e.pdfUrl || e.telegramFileId)).length, 0);
+    return { depts, exams, withPdf, missing: Math.max(0, exams - withPdf) };
   }, [catalog]);
 
   const filteredDepts = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return catalog.departments;
-    return catalog.departments.filter(
-      (d) => d.name.toLowerCase().includes(q) || d.id.includes(q) ||
-        d.exams.some((e) => e.title.toLowerCase().includes(q)),
-    );
+    return catalog.departments.filter((d) =>
+      d.name.toLowerCase().includes(q) || d.id.includes(q) ||
+      d.exams.some((e) => e.title.toLowerCase().includes(q)));
   }, [catalog, search]);
 
   const login = (e: React.FormEvent) => {
     e.preventDefault();
-    if (pin === getPin()) {
-      sessionStorage.setItem(ADMIN_SESSION_KEY, "1");
-      setAuthed(true);
-      setPinError("");
-      setPin("");
-    } else setPinError("Incorrect password");
+    const entered = pin.trim();
+    if (!entered) return setPinError("Enter password");
+    if (entered !== getPin()) return setPinError("Incorrect password");
+    try { sessionStorage.setItem(ADMIN_SESSION_KEY, "1"); } catch {}
+    setAuthed(true);
+    setPinError("");
+    setPinInput("");
+    setCatalog(loadCatalog());
+    toast.success("Signed in");
   };
 
   const logout = () => {
-    sessionStorage.removeItem(ADMIN_SESSION_KEY);
+    try { sessionStorage.removeItem(ADMIN_SESSION_KEY); } catch {}
     setAuthed(false);
+    toast.message("Signed out");
   };
 
   const addDepartment = () => {
     const name = newDeptName.trim();
-    if (!name) return;
-    const id = slugify(name);
-    if (catalog.departments.some((d) => d.id === id)) return alert("Department id already exists");
-    persist({ ...catalog, departments: [...catalog.departments, { id, name, emoji: "📘", exams: [] }] });
-    setNewDeptName("");
+    if (!name) return toast.error("Enter a department name");
+    const id = uniqueDeptId(name, catalog.departments);
+    if (persist({ ...catalog, departments: [...catalog.departments, { id, name, emoji: "📘", exams: [] }] })) {
+      setNewDeptName("");
+      toast.success(`Added "${name}"`);
+    }
   };
 
   const removeDepartment = (id: string) => {
-    if (!confirm("Delete this department and all its exams?")) return;
-    persist({ ...catalog, departments: catalog.departments.filter((d) => d.id !== id) });
+    const dept = catalog.departments.find((d) => d.id === id);
+    if (!dept || !confirm(`Delete "${dept.name}" and ${dept.exams.length} exam(s)?`)) return;
+    if (persist({ ...catalog, departments: catalog.departments.filter((d) => d.id !== id) }))
+      toast.success("Department deleted");
   };
 
-  const saveDepartment = (dept: Department) => {
-    persist({ ...catalog, departments: catalog.departments.map((d) => (d.id === dept.id ? dept : d)) });
-    setEditingDept(null);
+  const saveDepartment = () => {
+    if (!editingDept) return;
+    const name = editingDept.name.trim();
+    if (!name) return toast.error("Department name is required");
+    const emoji = (editingDept.emoji || "📘").trim() || "📘";
+    if (persist({
+      ...catalog,
+      departments: catalog.departments.map((d) =>
+        d.id === editingDept.id ? { ...d, name, emoji } : d),
+    })) {
+      setEditingDept(null);
+      toast.success("Department saved");
+    }
   };
 
   const addExam = (deptId: string) => {
     const exam: ExamEntry = {
-      id: `${deptId}-${Date.now()}`, title: "New exam PDF", year: new Date().getFullYear(),
-      pdfUrl: null, telegramFileId: null,
+      id: `${deptId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      title: "New exam PDF",
+      year: new Date().getFullYear(),
+      pdfUrl: null,
+      telegramFileId: null,
     };
-    persist({
+    if (persist({
       ...catalog,
       departments: catalog.departments.map((d) =>
         d.id === deptId ? { ...d, exams: [...d.exams, exam] } : d),
-    });
-    setEditingExam({ deptId, exam });
+    })) setEditingExam({ deptId, exam: { ...exam } });
   };
 
-  const saveExam = (deptId: string, exam: ExamEntry) => {
-    persist({
+  const saveExam = () => {
+    if (!editingExam) return;
+    const title = editingExam.exam.title.trim();
+    if (!title) return toast.error("Exam title is required");
+    const exam: ExamEntry = {
+      ...editingExam.exam,
+      title,
+      pdfUrl: editingExam.exam.pdfUrl?.trim() || null,
+      telegramFileId: editingExam.exam.telegramFileId?.trim() || null,
+      year: editingExam.exam.year == null || Number.isNaN(Number(editingExam.exam.year))
+        ? null : Number(editingExam.exam.year),
+    };
+    if (persist({
       ...catalog,
       departments: catalog.departments.map((d) =>
-        d.id === deptId ? { ...d, exams: d.exams.map((e) => (e.id === exam.id ? exam : e)) } : d),
-    });
-    setEditingExam(null);
+        d.id === editingExam.deptId
+          ? { ...d, exams: d.exams.some((e) => e.id === exam.id)
+              ? d.exams.map((e) => (e.id === exam.id ? exam : e))
+              : [...d.exams, exam] }
+          : d),
+    })) {
+      setEditingExam(null);
+      toast.success("Exam saved");
+    }
   };
 
   const removeExam = (deptId: string, examId: string) => {
     if (!confirm("Delete this exam entry?")) return;
-    persist({
+    if (persist({
       ...catalog,
       departments: catalog.departments.map((d) =>
         d.id === deptId ? { ...d, exams: d.exams.filter((e) => e.id !== examId) } : d),
-    });
+    })) toast.success("Exam deleted");
   };
+
+  const onImportFile = async (file: File | null) => {
+    if (!file) return;
+    setSaving(true);
+    try {
+      const next = importCatalogFromText(await file.text());
+      setCatalog(next);
+      toast.success(`Imported ${next.departments.length} department(s)`);
+    } catch (e) {
+      toast.error((e as Error).message || "Import failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const resetCatalog = () => {
+    if (!confirm("Reset catalog to default sample data?")) return;
+    if (persist(createSeed())) toast.success("Catalog reset");
+  };
+
+  if (!ready) {
+    return <div className="flex min-h-dvh items-center justify-center bg-background text-sm text-muted-foreground">Loading admin…</div>;
+  }
 
   if (!authed) {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-background px-4">
         <form onSubmit={login} className="w-full max-w-sm space-y-5 rounded-3xl border border-border/70 bg-card p-8 shadow-lg">
           <div className="flex items-center gap-3">
-            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground">
-              <Shield className="h-5 w-5" />
-            </span>
+            <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary text-primary-foreground"><Shield className="h-5 w-5" /></span>
             <div>
               <h1 className="font-display text-lg font-semibold tracking-tight">Admin login</h1>
               <p className="text-xs text-muted-foreground">Exit Exam dashboard</p>
@@ -131,14 +198,12 @@ export function AdminDashboard() {
           </div>
           <div className="space-y-2">
             <Label htmlFor="pin">Password</Label>
-            <Input id="pin" type="password" value={pin} onChange={(e) => setPin(e.target.value)}
-              className="h-11 rounded-2xl" autoFocus placeholder="Enter admin password" />
+            <Input id="pin" type="password" value={pin} onChange={(e) => { setPinInput(e.target.value); if (pinError) setPinError(""); }}
+              className="h-11 rounded-2xl" autoFocus autoComplete="current-password" placeholder="Enter admin password" />
             {pinError && <p className="text-xs text-destructive">{pinError}</p>}
           </div>
           <Button type="submit" className="h-11 w-full rounded-2xl font-semibold">Sign in</Button>
-          <p className="text-center text-[11px] text-muted-foreground">
-            Default: <code className="rounded bg-muted px-1">admin123</code>
-          </p>
+          <p className="text-center text-[11px] text-muted-foreground">Default: <code className="rounded bg-muted px-1">admin123</code></p>
           <Link to="/" className="block text-center text-xs text-muted-foreground underline">← Back to practice app</Link>
         </form>
       </div>
@@ -169,27 +234,25 @@ export function AdminDashboard() {
           ))}
         </nav>
         <div className="space-y-2 border-t border-border/60 p-3">
-          <a href="https://t.me/exitexamto" target="_blank" rel="noreferrer"
-            className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground hover:bg-muted">
+          <a href="https://t.me/exitexamto" target="_blank" rel="noreferrer" className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground hover:bg-muted">
             <MessageCircle className="h-3.5 w-3.5 text-[#229ED9]" /> Telegram
           </a>
           <Link to="/" className="flex items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground hover:bg-muted">
             <BookOpen className="h-3.5 w-3.5" /> Open practice app
           </Link>
-          <button type="button" onClick={logout}
-            className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground hover:bg-muted">
+          <button type="button" onClick={logout} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-xs text-muted-foreground hover:bg-muted">
             <LogOut className="h-3.5 w-3.5" /> Sign out
           </button>
         </div>
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-20 flex items-center justify-between border-b border-border/60 bg-card/90 px-3 py-3 backdrop-blur lg:hidden">
+        <header className="sticky top-0 z-20 flex items-center justify-between gap-2 border-b border-border/60 bg-card/90 px-3 py-3 backdrop-blur lg:hidden">
           <p className="font-display text-sm font-semibold">Admin</p>
           <div className="flex gap-1 overflow-x-auto">
             {nav.map((item) => (
               <button key={item.id} type="button" onClick={() => setTab(item.id)}
-                className={cn("rounded-full px-3 py-1.5 text-[11px] font-medium",
+                className={cn("rounded-full px-3 py-1.5 text-[11px] font-medium whitespace-nowrap",
                   tab === item.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground")}>
                 {item.label}
               </button>
@@ -223,7 +286,7 @@ export function AdminDashboard() {
                   <div className="mt-4 flex flex-wrap gap-2">
                     <Button className="rounded-xl" onClick={() => setTab("departments")}><Building2 className="mr-2 h-4 w-4" /> Departments</Button>
                     <Button variant="outline" className="rounded-xl" onClick={() => setTab("exams")}><FileText className="mr-2 h-4 w-4" /> Exam PDFs</Button>
-                    <Button variant="outline" className="rounded-xl" onClick={() => exportDepartmentsJson(catalog)}>Export JSON</Button>
+                    <Button variant="outline" className="rounded-xl" onClick={() => { exportDepartmentsJson(catalog); toast.success("Downloaded departments.json"); }}>Export JSON</Button>
                   </div>
                 </div>
                 <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
@@ -252,10 +315,10 @@ export function AdminDashboard() {
               </div>
               <div className="flex flex-wrap gap-2 rounded-2xl border border-dashed border-border bg-muted/20 p-3">
                 <Input value={newDeptName} onChange={(e) => setNewDeptName(e.target.value)} placeholder="New department name"
-                  className="h-10 max-w-xs rounded-xl" onKeyDown={(e) => e.key === "Enter" && addDepartment()} />
+                  className="h-10 max-w-xs rounded-xl" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addDepartment(); } }} />
                 <Button type="button" className="h-10 rounded-xl" onClick={addDepartment}><Plus className="mr-1 h-4 w-4" /> Add</Button>
               </div>
-              <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+              <div className="overflow-x-auto rounded-2xl border border-border/70 bg-card shadow-sm">
                 <table className="w-full text-left text-sm">
                   <thead className="border-b border-border/60 bg-muted/30 text-xs text-muted-foreground">
                     <tr>
@@ -322,26 +385,35 @@ export function AdminDashboard() {
             <div className="max-w-xl space-y-5">
               <div>
                 <h1 className="font-display text-2xl font-semibold tracking-tight">Settings</h1>
-                <p className="mt-1 text-sm text-muted-foreground">Admin access and data export.</p>
+                <p className="mt-1 text-sm text-muted-foreground">Admin access and catalog data.</p>
               </div>
               <div className="space-y-4 rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
                 <div>
                   <Label>Change admin password (this browser)</Label>
                   <div className="mt-2 flex gap-2">
-                    <Input type="password" id="new-pin" placeholder="New password (min 4 chars)" className="h-10 rounded-xl" />
+                    <Input type="password" id="new-pin" placeholder="New password (min 4 chars)" className="h-10 rounded-xl" autoComplete="new-password" />
                     <Button type="button" variant="outline" className="h-10 rounded-xl" onClick={() => {
                       const el = document.getElementById("new-pin") as HTMLInputElement | null;
                       const v = el?.value.trim() || "";
-                      if (v.length < 4) return alert("Use at least 4 characters");
-                      localStorage.setItem("exit-exam-admin-pin", v);
-                      alert("Password updated");
-                      if (el) el.value = "";
+                      if (v.length < 4) return toast.error("Use at least 4 characters");
+                      try { setPin(v); toast.success("Password updated"); if (el) el.value = ""; }
+                      catch { toast.error("Could not save password"); }
                     }}>Save</Button>
                   </div>
                 </div>
-                <Button type="button" className="rounded-xl" onClick={() => exportDepartmentsJson(catalog)}>Download departments.json</Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button type="button" className="rounded-xl" onClick={() => { exportDepartmentsJson(catalog); toast.success("Downloaded departments.json"); }}>Download JSON</Button>
+                  <label className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-xl border border-border px-3 text-sm font-medium hover:bg-muted">
+                    <Upload className="h-4 w-4" />{saving ? "Importing…" : "Import JSON"}
+                    <input type="file" accept="application/json,.json" className="sr-only" disabled={saving}
+                      onChange={(e) => { void onImportFile(e.target.files?.[0] ?? null); e.target.value = ""; }} />
+                  </label>
+                  <Button type="button" variant="outline" className="rounded-xl" onClick={resetCatalog}>
+                    <RotateCcw className="mr-1 h-4 w-4" /> Reset sample
+                  </Button>
+                </div>
                 <p className="text-[11px] text-muted-foreground">
-                  Use exported JSON in <code className="rounded bg-muted px-1">telegram-bot/departments.json</code>.
+                  Stored in this browser only. Export JSON into <code className="rounded bg-muted px-1">telegram-bot/departments.json</code> for the bot.
                 </p>
               </div>
             </div>
@@ -350,35 +422,37 @@ export function AdminDashboard() {
       </div>
 
       {editingDept && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true"
+          onClick={(e) => { if (e.target === e.currentTarget) setEditingDept(null); }}>
           <div className="w-full max-w-md space-y-4 rounded-2xl border border-border bg-card p-6 shadow-xl">
             <div className="flex items-center justify-between">
               <h3 className="font-display font-semibold">Edit department</h3>
-              <button type="button" onClick={() => setEditingDept(null)}><X className="h-4 w-4" /></button>
+              <button type="button" onClick={() => setEditingDept(null)} aria-label="Close"><X className="h-4 w-4" /></button>
             </div>
             <div className="space-y-2"><Label>Name</Label>
-              <Input value={editingDept.name} onChange={(e) => setEditingDept({ ...editingDept, name: e.target.value })} className="h-10 rounded-xl" />
+              <Input value={editingDept.name} onChange={(e) => setEditingDept({ ...editingDept, name: e.target.value })} className="h-10 rounded-xl" autoFocus />
             </div>
             <div className="space-y-2"><Label>Emoji</Label>
               <Input value={editingDept.emoji} onChange={(e) => setEditingDept({ ...editingDept, emoji: e.target.value })} className="h-10 rounded-xl" />
             </div>
-            <Button className="w-full rounded-xl" onClick={() => saveDepartment(editingDept)}><Save className="mr-2 h-4 w-4" /> Save</Button>
+            <Button className="w-full rounded-xl" onClick={saveDepartment}><Save className="mr-2 h-4 w-4" /> Save</Button>
           </div>
         </div>
       )}
 
       {editingExam && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true"
+          onClick={(e) => { if (e.target === e.currentTarget) setEditingExam(null); }}>
           <div className="w-full max-w-md space-y-4 rounded-2xl border border-border bg-card p-6 shadow-xl">
             <div className="flex items-center justify-between">
               <h3 className="font-display font-semibold">Edit exam</h3>
-              <button type="button" onClick={() => setEditingExam(null)}><X className="h-4 w-4" /></button>
+              <button type="button" onClick={() => setEditingExam(null)} aria-label="Close"><X className="h-4 w-4" /></button>
             </div>
             <div className="space-y-2"><Label>Title</Label>
-              <Input value={editingExam.exam.title} onChange={(e) => setEditingExam({ ...editingExam, exam: { ...editingExam.exam, title: e.target.value } })} className="h-10 rounded-xl" />
+              <Input value={editingExam.exam.title} onChange={(e) => setEditingExam({ ...editingExam, exam: { ...editingExam.exam, title: e.target.value } })} className="h-10 rounded-xl" autoFocus />
             </div>
             <div className="space-y-2"><Label>Year</Label>
-              <Input type="number" value={editingExam.exam.year ?? ""} onChange={(e) => setEditingExam({ ...editingExam, exam: { ...editingExam.exam, year: e.target.value ? Number(e.target.value) : null } })} className="h-10 rounded-xl" />
+              <Input type="number" value={editingExam.exam.year ?? ""} onChange={(e) => setEditingExam({ ...editingExam, exam: { ...editingExam.exam, year: e.target.value === "" ? null : Number(e.target.value) } })} className="h-10 rounded-xl" />
             </div>
             <div className="space-y-2"><Label>PDF URL</Label>
               <Input value={editingExam.exam.pdfUrl ?? ""} onChange={(e) => setEditingExam({ ...editingExam, exam: { ...editingExam.exam, pdfUrl: e.target.value || null } })} placeholder="https://…" className="h-10 rounded-xl" />
@@ -386,7 +460,7 @@ export function AdminDashboard() {
             <div className="space-y-2"><Label>Telegram file_id</Label>
               <Input value={editingExam.exam.telegramFileId ?? ""} onChange={(e) => setEditingExam({ ...editingExam, exam: { ...editingExam.exam, telegramFileId: e.target.value || null } })} placeholder="BQACAg…" className="h-10 rounded-xl" />
             </div>
-            <Button className="w-full rounded-xl" onClick={() => saveExam(editingExam.deptId, editingExam.exam)}><Save className="mr-2 h-4 w-4" /> Save</Button>
+            <Button className="w-full rounded-xl" onClick={saveExam}><Save className="mr-2 h-4 w-4" /> Save</Button>
           </div>
         </div>
       )}
