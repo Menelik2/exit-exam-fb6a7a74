@@ -1,4 +1,4 @@
-import { createHmac } from "node:crypto";
+import { createHmac, timingSafeEqual } from "node:crypto";
 
 function getAdminPassword() {
   return (process.env.ADMIN_PASSWORD || "").trim() || "admin123";
@@ -15,6 +15,22 @@ function createSessionToken() {
   return `${payload}.${sig}`;
 }
 
+function safeEqualString(a, b) {
+  try {
+    const ba = Buffer.from(String(a), "utf8");
+    const bb = Buffer.from(String(b), "utf8");
+    if (ba.length !== bb.length) {
+      // still compare to avoid leaking length timing of password match path
+      const pad = Buffer.alloc(ba.length);
+      timingSafeEqual(ba, pad);
+      return false;
+    }
+    return timingSafeEqual(ba, bb);
+  } catch {
+    return false;
+  }
+}
+
 async function readBody(req) {
   if (req.body != null) {
     if (typeof req.body === "string") {
@@ -26,7 +42,6 @@ async function readBody(req) {
     }
     if (typeof req.body === "object") return req.body;
   }
-  // Fallback: stream body (some runtimes)
   try {
     const chunks = [];
     for await (const chunk of req) chunks.push(chunk);
@@ -51,7 +66,7 @@ export default async function handler(req, res) {
     const body = await readBody(req);
     const password = String(body.password ?? (body.data && body.data.password) ?? "").trim();
     const expected = getAdminPassword();
-    const ok = password.length > 0 && password === expected;
+    const ok = password.length > 0 && safeEqualString(password, expected);
 
     if (!ok) {
       res.statusCode = 200;
