@@ -220,8 +220,8 @@ export function ExamGeneratorPage() {
         <div className="flex flex-wrap gap-2">
           <label className="inline-flex h-11 cursor-pointer items-center gap-1.5 rounded-2xl border border-dashed border-border bg-muted/40 px-3.5 text-xs font-medium transition hover:border-foreground/30 hover:bg-muted">
             <Upload className="h-3.5 w-3.5" />
-            {docExtracting ? "Reading…" : "Upload PDF / DOCX / TXT"}
-            <input type="file" className="sr-only" accept=".pdf,.docx,.txt,.md,application/pdf,text/plain" disabled={docExtracting} onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
+            {docExtracting ? "Reading…" : "Upload PDF / DOCX / DOC / TXT"}
+            <input type="file" className="sr-only" accept=".pdf,.docx,.doc,.txt,.md,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain" disabled={docExtracting} onChange={(e) => handleFile(e.target.files?.[0] ?? null)} />
           </label>
           {docName && (
             <Button type="button" variant="outline" className="h-11 rounded-2xl text-xs" onClick={() => { setDocText(""); setDocName(""); setDocError(null); }}>
@@ -344,13 +344,7 @@ export function ExamGeneratorPage() {
                 <h2 className="font-display text-lg font-semibold tracking-tight">Quiz setup</h2>
                 <p className="mt-1 text-xs text-muted-foreground">Change topic or start a new attempt</p>
               </div>
-              <button
-                type="button"
-                className="shrink-0 rounded-full border border-border/80 px-3 py-1.5 text-xs font-medium hover:bg-muted"
-                onClick={() => setSettingsOpen(false)}
-              >
-                Close
-              </button>
+              <button type="button" className="shrink-0 rounded-full border border-border/80 px-3 py-1.5 text-xs font-medium hover:bg-muted" onClick={() => setSettingsOpen(false)}>Close</button>
             </div>
             {setupFields}
           </section>
@@ -373,7 +367,7 @@ export function ExamGeneratorPage() {
             </span>
             <p className="mt-4 font-display text-base font-semibold tracking-tight">No active attempt</p>
             <p className="mx-auto mt-1.5 max-w-[220px] text-xs leading-relaxed text-muted-foreground">
-              Open Setup, choose a department exam PDF, then generate questions.
+              Open Setup, choose a department exam (PDF/DOCX/DOC), then generate questions.
             </p>
           </div>
         )}
