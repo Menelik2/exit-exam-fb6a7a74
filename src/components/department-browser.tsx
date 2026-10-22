@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getAdminCatalog } from "@/lib/admin.functions";
-import { fetchExamPdf } from "@/lib/exam-source.functions";
+import { fetchExamDocument } from "@/lib/exam-source.functions";
 import { extractDocumentText } from "@/lib/extract-document";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,7 +43,7 @@ export function DepartmentBrowser({
   onLoadExamDocument?: (payload: { name: string; text: string; topic: string }) => void;
 }) {
   const getCatalogFn = useServerFn(getAdminCatalog);
-  const fetchPdfFn = useServerFn(fetchExamPdf);
+  const fetchDocFn = useServerFn(fetchExamDocument);
   const [loading, setLoading] = useState(true);
   const [departments, setDepartments] = useState<Dept[]>([]);
   const [search, setSearch] = useState("");
@@ -96,37 +96,46 @@ export function DepartmentBrowser({
       return;
     }
     if (!exam.pdfUrl && !exam.telegramFileId) {
-      toast.error("No PDF linked for this exam yet");
+      toast.error("No document linked for this exam yet");
       return;
     }
     setBusyExamId(exam.id);
     try {
-      toast.message("Loading exam PDF…");
-      const file = await fetchPdfFn({
+      toast.message("Loading exam document…");
+      const file = await fetchDocFn({
         data: {
           title: exam.title,
           pdfUrl: exam.pdfUrl ?? null,
           telegramFileId: exam.telegramFileId ?? null,
         },
       });
-      const bin = Uint8Array.from(atob(file.base64), (c) => c.charCodeAt(0));
-      const blob = new Blob([bin], { type: file.mimeType || "application/pdf" });
-      const f = new File([blob], file.filename || `${exam.title}.pdf`, {
-        type: file.mimeType || "application/pdf",
-      });
-      toast.message("Extracting text from PDF…");
-      const text = await extractDocumentText(f);
+
+      let text = "";
+      if (file.kind === "text") {
+        text = file.text;
+      } else {
+        toast.message("Extracting text…");
+        const bin = Uint8Array.from(atob(file.base64), (c) => c.charCodeAt(0));
+        const blob = new Blob([bin], { type: file.mimeType || "application/pdf" });
+        const f = new File([blob], file.filename || `${exam.title}.pdf`, {
+          type: file.mimeType || "application/pdf",
+        });
+        text = await extractDocumentText(f);
+      }
+
       if (!text || text.trim().length < 40) {
-        throw new Error("Could not read enough text from this PDF (it may be scanned images only).");
+        throw new Error(
+          "Could not read enough text from this file (scanned PDFs need OCR; try DOCX/PDF with real text).",
+        );
       }
       onLoadExamDocument({
         name: exam.title,
         text,
         topic: deptName,
       });
-      toast.success("PDF loaded — generating quiz questions");
+      toast.success("Document loaded — generating quiz questions");
     } catch (e) {
-      toast.error((e as Error).message || "Failed to load exam PDF");
+      toast.error((e as Error).message || "Failed to load exam document");
     } finally {
       setBusyExamId(null);
     }
@@ -176,7 +185,7 @@ export function DepartmentBrowser({
 
         {selected.exams.length === 0 ? (
           <p className="rounded-xl bg-muted/40 px-4 py-6 text-center text-sm text-muted-foreground">
-            No exam PDFs linked yet for this department.
+            No exam documents linked yet for this department.
           </p>
         ) : (
           <ul className="divide-y divide-border/50 rounded-xl border border-border/60">
@@ -187,7 +196,7 @@ export function DepartmentBrowser({
               const busy = busyExamId === exam.id;
               const meta = [
                 exam.year != null ? String(exam.year) : null,
-                hasPdf ? "PDF link" : null,
+                hasPdf ? "Document URL" : null,
                 hasTg ? "Telegram file" : null,
                 !canGenerate ? "Not linked yet" : null,
               ]
@@ -225,7 +234,7 @@ export function DepartmentBrowser({
                     {hasPdf && (
                       <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg" asChild>
                         <a href={exam.pdfUrl!} target="_blank" rel="noreferrer">
-                          Open PDF <ExternalLink className="ml-1 h-3 w-3" />
+                          Open file <ExternalLink className="ml-1 h-3 w-3" />
                         </a>
                       </Button>
                     )}
@@ -259,7 +268,7 @@ export function DepartmentBrowser({
           <div>
             <h3 className="font-display text-base font-semibold tracking-tight">Select by department</h3>
             <p className="text-[11px] text-muted-foreground">
-              Choose a department → exam PDF → generate all questions
+              Choose a department → exam (PDF/DOCX/DOC) → generate all questions
             </p>
           </div>
         </div>
