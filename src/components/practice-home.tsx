@@ -6,8 +6,8 @@ import type { ExamQuestion } from "@/lib/exam.functions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Building2,
   ChevronLeft,
+  ChevronRight,
   FileText,
   ListChecks,
   Loader2,
@@ -249,75 +249,88 @@ export function PracticeHome() {
 
     return (
       <div className="min-h-dvh bg-background text-foreground">
-        <header className="sticky top-0 z-50 border-b border-border/60 bg-card/90 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
-          <div className="mx-auto flex w-full max-w-3xl items-center gap-3 px-4 py-3">
+        <div
+          className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-500/[0.05] via-background to-background"
+          aria-hidden
+        />
+        <header className="sticky top-0 z-50 border-b border-border/50 bg-card/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl supports-[backdrop-filter]:bg-card/70">
+          <div className="mx-auto flex w-full max-w-5xl items-center gap-3 px-4 py-3 sm:px-6 lg:px-8">
             <button
               type="button"
               onClick={backToDepts}
-              className="flex h-10 w-10 items-center justify-center rounded-2xl border border-border/80 hover:bg-muted"
+              className="flex h-11 w-11 min-h-[44px] min-w-[44px] items-center justify-center rounded-2xl border border-border/70 bg-card transition hover:bg-muted active:scale-[0.97]"
               aria-label="Back to departments"
             >
               <ChevronLeft className="h-5 w-5" />
             </button>
             <div className="min-w-0 flex-1">
-              <p className="truncate font-display text-base font-semibold">
+              <p className="truncate font-display text-base font-semibold tracking-tight">
                 <span className="mr-1.5">{selectedDept.emoji || "📘"}</span>
                 {selectedDept.name}
               </p>
-              <p className="text-[11px] text-muted-foreground">
-                {exams.length} exam{exams.length === 1 ? "" : "s"} — start practice quiz
+              <p className="text-[11px] text-muted-foreground sm:text-xs">
+                {exams.length} exam{exams.length === 1 ? "" : "s"} available
               </p>
             </div>
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-5">
+        <main className="mx-auto w-full max-w-5xl space-y-4 px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-5 sm:px-6 sm:pt-6 lg:px-8">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search exams…"
-              className="h-11 rounded-2xl pl-9"
+              className="h-12 rounded-2xl border-border/70 bg-card pl-10 text-base shadow-sm sm:h-11 sm:text-sm"
+              aria-label="Search exams"
             />
           </div>
 
           {list.length === 0 ? (
-            <p className="rounded-2xl border border-border/60 bg-card px-4 py-12 text-center text-sm text-muted-foreground">
-              No exams in this department yet. Check back soon.
-            </p>
+            <div className="rounded-3xl border border-dashed border-border/80 bg-card/60 px-6 py-14 text-center">
+              <p className="text-sm font-medium">No exams found</p>
+              <p className="mt-1 text-xs text-muted-foreground">Try another search or check back later.</p>
+            </div>
           ) : (
-            <ul className="space-y-3">
+            <ul className="space-y-3 sm:space-y-3.5">
               {list.map((exam) => {
                 const hasQuiz = Array.isArray(exam.questions) && exam.questions.length > 0;
                 return (
-                  <li key={exam.id} className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm">
-                    <div className="flex gap-3">
-                      <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                        <FileText className="h-4 w-4" />
+                  <li
+                    key={exam.id}
+                    className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm transition hover:border-blue-500/25 hover:shadow-md sm:p-5"
+                  >
+                    <div className="flex gap-3.5">
+                      <span className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600">
+                        <FileText className="h-[18px] w-[18px]" />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium leading-snug">{exam.title}</p>
-                        <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        <p className="text-[15px] font-semibold leading-snug tracking-tight">{exam.title}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
                           {[
                             exam.year != null ? String(exam.year) : null,
-                            hasQuiz ? `${exam.questions!.length} practice Qs` : "Quiz coming soon",
+                            hasQuiz ? `${exam.questions!.length} questions ready` : "Quiz coming soon",
                           ]
                             .filter(Boolean)
                             .join(" · ")}
                         </p>
                         {exam.note && (
-                          <p className="mt-1 text-[11px] text-muted-foreground">{exam.note}</p>
+                          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{exam.note}</p>
                         )}
-                        <div className="mt-3 flex flex-wrap gap-2">
+                        <div className="mt-3.5">
                           {hasQuiz ? (
-                            <Button type="button" className="h-9 rounded-xl" onClick={() => startStoredQuiz(exam)}>
-                              <ListChecks className="mr-1.5 h-3.5 w-3.5" />
+                            <Button
+                              type="button"
+                              className="h-11 min-h-[44px] w-full rounded-xl bg-blue-600 text-sm font-semibold text-white shadow-sm shadow-blue-600/20 hover:bg-blue-700 sm:w-auto sm:px-5"
+                              onClick={() => startStoredQuiz(exam)}
+                            >
+                              <ListChecks className="mr-1.5 h-4 w-4" />
                               Start quiz ({exam.questions!.length} Qs)
                             </Button>
                           ) : (
-                            <span className="text-[11px] text-muted-foreground">
-                              Quiz not ready yet — check back soon
+                            <span className="inline-flex items-center rounded-full bg-muted px-3 py-1.5 text-[11px] font-medium text-muted-foreground">
+                              Quiz not ready yet
                             </span>
                           )}
                         </div>
@@ -335,88 +348,112 @@ export function PracticeHome() {
 
   return (
     <div className="min-h-dvh bg-background text-foreground">
-      <header className="sticky top-0 z-50 border-b border-border/60 bg-card/90 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
-        <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-3 px-4 py-3">
+      <div
+        className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-500/[0.06] via-background to-background"
+        aria-hidden
+      />
+
+      <header className="sticky top-0 z-50 border-b border-border/50 bg-card/80 pt-[env(safe-area-inset-top)] backdrop-blur-xl supports-[backdrop-filter]:bg-card/70">
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
           <div className="flex min-w-0 items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md shadow-primary/20">
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md shadow-primary/20 ring-1 ring-black/5">
               <ListChecks className="h-[18px] w-[18px]" />
             </span>
             <div className="min-w-0">
-              <p className="font-display text-[15px] font-semibold tracking-tight">Exit Exam Practice</p>
-              <p className="text-[11px] text-muted-foreground">Choose department → exam → start quiz</p>
+              <p className="truncate font-display text-[15px] font-semibold tracking-tight sm:text-base">
+                Exit Exam Practice
+              </p>
+              <p className="truncate text-[11px] text-muted-foreground sm:text-xs">
+                Department → exam → quiz
+              </p>
             </div>
           </div>
-          <nav className="flex shrink-0 items-center gap-1.5" aria-label="Main">
+          <nav className="flex shrink-0 items-center gap-2" aria-label="Main">
             <Link
               to="/generate"
-              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-blue-600/20 bg-blue-600 px-3.5 text-xs font-semibold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 active:scale-[0.97]"
+              className="inline-flex h-11 min-h-[44px] items-center gap-1.5 rounded-full bg-blue-600 px-3.5 text-xs font-semibold text-white shadow-md shadow-blue-600/25 transition hover:bg-blue-700 active:scale-[0.97] sm:px-4 sm:text-sm"
             >
-              <Sparkles className="h-3.5 w-3.5" />
-              <span>Exam Generator</span>
+              <Sparkles className="h-4 w-4" />
+              <span className="max-[360px]:hidden">Exam Generator</span>
+              <span className="min-[361px]:hidden">Generate</span>
             </Link>
             <a
               href="https://t.me/exitexamto"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-[#229ED9]/35 bg-[#229ED9]/10 px-3 text-xs font-medium transition hover:bg-[#229ED9]/18 active:scale-[0.97]"
-              aria-label="Telegram support"
+              className="inline-flex h-11 min-h-[44px] w-11 items-center justify-center rounded-full border border-[#229ED9]/35 bg-[#229ED9]/10 text-[#229ED9] transition hover:bg-[#229ED9]/18 active:scale-[0.97] sm:w-auto sm:gap-1.5 sm:px-3.5"
+              aria-label="Telegram help"
             >
-              <MessageCircle className="h-4 w-4 text-[#229ED9]" />
-              <span className="hidden sm:inline">Help</span>
+              <MessageCircle className="h-4 w-4" />
+              <span className="hidden sm:inline text-xs font-medium text-foreground">Help</span>
             </a>
           </nav>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl space-y-4 px-4 py-5">
-        <div>
-          <h1 className="font-display text-xl font-semibold tracking-tight sm:text-2xl">
+      <main className="mx-auto w-full max-w-5xl px-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-6 sm:px-6 sm:pt-8 lg:px-8">
+        <section className="mb-6 sm:mb-8">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-blue-600/90 sm:text-xs">
+            Practice
+          </p>
+          <h1 className="mt-1.5 font-display text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
             Select a department
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Choose your department, open an exam, and start the practice quiz.
+          <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground sm:text-[15px]">
+            Pick your field, open an exam, and start the stored practice quiz — no setup needed.
           </p>
-        </div>
+        </section>
 
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <div className="relative mb-5 sm:mb-6">
+          <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search departments or exams…"
-            className="h-11 rounded-2xl pl-9"
+            className="h-12 rounded-2xl border-border/70 bg-card pl-10 text-base shadow-sm sm:h-11 sm:text-sm"
+            aria-label="Search departments or exams"
           />
         </div>
 
         {filteredDepts.length === 0 ? (
-          <p className="rounded-2xl border border-border/60 bg-card px-4 py-12 text-center text-sm text-muted-foreground">
-            No departments available yet. Check back soon.
-          </p>
+          <div className="rounded-3xl border border-dashed border-border/80 bg-card/60 px-6 py-16 text-center">
+            <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-muted text-xl">
+              📚
+            </span>
+            <p className="mt-4 text-sm font-medium text-foreground">No departments yet</p>
+            <p className="mt-1 text-xs text-muted-foreground">Check back soon for practice exams.</p>
+          </div>
         ) : (
-          <div className="grid gap-2 sm:grid-cols-2">
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 sm:gap-4">
             {filteredDepts.map((d) => {
               const n = (d.exams || []).length;
               const withQuiz = (d.exams || []).filter((e) => e.questions && e.questions.length > 0).length;
               return (
-                <button
-                  key={d.id}
-                  type="button"
-                  onClick={() => openDept(d)}
-                  className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card px-4 py-3.5 text-left shadow-sm transition hover:border-primary/40 hover:bg-muted/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <span className="text-2xl leading-none">{d.emoji || "📘"}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-semibold">{d.name}</span>
-                    <span className="block text-[11px] text-muted-foreground">
-                      {n} exam{n === 1 ? "" : "s"}
-                      {withQuiz ? ` · ${withQuiz} with quiz` : ""}
+                <li key={d.id}>
+                  <button
+                    type="button"
+                    onClick={() => openDept(d)}
+                    className="group flex w-full min-h-[72px] items-center gap-3.5 rounded-2xl border border-border/60 bg-card p-4 text-left shadow-sm transition duration-150 hover:border-blue-500/30 hover:bg-blue-500/[0.03] hover:shadow-md active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 sm:p-5"
+                  >
+                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-muted/80 text-2xl ring-1 ring-border/40 transition group-hover:bg-blue-500/10">
+                      {d.emoji || "📘"}
                     </span>
-                  </span>
-                  <Building2 className="h-4 w-4 shrink-0 text-muted-foreground/60" />
-                </button>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[15px] font-semibold tracking-tight text-foreground">
+                        {d.name}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground">
+                        {n === 0
+                          ? "No exams yet"
+                          : `${n} exam${n === 1 ? "" : "s"}${withQuiz ? ` · ${withQuiz} ready` : ""}`}
+                      </span>
+                    </span>
+                    <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground/50 transition group-hover:translate-x-0.5 group-hover:text-blue-600" />
+                  </button>
+                </li>
               );
             })}
-          </div>
+          </ul>
         )}
       </main>
     </div>
