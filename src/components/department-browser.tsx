@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { getAdminCatalog } from "@/lib/admin.functions";
+import { apiGetCatalog } from "@/lib/admin-api";
 import { fetchExamDocument } from "@/lib/exam-source.functions";
 import { extractDocumentText } from "@/lib/extract-document";
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,6 @@ export function DepartmentBrowser({
   onUseTopic?: (topic: string) => void;
   onLoadExamDocument?: (payload: { name: string; text: string; topic: string }) => void;
 }) {
-  const getCatalogFn = useServerFn(getAdminCatalog);
   const fetchDocFn = useServerFn(fetchExamDocument);
   const [loading, setLoading] = useState(true);
   const [departments, setDepartments] = useState<Dept[]>([]);
@@ -55,7 +54,7 @@ export function DepartmentBrowser({
     let cancelled = false;
     (async () => {
       try {
-        const res = await getCatalogFn();
+        const res = await apiGetCatalog();
         if (cancelled) return;
         const depts = res?.catalog?.departments;
         setDepartments(Array.isArray(depts) ? (depts as Dept[]) : []);
@@ -68,7 +67,7 @@ export function DepartmentBrowser({
     return () => {
       cancelled = true;
     };
-  }, [getCatalogFn]);
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
