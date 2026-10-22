@@ -349,7 +349,7 @@ export function PracticeHome() {
           <nav className="flex shrink-0 items-center gap-1.5" aria-label="Main">
             <Link
               to="/generate"
-              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-primary/25 bg-primary px-3.5 text-xs font-semibold text-primary-foreground shadow-sm shadow-primary/20 transition hover:bg-primary/90 active:scale-[0.97]"
+              className="inline-flex h-10 items-center gap-1.5 rounded-full border border-blue-600/20 bg-blue-600 px-3.5 text-xs font-semibold text-white shadow-sm shadow-blue-600/25 transition hover:bg-blue-700 active:scale-[0.97]"
             >
               <Sparkles className="h-3.5 w-3.5" />
               <span>Exam Generator</span>
