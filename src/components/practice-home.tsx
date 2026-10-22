@@ -441,30 +441,30 @@ export function PracticeHome() {
                   <button
                     type="button"
                     onClick={() => openDept(d)}
-                    className="group relative flex w-full items-center gap-3 overflow-hidden rounded-2xl border border-slate-200/70 bg-white px-3.5 py-3 text-left shadow-[0_1px_8px_rgba(15,23,42,0.04)] transition duration-200 hover:border-blue-200 hover:shadow-[0_8px_24px_rgba(37,99,235,0.1)] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 dark:border-border dark:bg-card lg:min-h-[160px] lg:flex-col lg:items-start lg:rounded-3xl lg:p-6 lg:hover:-translate-y-0.5"
+                    className="group relative flex w-full items-center gap-3 rounded-2xl border border-slate-200/70 bg-white px-3.5 py-3 text-left shadow-[0_1px_8px_rgba(15,23,42,0.04)] transition duration-200 hover:border-blue-200 hover:shadow-[0_8px_24px_rgba(37,99,235,0.1)] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 dark:border-border dark:bg-card sm:gap-3.5 sm:px-4 sm:py-3.5 lg:min-h-[152px] lg:flex-col lg:items-stretch lg:gap-0 lg:rounded-3xl lg:p-5 lg:hover:-translate-y-0.5"
                   >
-                    <div className="flex w-full items-start gap-3 lg:justify-between">
-                      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 text-xl shadow-inner dark:from-muted dark:to-muted/60 lg:h-12 lg:w-12 lg:rounded-2xl lg:text-2xl">
-                        {d.emoji || "📘"}
-                      </span>
-                      <span className="ml-auto flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-50 text-slate-400 transition group-hover:bg-blue-50 group-hover:text-blue-600 dark:bg-muted lg:ml-0 lg:h-8 lg:w-8">
-                        <ChevronRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5 lg:h-4 lg:w-4" />
-                      </span>
-                    </div>
-                    <span className="min-w-0 flex-1 lg:mt-4 lg:flex-none lg:w-full">
-                      <span className="block truncate text-[14px] font-semibold tracking-tight text-slate-900 dark:text-foreground lg:text-[16px]">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-slate-50 to-slate-100 text-xl shadow-inner dark:from-muted dark:to-muted/60 lg:h-12 lg:w-12 lg:rounded-2xl lg:text-2xl">
+                      {d.emoji || "📘"}
+                    </span>
+
+                    <span className="min-w-0 flex-1 lg:mt-4">
+                      <span className="block truncate pr-1 text-[14px] font-semibold tracking-tight text-slate-900 dark:text-foreground lg:text-[15px]">
                         {d.name}
                       </span>
-                      <span className="mt-1 flex flex-wrap items-center gap-1 lg:mt-2.5 lg:gap-1.5">
-                        <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-muted dark:text-muted-foreground lg:px-2.5 lg:text-[11px]">
+                      <span className="mt-1 flex flex-wrap items-center gap-1 lg:mt-2 lg:gap-1.5">
+                        <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-muted dark:text-muted-foreground lg:text-[11px]">
                           {n === 0 ? "No exams" : `${n} exam${n === 1 ? "" : "s"}`}
                         </span>
                         {withQuiz > 0 && (
-                          <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 lg:px-2.5 lg:text-[11px]">
+                          <span className="inline-flex items-center rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300 lg:text-[11px]">
                             {withQuiz} ready
                           </span>
                         )}
                       </span>
+                    </span>
+
+                    <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-50 text-slate-400 transition group-hover:bg-blue-50 group-hover:text-blue-600 dark:bg-muted lg:absolute lg:right-4 lg:top-4 lg:h-8 lg:w-8">
+                      <ChevronRight className="h-3.5 w-3.5 transition group-hover:translate-x-0.5 lg:h-4 lg:w-4" />
                     </span>
                   </button>
                 </li>
