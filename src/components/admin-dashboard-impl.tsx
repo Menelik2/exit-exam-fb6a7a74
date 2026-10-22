@@ -45,7 +45,7 @@ export function AdminDashboard() {
   const [loggingIn, setLoggingIn] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [genId, setGenId] = useState<string | null>(null);
-  const [genCount, setGenCount] = useState("25");
+  const [genCount, setGenCount] = useState("0");
 
   useEffect(() => {
     let c = false;
@@ -119,12 +119,17 @@ export function AdminDashboard() {
       toast.error("Save a public PDF/DOCX URL first");
       return;
     }
-    let n = parseInt(genCount, 10);
-    if (Number.isNaN(n) || n < 5) n = 5;
-    if (n > 50) n = 50;
+    // 0 or empty = full document (all sections, one run, up to 200 Qs)
+    const raw = genCount.trim().toLowerCase();
+    let n = 0;
+    if (raw && raw !== "all" && raw !== "full" && raw !== "0") {
+      n = parseInt(raw, 10);
+      if (Number.isNaN(n) || n < 0) n = 0;
+      if (n > 200) n = 200;
+    }
     setGenId(exam.id);
     try {
-      toast.message("Loading PDF & generating questions…");
+      toast.message(n === 0 ? "Generating ALL questions from full PDF/DOCX…" : `Generating ${n} questions…`);
       const questions = await generateAndStoreExamQuestions(exam, n);
       const nextExam: ExamEntry = { ...exam, questions: questions as StoredQuestion[] };
       const ok = await persist({
@@ -209,7 +214,7 @@ export function AdminDashboard() {
           {tab === "overview" && (
             <div className="space-y-4">
               <h1 className="font-display text-2xl font-semibold">Overview</h1>
-              <p className="text-sm text-muted-foreground">1) Add department 2) Add exam + public PDF URL 3) Generate & store 4) Users Start quiz</p>
+              <p className="text-sm text-muted-foreground">1) Department 2) Exam + public PDF 3) Generate ALL questions once 4) Users only Start quiz</p>
               <Button onClick={() => setTab("exams")}>Go to Exams</Button>
             </div>
           )}
@@ -249,7 +254,7 @@ export function AdminDashboard() {
             <div className="space-y-4">
               <div>
                 <h1 className="font-display text-2xl font-semibold">Exams</h1>
-                <p className="text-sm text-muted-foreground">Save PDF URL → Generate & store → users practice without generating</p>
+                <p className="text-sm text-muted-foreground">Save PDF URL → Generate ALL questions once → users Start quiz</p>
               </div>
               {depts.map((d) => (
                 <div key={d.id} className="rounded-2xl border bg-card p-4">
@@ -282,7 +287,7 @@ export function AdminDashboard() {
                             </p>
                           </div>
                           <Button size="sm" disabled={!!genId || saving || !(exam.pdfUrl || exam.telegramFileId)} onClick={() => void genStore(d.id, exam)}>
-                            {genId === exam.id ? <><Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />Gen…</> : <><Sparkles className="mr-1 h-3.5 w-3.5" />{exam.questions?.length ? "Re-gen" : "Gen Qs"}</>}
+                            {genId === exam.id ? <><Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />Gen…</> : <><Sparkles className="mr-1 h-3.5 w-3.5" />{exam.questions?.length ? "Re-gen all" : "Gen all Qs"}</>}
                           </Button>
                           <Button size="sm" variant="outline" onClick={() => setEditingExam({ deptId: d.id, exam: { ...exam } })}><Pencil className="h-3.5 w-3.5" /></Button>
                           <Button size="sm" variant="outline" className="text-destructive" onClick={async () => {
@@ -346,12 +351,12 @@ export function AdminDashboard() {
             <div className="flex justify-between"><h3 className="font-semibold">Edit exam</h3><button type="button" onClick={() => setEditingExam(null)}><X className="h-4 w-4" /></button></div>
             <div className="space-y-1"><Label>Title</Label><Input value={editingExam.exam.title} onChange={(e) => setEditingExam({ ...editingExam, exam: { ...editingExam.exam, title: e.target.value } })} /></div>
             <div className="space-y-1"><Label>PDF/DOCX public URL</Label><Input value={editingExam.exam.pdfUrl ?? ""} onChange={(e) => setEditingExam({ ...editingExam, exam: { ...editingExam.exam, pdfUrl: e.target.value || null } })} placeholder="https://…" /></div>
-            <div className="space-y-1"><Label>Questions to generate</Label><Input value={genCount} onChange={(e) => setGenCount(e.target.value)} inputMode="numeric" /></div>
+            <div className="space-y-1"><Label>Questions (0 = entire PDF/DOCX)</Label><Input value={genCount} onChange={(e) => setGenCount(e.target.value)} inputMode="numeric" placeholder="0 = all" /><p className="text-[10px] text-muted-foreground">Leave 0 to generate from the full document once (all sections). Optional: set a number up to 200.</p></div>
             {editingExam.exam.questions?.length ? <p className="text-[11px] text-muted-foreground">Stored {editingExam.exam.questions.length} Qs for users</p> : null}
             <div className="flex flex-wrap justify-end gap-2">
               <Button variant="outline" onClick={() => setEditingExam(null)}>Cancel</Button>
               <Button variant="secondary" disabled={!!genId || saving || !(editingExam.exam.pdfUrl || editingExam.exam.telegramFileId)} onClick={() => void genStore(editingExam.deptId, editingExam.exam)}>
-                {genId === editingExam.exam.id ? "Generating…" : "Generate & store"}
+                {genId === editingExam.exam.id ? "Generating full document…" : "Generate all & store"}
               </Button>
               <Button disabled={saving || !!genId} onClick={async () => {
                 const title = editingExam.exam.title.trim();
