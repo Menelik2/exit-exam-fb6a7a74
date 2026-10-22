@@ -13,6 +13,16 @@ import { cn } from "@/lib/utils";
 import type { Catalog, Department, ExamEntry, TabId } from "@/components/admin-types";
 
 const EMPTY_CATALOG: Catalog = { departments: [], updatedAt: new Date(0).toISOString() };
+
+function toLocalCatalog(res: unknown): Catalog {
+  const r = res as { catalog?: { departments?: Catalog["departments"]; updatedAt?: string } } | null;
+  const depts = r?.catalog?.departments;
+  return {
+    departments: Array.isArray(depts) ? depts : [],
+    updatedAt: r?.catalog?.updatedAt || new Date().toISOString(),
+  };
+}
+
 const ADMIN_TOKEN_KEY = "exit-exam-admin-token-v2";
 import { uniqueDeptId, exportDepartmentsJson } from "@/components/admin-catalog";
 import { useServerFn } from "@tanstack/react-start";
@@ -20,7 +30,6 @@ import {
   verifyAdminPassword,
   getAdminCatalog,
   saveAdminCatalog,
-  type ServerCatalog,
 } from "@/lib/admin.functions";
 
 export function AdminDashboard() {
@@ -55,13 +64,13 @@ export function AdminDashboard() {
       try {
         const res = await getCatalogFn();
         if (cancelled) return;
-        setCatalog({
-          departments: res.catalog.departments as Catalog["departments"],
-          updatedAt: res.catalog.updatedAt || new Date().toISOString(),
-        });
-        setStorageMode(res.storage);
+        setCatalog(toLocalCatalog(res));
+        setStorageMode((res as { storage?: typeof storageMode })?.storage || "github-readonly");
       } catch (e) {
-        if (!cancelled) toast.error((e as Error).message || "Failed to load catalog");
+        if (!cancelled) {
+          setCatalog(EMPTY_CATALOG);
+          toast.error((e as Error).message || "Failed to load catalog");
+        }
       } finally {
         if (!cancelled) setReady(true);
       }
@@ -80,7 +89,7 @@ export function AdminDashboard() {
         data: {
           token: adminToken,
           catalog: {
-            departments: next.departments,
+            departments: next.departments || [],
             updatedAt: next.updatedAt,
             appUrl: "https://yeniexams.vercel.app",
             channelUrl: "https://t.me/exitexamto",
@@ -88,10 +97,7 @@ export function AdminDashboard() {
           },
         },
       });
-      setCatalog({
-        departments: res.catalog.departments as Catalog["departments"],
-        updatedAt: res.catalog.updatedAt || new Date().toISOString(),
-      });
+      setCatalog(toLocalCatalog(res));
       setStorageMode("github");
       return true;
     } catch (e) {
@@ -107,19 +113,21 @@ export function AdminDashboard() {
   }, [adminToken, saveCatalogFn]);
 
   const stats = useMemo(() => {
-    const depts = catalog.departments.length;
-    const exams = catalog.departments.reduce((n, d) => n + d.exams.length, 0);
-    const withPdf = catalog.departments.reduce(
-      (n, d) => n + d.exams.filter((e) => !!(e.pdfUrl || e.telegramFileId)).length, 0);
+    const list = Array.isArray(catalog?.departments) ? catalog.departments : [];
+    const depts = list.length;
+    const exams = list.reduce((n, d) => n + (d.exams?.length || 0), 0);
+    const withPdf = list.reduce(
+      (n, d) => n + (d.exams || []).filter((e) => !!(e.pdfUrl || e.telegramFileId)).length, 0);
     return { depts, exams, withPdf, missing: Math.max(0, exams - withPdf) };
   }, [catalog]);
 
   const filteredDepts = useMemo(() => {
+    const list = Array.isArray(catalog?.departments) ? catalog.departments : [];
     const q = search.trim().toLowerCase();
-    if (!q) return catalog.departments;
-    return catalog.departments.filter((d) =>
+    if (!q) return list;
+    return list.filter((d) =>
       d.name.toLowerCase().includes(q) || d.id.includes(q) ||
-      d.exams.some((e) => e.title.toLowerCase().includes(q)));
+      (d.exams || []).some((e) => e.title.toLowerCase().includes(q)));
   }, [catalog, search]);
 
   const login = async (e: React.FormEvent) => {
@@ -141,12 +149,13 @@ export function AdminDashboard() {
       setAdminToken(res.token);
       setAuthed(true);
       setPinInput("");
-      const cat = await getCatalogFn();
-      setCatalog({
-        departments: cat.catalog.departments as Catalog["departments"],
-        updatedAt: cat.catalog.updatedAt || new Date().toISOString(),
-      });
-      setStorageMode(cat.storage);
+      try {
+        const cat = await getCatalogFn();
+        setCatalog(toLocalCatalog(cat));
+        setStorageMode((cat as { storage?: typeof storageMode })?.storage || "github-readonly");
+      } catch {
+        setCatalog(EMPTY_CATALOG);
+      }
       toast.success("Signed in");
     } catch (err) {
       setPinError((err as Error)?.message || "Login failed");
@@ -162,11 +171,13 @@ export function AdminDashboard() {
     toast.message("Signed out");
   };
 
+  const depts = catalog.departments || [];
+
   const addDepartment = async () => {
     const name = newDeptName.trim();
     if (!name) return toast.error("Enter a department name");
-    const id = uniqueDeptId(name, catalog.departments);
-    const ok = await persist({ ...catalog, departments: [...catalog.departments, { id, name, emoji: "📘", exams: [] }] });
+    const id = uniqueDeptId(name, depts);
+    const ok = await persist({ ...catalog, departments: [...depts, { id, name, emoji: "📘", exams: [] }] });
     if (ok) {
       setNewDeptName("");
       toast.success(`Added "${name}"`);
@@ -174,9 +185,9 @@ export function AdminDashboard() {
   };
 
   const removeDepartment = async (id: string) => {
-    const dept = catalog.departments.find((d) => d.id === id);
-    if (!dept || !confirm(`Delete "${dept.name}" and ${dept.exams.length} exam(s)?`)) return;
-    if (await persist({ ...catalog, departments: catalog.departments.filter((d) => d.id !== id) }))
+    const dept = depts.find((d) => d.id === id);
+    if (!dept || !confirm(`Delete "${dept.name}" and ${(dept.exams || []).length} exam(s)?`)) return;
+    if (await persist({ ...catalog, departments: depts.filter((d) => d.id !== id) }))
       toast.success("Department deleted");
   };
 
@@ -187,7 +198,7 @@ export function AdminDashboard() {
     const emoji = (editingDept.emoji || "📘").trim() || "📘";
     if (await persist({
       ...catalog,
-      departments: catalog.departments.map((d) =>
+      departments: depts.map((d) =>
         d.id === editingDept.id ? { ...d, name, emoji } : d),
     })) {
       setEditingDept(null);
@@ -198,15 +209,15 @@ export function AdminDashboard() {
   const addExam = async (deptId: string) => {
     const exam: ExamEntry = {
       id: `${deptId}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-      title: "New exam PDF",
+      title: "New exam document",
       year: new Date().getFullYear(),
       pdfUrl: null,
       telegramFileId: null,
     };
     if (await persist({
       ...catalog,
-      departments: catalog.departments.map((d) =>
-        d.id === deptId ? { ...d, exams: [...d.exams, exam] } : d),
+      departments: depts.map((d) =>
+        d.id === deptId ? { ...d, exams: [...(d.exams || []), exam] } : d),
     })) setEditingExam({ deptId, exam: { ...exam } });
   };
 
@@ -224,11 +235,11 @@ export function AdminDashboard() {
     };
     if (await persist({
       ...catalog,
-      departments: catalog.departments.map((d) =>
+      departments: depts.map((d) =>
         d.id === editingExam.deptId
-          ? { ...d, exams: d.exams.some((e) => e.id === exam.id)
-              ? d.exams.map((e) => (e.id === exam.id ? exam : e))
-              : [...d.exams, exam] }
+          ? { ...d, exams: (d.exams || []).some((e) => e.id === exam.id)
+              ? (d.exams || []).map((e) => (e.id === exam.id ? exam : e))
+              : [...(d.exams || []), exam] }
           : d),
     })) {
       setEditingExam(null);
@@ -240,8 +251,8 @@ export function AdminDashboard() {
     if (!confirm("Delete this exam entry?")) return;
     if (await persist({
       ...catalog,
-      departments: catalog.departments.map((d) =>
-        d.id === deptId ? { ...d, exams: d.exams.filter((e) => e.id !== examId) } : d),
+      departments: depts.map((d) =>
+        d.id === deptId ? { ...d, exams: (d.exams || []).filter((e) => e.id !== examId) } : d),
     })) toast.success("Exam deleted");
   };
 
@@ -266,11 +277,8 @@ export function AdminDashboard() {
   const reloadFromServer = async () => {
     try {
       const res = await getCatalogFn();
-      setCatalog({
-        departments: res.catalog.departments as Catalog["departments"],
-        updatedAt: res.catalog.updatedAt || new Date().toISOString(),
-      });
-      setStorageMode(res.storage);
+      setCatalog(toLocalCatalog(res));
+      setStorageMode((res as { storage?: typeof storageMode })?.storage || "github-readonly");
       toast.success("Reloaded from server");
     } catch (e) {
       toast.error((e as Error).message || "Reload failed");
@@ -361,13 +369,13 @@ export function AdminDashboard() {
             <div className="space-y-6">
               <div>
                 <h1 className="font-display text-2xl font-semibold tracking-tight">Overview</h1>
-                <p className="mt-1 text-sm text-muted-foreground">Manage departments and exam PDFs for the app & Telegram bot.</p>
+                <p className="mt-1 text-sm text-muted-foreground">Manage departments and exam documents for the app & Telegram bot.</p>
               </div>
               <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 {[
                   { label: "Departments", value: stats.depts, c: "text-violet-800" },
                   { label: "Exam entries", value: stats.exams, c: "text-sky-800" },
-                  { label: "With PDF / file_id", value: stats.withPdf, c: "text-emerald-800" },
+                  { label: "With file linked", value: stats.withPdf, c: "text-emerald-800" },
                   { label: "Missing file", value: stats.missing, c: "text-amber-800" },
                 ].map((s) => (
                   <div key={s.label} className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
@@ -407,39 +415,39 @@ export function AdminDashboard() {
                 </div>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" className="h-10 w-48 rounded-xl pl-9" />
+                  <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" className="h-10 w-full rounded-xl pl-9 sm:w-56" />
                 </div>
               </div>
-              <div className="flex flex-wrap gap-2 rounded-2xl border border-dashed border-border bg-muted/20 p-3">
-                <Input value={newDeptName} onChange={(e) => setNewDeptName(e.target.value)} placeholder="New department name"
-                  className="h-10 max-w-xs rounded-xl" onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); void addDepartment(); } }} />
-                <Button type="button" className="h-10 rounded-xl" onClick={() => void addDepartment()}><Plus className="mr-1 h-4 w-4" /> Add</Button>
+              <div className="flex flex-wrap gap-2">
+                <Input value={newDeptName} onChange={(e) => setNewDeptName(e.target.value)} placeholder="New department name" className="h-10 max-w-xs rounded-xl" onKeyDown={(e) => { if (e.key === "Enter") void addDepartment(); }} />
+                <Button className="h-10 rounded-xl" onClick={() => void addDepartment()}><Plus className="mr-1 h-4 w-4" /> Add</Button>
               </div>
-              <div className="overflow-x-auto rounded-2xl border border-border/70 bg-card shadow-sm">
-                <table className="w-full text-left text-sm">
-                  <thead className="border-b border-border/60 bg-muted/30 text-xs text-muted-foreground">
+              <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-sm">
+                <table className="w-full text-sm">
+                  <thead className="border-b border-border/60 bg-muted/40 text-left text-xs text-muted-foreground">
                     <tr>
                       <th className="px-4 py-3 font-medium">Department</th>
-                      <th className="px-4 py-3 font-medium">ID</th>
                       <th className="px-4 py-3 font-medium">Exams</th>
-                      <th className="px-4 py-3 font-medium text-right">Actions</th>
+                      <th className="px-4 py-3 font-medium">Id</th>
+                      <th className="px-4 py-3 font-medium">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredDepts.map((d) => (
+                    {filteredDepts.length === 0 ? (
+                      <tr><td colSpan={4} className="px-4 py-10 text-center text-muted-foreground">No departments yet</td></tr>
+                    ) : filteredDepts.map((d) => (
                       <tr key={d.id} className="border-b border-border/40 last:border-0">
-                        <td className="px-4 py-3"><span className="mr-2">{d.emoji}</span>{d.name}</td>
+                        <td className="px-4 py-3 font-medium">{d.emoji || "📘"} {d.name}</td>
+                        <td className="px-4 py-3 tabular-nums">{(d.exams || []).length}</td>
                         <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{d.id}</td>
-                        <td className="px-4 py-3 tabular-nums">{d.exams.length}</td>
-                        <td className="px-4 py-3 text-right">
-                          <Button type="button" variant="ghost" size="sm" className="h-8 rounded-lg" onClick={() => setEditingDept({ ...d })}><Pencil className="h-3.5 w-3.5" /></Button>
-                          <Button type="button" variant="ghost" size="sm" className="h-8 rounded-lg text-destructive" onClick={() => void removeDepartment(d.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap gap-1">
+                            <Button size="sm" variant="outline" className="h-8 rounded-lg" onClick={() => setEditingDept({ ...d })}><Pencil className="mr-1 h-3 w-3" /> Edit</Button>
+                            <Button size="sm" variant="outline" className="h-8 rounded-lg text-destructive" onClick={() => void removeDepartment(d.id)}><Trash2 className="h-3 w-3" /></Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
-                    {filteredDepts.length === 0 && (
-                      <tr><td colSpan={4} className="px-4 py-10 text-center text-muted-foreground">No departments yet</td></tr>
-                    )}
                   </tbody>
                 </table>
               </div>
@@ -449,67 +457,60 @@ export function AdminDashboard() {
           {tab === "exams" && (
             <div className="space-y-5">
               <div>
-                <h1 className="font-display text-2xl font-semibold tracking-tight">Exam PDFs</h1>
-                <p className="mt-1 text-sm text-muted-foreground">Link each paper to a <code className="rounded bg-muted px-1">pdfUrl</code> or Telegram <code className="rounded bg-muted px-1">file_id</code>.</p>
+                <h1 className="font-display text-2xl font-semibold tracking-tight">Exam documents</h1>
+                <p className="mt-1 text-sm text-muted-foreground">Link each paper (PDF, DOCX, or DOC) via <code className="rounded bg-muted px-1">pdfUrl</code> (any document URL) or Telegram <code className="rounded bg-muted px-1">file_id</code>.</p>
               </div>
-              {catalog.departments.map((d) => (
-                <div key={d.id} className="rounded-2xl border border-border/70 bg-card shadow-sm">
-                  <div className="flex items-center justify-between border-b border-border/50 px-4 py-3">
-                    <h2 className="font-display text-sm font-semibold">{d.emoji} {d.name}</h2>
-                    <Button type="button" size="sm" className="h-8 rounded-lg" onClick={() => void addExam(d.id)}><Plus className="mr-1 h-3.5 w-3.5" /> Add exam</Button>
+              {(catalog.departments || []).map((d) => (
+                <div key={d.id} className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
+                  <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                    <h2 className="font-display text-base font-semibold">{d.emoji || "📘"} {d.name}</h2>
+                    <Button size="sm" className="h-8 rounded-lg" onClick={() => void addExam(d.id)}><Plus className="mr-1 h-3.5 w-3.5" /> Add exam</Button>
                   </div>
-                  <ul className="divide-y divide-border/40">
-                    {d.exams.length === 0 && <li className="px-4 py-6 text-center text-xs text-muted-foreground">No exams</li>}
-                    {d.exams.map((exam) => (
-                      <li key={exam.id} className="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium">{exam.title}</p>
-                          <p className="text-[11px] text-muted-foreground">
-                            {exam.year ?? "—"} · {exam.telegramFileId ? "Telegram file_id set" : exam.pdfUrl ? "PDF URL set" : "No file linked"}
-                          </p>
-                        </div>
-                        <Button type="button" variant="outline" size="sm" className="h-8 rounded-lg" onClick={() => setEditingExam({ deptId: d.id, exam: { ...exam } })}>Edit</Button>
-                        <Button type="button" variant="ghost" size="sm" className="h-8 rounded-lg text-destructive" onClick={() => void removeExam(d.id, exam.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
-                      </li>
-                    ))}
-                  </ul>
+                  {(d.exams || []).length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No exams linked yet.</p>
+                  ) : (
+                    <ul className="divide-y divide-border/50 rounded-xl border border-border/50">
+                      {(d.exams || []).map((exam) => (
+                        <li key={exam.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium">{exam.title}</p>
+                            <p className="text-[11px] text-muted-foreground">
+                              {exam.year ?? "—"} · {exam.telegramFileId ? "Telegram file" : exam.pdfUrl ? "Document URL" : "No file linked"}
+                            </p>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="outline" className="h-8 rounded-lg" onClick={() => setEditingExam({ deptId: d.id, exam: { ...exam } })}><Pencil className="h-3 w-3" /></Button>
+                            <Button size="sm" variant="outline" className="h-8 rounded-lg text-destructive" onClick={() => void removeExam(d.id, exam.id)}><Trash2 className="h-3 w-3" /></Button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               ))}
             </div>
           )}
 
           {tab === "settings" && (
-            <div className="max-w-xl space-y-5">
+            <div className="space-y-5">
               <div>
                 <h1 className="font-display text-2xl font-semibold tracking-tight">Settings</h1>
                 <p className="mt-1 text-sm text-muted-foreground">Admin access and catalog data.</p>
               </div>
-              <div className="space-y-4 rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
-                <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-sm">
-                  <p className="font-medium">Admin password (server)</p>
-                  <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                    Password is <strong>not</strong> stored in the browser. Set it in Vercel → Project → Settings → Environment Variables:
-                  </p>
-                  <p className="mt-2 font-mono text-xs"><code className="rounded bg-muted px-1.5 py-0.5">ADMIN_PASSWORD</code> = your secret</p>
-                  <p className="mt-2 text-[11px] text-muted-foreground">
-                    Redeploy after changing. If unset, login uses the dev default <code className="rounded bg-muted px-1">admin123</code>.
-                  </p>
-                </div>
+              <div className="rounded-2xl border border-border/70 bg-card p-5 shadow-sm space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Catalog is stored on the server in <code className="rounded bg-muted px-1">telegram-bot/departments.json</code>
+                </p>
                 <div className="flex flex-wrap gap-2">
                   <Button type="button" className="rounded-xl" onClick={() => { exportDepartmentsJson(catalog); toast.success("Downloaded departments.json"); }}>Download JSON</Button>
-                  <label className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-xl border border-border px-3 text-sm font-medium hover:bg-muted">
+                  <label className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-xl border border-border bg-background px-4 text-sm font-medium hover:bg-muted">
                     <Upload className="h-4 w-4" />{saving ? "Importing…" : "Import JSON"}
-                    <input type="file" accept="application/json,.json" className="sr-only" disabled={saving}
-                      onChange={(e) => { void onImportFile(e.target.files?.[0] ?? null); e.target.value = ""; }} />
+                    <input type="file" className="sr-only" accept="application/json,.json" disabled={saving} onChange={(e) => void onImportFile(e.target.files?.[0] ?? null)} />
                   </label>
                   <Button type="button" variant="outline" className="rounded-xl" onClick={() => void reloadFromServer()}>
-                    <RotateCcw className="mr-1 h-4 w-4" /> Reload from server
+                    <RotateCcw className="mr-2 h-4 w-4" /> Reload
                   </Button>
                 </div>
-                <p className="text-[11px] text-muted-foreground">
-                  Catalog is stored on the server in <code className="rounded bg-muted px-1">telegram-bot/departments.json</code>
-                  {" "}({storageMode === "github" ? "read/write via GitHub" : storageMode === "github-readonly" ? "read-only — set ADMIN_GITHUB_TOKEN to enable saves" : "…"}).
-                </p>
               </div>
             </div>
           )}
@@ -517,45 +518,49 @@ export function AdminDashboard() {
       </div>
 
       {editingDept && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true"
-          onClick={(e) => { if (e.target === e.currentTarget) setEditingDept(null); }}>
-          <div className="w-full max-w-md space-y-4 rounded-2xl border border-border bg-card p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
+          <div className="w-full max-w-md space-y-4 rounded-2xl border border-border bg-card p-5 shadow-xl">
             <div className="flex items-center justify-between">
-              <h3 className="font-display font-semibold">Edit department</h3>
-              <button type="button" onClick={() => setEditingDept(null)} aria-label="Close"><X className="h-4 w-4" /></button>
+              <h3 className="font-display text-base font-semibold">Edit department</h3>
+              <button type="button" onClick={() => setEditingDept(null)}><X className="h-4 w-4" /></button>
             </div>
             <div className="space-y-2"><Label>Name</Label>
-              <Input value={editingDept.name} onChange={(e) => setEditingDept({ ...editingDept, name: e.target.value })} className="h-10 rounded-xl" autoFocus />
+              <Input value={editingDept.name} onChange={(e) => setEditingDept({ ...editingDept, name: e.target.value })} className="h-10 rounded-xl" />
             </div>
             <div className="space-y-2"><Label>Emoji</Label>
-              <Input value={editingDept.emoji} onChange={(e) => setEditingDept({ ...editingDept, emoji: e.target.value })} className="h-10 rounded-xl" />
+              <Input value={editingDept.emoji || ""} onChange={(e) => setEditingDept({ ...editingDept, emoji: e.target.value })} className="h-10 rounded-xl" />
             </div>
-            <Button className="w-full rounded-xl" onClick={() => void saveDepartment()}><Save className="mr-2 h-4 w-4" /> Save</Button>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" className="rounded-xl" onClick={() => setEditingDept(null)}>Cancel</Button>
+              <Button className="rounded-xl" onClick={() => void saveDepartment()}><Save className="mr-1 h-4 w-4" /> Save</Button>
+            </div>
           </div>
         </div>
       )}
 
       {editingExam && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true"
-          onClick={(e) => { if (e.target === e.currentTarget) setEditingExam(null); }}>
-          <div className="w-full max-w-md space-y-4 rounded-2xl border border-border bg-card p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
+          <div className="w-full max-w-md space-y-4 rounded-2xl border border-border bg-card p-5 shadow-xl">
             <div className="flex items-center justify-between">
-              <h3 className="font-display font-semibold">Edit exam</h3>
-              <button type="button" onClick={() => setEditingExam(null)} aria-label="Close"><X className="h-4 w-4" /></button>
+              <h3 className="font-display text-base font-semibold">Edit exam</h3>
+              <button type="button" onClick={() => setEditingExam(null)}><X className="h-4 w-4" /></button>
             </div>
             <div className="space-y-2"><Label>Title</Label>
-              <Input value={editingExam.exam.title} onChange={(e) => setEditingExam({ ...editingExam, exam: { ...editingExam.exam, title: e.target.value } })} className="h-10 rounded-xl" autoFocus />
+              <Input value={editingExam.exam.title} onChange={(e) => setEditingExam({ ...editingExam, exam: { ...editingExam.exam, title: e.target.value } })} className="h-10 rounded-xl" />
             </div>
             <div className="space-y-2"><Label>Year</Label>
               <Input type="number" value={editingExam.exam.year ?? ""} onChange={(e) => setEditingExam({ ...editingExam, exam: { ...editingExam.exam, year: e.target.value === "" ? null : Number(e.target.value) } })} className="h-10 rounded-xl" />
             </div>
-            <div className="space-y-2"><Label>PDF URL</Label>
+            <div className="space-y-2"><Label>Document URL (PDF / DOCX / DOC)</Label>
               <Input value={editingExam.exam.pdfUrl ?? ""} onChange={(e) => setEditingExam({ ...editingExam, exam: { ...editingExam.exam, pdfUrl: e.target.value || null } })} placeholder="https://…" className="h-10 rounded-xl" />
             </div>
             <div className="space-y-2"><Label>Telegram file_id</Label>
-              <Input value={editingExam.exam.telegramFileId ?? ""} onChange={(e) => setEditingExam({ ...editingExam, exam: { ...editingExam.exam, telegramFileId: e.target.value || null } })} placeholder="BQACAg…" className="h-10 rounded-xl" />
+              <Input value={editingExam.exam.telegramFileId ?? ""} onChange={(e) => setEditingExam({ ...editingExam, exam: { ...editingExam.exam, telegramFileId: e.target.value || null } })} placeholder="Optional" className="h-10 rounded-xl" />
             </div>
-            <Button className="w-full rounded-xl" onClick={() => void saveExam()}><Save className="mr-2 h-4 w-4" /> Save</Button>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" className="rounded-xl" onClick={() => setEditingExam(null)}>Cancel</Button>
+              <Button className="rounded-xl" onClick={() => void saveExam()}><Save className="mr-1 h-4 w-4" /> Save</Button>
+            </div>
           </div>
         </div>
       )}
