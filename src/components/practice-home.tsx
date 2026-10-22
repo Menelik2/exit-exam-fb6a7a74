@@ -315,9 +315,6 @@ export function PracticeHome() {
                             .filter(Boolean)
                             .join(" · ")}
                         </p>
-                        {exam.note && (
-                          <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{exam.note}</p>
-                        )}
                         <div className="mt-3.5">
                           {hasQuiz ? (
                             <Button
