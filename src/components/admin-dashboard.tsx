@@ -12,9 +12,11 @@ import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { Catalog, Department, ExamEntry, TabId } from "@/components/admin-types";
 import {
-  ADMIN_SESSION_KEY, createSeed, loadCatalog, saveCatalog, getPin, setPin,
+  ADMIN_SESSION_KEY, createSeed, loadCatalog, saveCatalog,
   uniqueDeptId, exportDepartmentsJson, importCatalogFromText,
 } from "@/components/admin-catalog";
+import { useServerFn } from "@tanstack/react-start";
+import { verifyAdminPassword } from "@/lib/admin.functions";
 
 export function AdminDashboard() {
   const [ready, setReady] = useState(false);
@@ -28,6 +30,8 @@ export function AdminDashboard() {
   const [editingExam, setEditingExam] = useState<{ deptId: string; exam: ExamEntry } | null>(null);
   const [newDeptName, setNewDeptName] = useState("");
   const [saving, setSaving] = useState(false);
+  const verifyFn = useServerFn(verifyAdminPassword);
+  const [loggingIn, setLoggingIn] = useState(false);
 
   useEffect(() => {
     try { if (sessionStorage.getItem(ADMIN_SESSION_KEY) === "1") setAuthed(true); } catch {}
@@ -61,17 +65,31 @@ export function AdminDashboard() {
       d.exams.some((e) => e.title.toLowerCase().includes(q)));
   }, [catalog, search]);
 
-  const login = (e: React.FormEvent) => {
+  const login = async (e: React.FormEvent) => {
     e.preventDefault();
     const entered = pin.trim();
-    if (!entered) return setPinError("Enter password");
-    if (entered !== getPin()) return setPinError("Incorrect password");
-    try { sessionStorage.setItem(ADMIN_SESSION_KEY, "1"); } catch {}
-    setAuthed(true);
+    if (!entered) {
+      setPinError("Enter password");
+      return;
+    }
+    setLoggingIn(true);
     setPinError("");
-    setPinInput("");
-    setCatalog(loadCatalog());
-    toast.success("Signed in");
+    try {
+      const res = await verifyFn({ data: { password: entered } });
+      if (!res?.ok) {
+        setPinError("Incorrect password");
+        return;
+      }
+      try { sessionStorage.setItem(ADMIN_SESSION_KEY, "1"); } catch {}
+      setAuthed(true);
+      setPinInput("");
+      setCatalog(loadCatalog());
+      toast.success("Signed in");
+    } catch (err) {
+      setPinError((err as Error)?.message || "Login failed");
+    } finally {
+      setLoggingIn(false);
+    }
   };
 
   const logout = () => {
@@ -202,8 +220,8 @@ export function AdminDashboard() {
               className="h-11 rounded-2xl" autoFocus autoComplete="current-password" placeholder="Enter admin password" />
             {pinError && <p className="text-xs text-destructive">{pinError}</p>}
           </div>
-          <Button type="submit" className="h-11 w-full rounded-2xl font-semibold">Sign in</Button>
-          <p className="text-center text-[11px] text-muted-foreground">Default: <code className="rounded bg-muted px-1">admin123</code></p>
+          <Button type="submit" className="h-11 w-full rounded-2xl font-semibold" disabled={loggingIn}>{loggingIn ? "Signing in…" : "Sign in"}</Button>
+          <p className="text-center text-[11px] text-muted-foreground">Password is set on the server (<code className="rounded bg-muted px-1">ADMIN_PASSWORD</code> env). Dev default: <code className="rounded bg-muted px-1">admin123</code></p>
           <Link to="/" className="block text-center text-xs text-muted-foreground underline">← Back to practice app</Link>
         </form>
       </div>
@@ -388,18 +406,15 @@ export function AdminDashboard() {
                 <p className="mt-1 text-sm text-muted-foreground">Admin access and catalog data.</p>
               </div>
               <div className="space-y-4 rounded-2xl border border-border/70 bg-card p-5 shadow-sm">
-                <div>
-                  <Label>Change admin password (this browser)</Label>
-                  <div className="mt-2 flex gap-2">
-                    <Input type="password" id="new-pin" placeholder="New password (min 4 chars)" className="h-10 rounded-xl" autoComplete="new-password" />
-                    <Button type="button" variant="outline" className="h-10 rounded-xl" onClick={() => {
-                      const el = document.getElementById("new-pin") as HTMLInputElement | null;
-                      const v = el?.value.trim() || "";
-                      if (v.length < 4) return toast.error("Use at least 4 characters");
-                      try { setPin(v); toast.success("Password updated"); if (el) el.value = ""; }
-                      catch { toast.error("Could not save password"); }
-                    }}>Save</Button>
-                  </div>
+                <div className="rounded-xl border border-border/60 bg-muted/20 p-4 text-sm">
+                  <p className="font-medium">Admin password (server)</p>
+                  <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                    Password is <strong>not</strong> stored in the browser. Set it in Vercel → Project → Settings → Environment Variables:
+                  </p>
+                  <p className="mt-2 font-mono text-xs"><code className="rounded bg-muted px-1.5 py-0.5">ADMIN_PASSWORD</code> = your secret</p>
+                  <p className="mt-2 text-[11px] text-muted-foreground">
+                    Redeploy after changing. If unset, login uses the dev default <code className="rounded bg-muted px-1">admin123</code>.
+                  </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <Button type="button" className="rounded-xl" onClick={() => { exportDepartmentsJson(catalog); toast.success("Downloaded departments.json"); }}>Download JSON</Button>
