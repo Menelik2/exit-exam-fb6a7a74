@@ -1,15 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ExamGeneratorPage } from "@/components/exam-generator-page";
+import { PracticeHome } from "@/components/practice-home";
 
 export const Route = createFileRoute("/")({
-  component: ExamGeneratorPage,
+  component: PracticeHome,
   head: () => ({
     meta: [
-      { title: "Exam Generator — Instant Multiple Choice Quizzes" },
+      { title: "Exit Exam Practice — Select department & open exams" },
       {
         name: "description",
         content:
-          "Generate custom multiple-choice exams by topic and difficulty. Preview answers and explanations instantly.",
+          "Choose your department, open stored exam PDFs/DOCX, or take practice quizzes. No AI generation required.",
       },
     ],
   }),
