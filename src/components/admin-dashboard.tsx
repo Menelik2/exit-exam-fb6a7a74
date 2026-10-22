@@ -11,8 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import type { Catalog, Department, ExamEntry, TabId } from "@/components/admin-types";
+import { uniqueDeptId, exportDepartmentsJson } from "@/components/admin-catalog";
+import { apiAdminLogin, apiGetCatalog, apiSaveCatalog } from "@/lib/admin-api";
 
 const EMPTY_CATALOG: Catalog = { departments: [], updatedAt: new Date(0).toISOString() };
+const ADMIN_TOKEN_KEY = "exit-exam-admin-token-v2";
 
 function toLocalCatalog(res: unknown): Catalog {
   const r = res as { catalog?: { departments?: Catalog["departments"]; updatedAt?: string } } | null;
@@ -22,15 +25,6 @@ function toLocalCatalog(res: unknown): Catalog {
     updatedAt: r?.catalog?.updatedAt || new Date().toISOString(),
   };
 }
-
-const ADMIN_TOKEN_KEY = "exit-exam-admin-token-v2";
-import { uniqueDeptId, exportDepartmentsJson } from "@/components/admin-catalog";
-import { useServerFn } from "@tanstack/react-start";
-import {
-  verifyAdminPassword,
-  getAdminCatalog,
-  saveAdminCatalog,
-} from "@/lib/admin.functions";
 
 export function AdminDashboard() {
   const [ready, setReady] = useState(false);
@@ -44,12 +38,9 @@ export function AdminDashboard() {
   const [editingExam, setEditingExam] = useState<{ deptId: string; exam: ExamEntry } | null>(null);
   const [newDeptName, setNewDeptName] = useState("");
   const [saving, setSaving] = useState(false);
-  const verifyFn = useServerFn(verifyAdminPassword);
   const [loggingIn, setLoggingIn] = useState(false);
   const [adminToken, setAdminToken] = useState<string | null>(null);
   const [storageMode, setStorageMode] = useState<"github" | "github-readonly" | "loading">("loading");
-  const getCatalogFn = useServerFn(getAdminCatalog);
-  const saveCatalogFn = useServerFn(saveAdminCatalog);
 
   useEffect(() => {
     let cancelled = false;
@@ -62,10 +53,10 @@ export function AdminDashboard() {
         }
       } catch { /* ignore */ }
       try {
-        const res = await getCatalogFn();
+        const res = await apiGetCatalog();
         if (cancelled) return;
         setCatalog(toLocalCatalog(res));
-        setStorageMode((res as { storage?: typeof storageMode })?.storage || "github-readonly");
+        setStorageMode(res.storage || "github-readonly");
       } catch (e) {
         if (!cancelled) {
           setCatalog(EMPTY_CATALOG);
@@ -76,7 +67,7 @@ export function AdminDashboard() {
       }
     })();
     return () => { cancelled = true; };
-  }, [getCatalogFn]);
+  }, []);
 
   const persist = useCallback(async (next: Catalog) => {
     if (!adminToken) {
@@ -85,17 +76,12 @@ export function AdminDashboard() {
       return false;
     }
     try {
-      const res = await saveCatalogFn({
-        data: {
-          token: adminToken,
-          catalog: {
-            departments: next.departments || [],
-            updatedAt: next.updatedAt,
-            appUrl: "https://yeniexams.vercel.app",
-            channelUrl: "https://t.me/exitexamto",
-            channelUsername: "@exitexamto",
-          },
-        },
+      const res = await apiSaveCatalog(adminToken, {
+        departments: next.departments || [],
+        updatedAt: next.updatedAt,
+        appUrl: "https://yeniexams.vercel.app",
+        channelUrl: "https://t.me/exitexamto",
+        channelUsername: "@exitexamto",
       });
       setCatalog(toLocalCatalog(res));
       setStorageMode("github");
@@ -110,7 +96,7 @@ export function AdminDashboard() {
       }
       return false;
     }
-  }, [adminToken, saveCatalogFn]);
+  }, [adminToken]);
 
   const stats = useMemo(() => {
     const list = Array.isArray(catalog?.departments) ? catalog.departments : [];
@@ -140,9 +126,9 @@ export function AdminDashboard() {
     setLoggingIn(true);
     setPinError("");
     try {
-      const res = await verifyFn({ data: { password: entered } });
+      const res = await apiAdminLogin(entered);
       if (!res?.ok || !res.token) {
-        setPinError("Incorrect password");
+        setPinError(res?.error || "Incorrect password");
         return;
       }
       try { sessionStorage.setItem(ADMIN_TOKEN_KEY, res.token); } catch {}
@@ -150,9 +136,9 @@ export function AdminDashboard() {
       setAuthed(true);
       setPinInput("");
       try {
-        const cat = await getCatalogFn();
+        const cat = await apiGetCatalog();
         setCatalog(toLocalCatalog(cat));
-        setStorageMode((cat as { storage?: typeof storageMode })?.storage || "github-readonly");
+        setStorageMode(cat.storage || "github-readonly");
       } catch {
         setCatalog(EMPTY_CATALOG);
       }
@@ -198,8 +184,7 @@ export function AdminDashboard() {
     const emoji = (editingDept.emoji || "📘").trim() || "📘";
     if (await persist({
       ...catalog,
-      departments: depts.map((d) =>
-        d.id === editingDept.id ? { ...d, name, emoji } : d),
+      departments: depts.map((d) => d.id === editingDept.id ? { ...d, name, emoji } : d),
     })) {
       setEditingDept(null);
       toast.success("Department saved");
@@ -237,9 +222,12 @@ export function AdminDashboard() {
       ...catalog,
       departments: depts.map((d) =>
         d.id === editingExam.deptId
-          ? { ...d, exams: (d.exams || []).some((e) => e.id === exam.id)
-              ? (d.exams || []).map((e) => (e.id === exam.id ? exam : e))
-              : [...(d.exams || []), exam] }
+          ? {
+              ...d,
+              exams: (d.exams || []).some((e) => e.id === exam.id)
+                ? (d.exams || []).map((e) => (e.id === exam.id ? exam : e))
+                : [...(d.exams || []), exam],
+            }
           : d),
     })) {
       setEditingExam(null);
@@ -276,9 +264,9 @@ export function AdminDashboard() {
 
   const reloadFromServer = async () => {
     try {
-      const res = await getCatalogFn();
+      const res = await apiGetCatalog();
       setCatalog(toLocalCatalog(res));
-      setStorageMode((res as { storage?: typeof storageMode })?.storage || "github-readonly");
+      setStorageMode(res.storage || "github-readonly");
       toast.success("Reloaded from server");
     } catch (e) {
       toast.error((e as Error).message || "Reload failed");
@@ -307,7 +295,7 @@ export function AdminDashboard() {
             {pinError && <p className="text-xs text-destructive">{pinError}</p>}
           </div>
           <Button type="submit" className="h-11 w-full rounded-2xl font-semibold" disabled={loggingIn}>{loggingIn ? "Signing in…" : "Sign in"}</Button>
-          <p className="text-center text-[11px] text-muted-foreground">Password is set on the server (<code className="rounded bg-muted px-1">ADMIN_PASSWORD</code> env). Dev default: <code className="rounded bg-muted px-1">admin123</code></p>
+          <p className="text-center text-[11px] text-muted-foreground">Uses Vercel env <code className="rounded bg-muted px-1">ADMIN_PASSWORD</code>. Example: your value <code className="rounded bg-muted px-1">123!@#Linux</code></p>
           <Link to="/" className="block text-center text-xs text-muted-foreground underline">← Back to practice app</Link>
         </form>
       </div>
@@ -458,7 +446,7 @@ export function AdminDashboard() {
             <div className="space-y-5">
               <div>
                 <h1 className="font-display text-2xl font-semibold tracking-tight">Exam documents</h1>
-                <p className="mt-1 text-sm text-muted-foreground">Link each paper (PDF, DOCX, or DOC) via <code className="rounded bg-muted px-1">pdfUrl</code> (any document URL) or Telegram <code className="rounded bg-muted px-1">file_id</code>.</p>
+                <p className="mt-1 text-sm text-muted-foreground">Link each paper via document URL or Telegram file_id.</p>
               </div>
               {(catalog.departments || []).map((d) => (
                 <div key={d.id} className="rounded-2xl border border-border/70 bg-card p-4 shadow-sm sm:p-5">
