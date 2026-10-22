@@ -57,7 +57,8 @@ export function DepartmentBrowser({
       try {
         const res = await getCatalogFn();
         if (cancelled) return;
-        setDepartments((res.catalog.departments || []) as Dept[]);
+        const depts = res?.catalog?.departments;
+        setDepartments(Array.isArray(depts) ? (depts as Dept[]) : []);
       } catch (e) {
         if (!cancelled) toast.error((e as Error).message || "Could not load departments");
       } finally {
