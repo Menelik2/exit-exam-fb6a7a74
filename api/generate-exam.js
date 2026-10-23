@@ -1,1 +1,232 @@
-PLACEHOLDER_GEN
+/**
+ * POST /api/generate-exam
+ * Body:
+ *   topic?: string,
+ *   difficulty?: string,
+ *   numQuestions?: number,
+ *   documentText?: string,
+ *   documentName?: string,
+ *   apiKey?: string,
+ *   provider?: string,
+ *   avoid?: string[],
+ *   nonce?: string,
+ *   fullDocument?: boolean
+ */
+
+import { timingSafeEqual } from "node:crypto";
+
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+const HARD_MAX = 50;
+
+function getEnvApiKey() {
+  return (
+    process.env.GEMINI_API_KEY ||
+    process.env.GOOGLE_API_KEY ||
+    process.env.GOOGLE_GENERATIVE_AI_API_KEY ||
+    ""
+  ).trim();
+}
+
+function clampNum(n, min, max, fallback) {
+  const x = Number(n);
+  if (!Number.isFinite(x)) return fallback;
+  return Math.max(min, Math.min(max, Math.round(x)));
+}
+
+function cleanJsonText(raw) {
+  let s = String(raw || "").trim();
+  if (s.startsWith("```")) {
+    s = s.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+  }
+  return s.trim();
+}
+
+function normalizeQuestions(raw, need) {
+  if (!Array.isArray(raw)) return [];
+  const out = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const question = String(item.question || item.stem || "").trim();
+    if (!question) continue;
+    let options = Array.isArray(item.options)
+      ? item.options.map((o) => String(o ?? "").trim()).filter(Boolean)
+      : [];
+    if (options.length < 2) continue;
+    options = options.slice(0, 6);
+    let correct = String(item.correct_answer || item.answer || "").trim();
+    if (!options.includes(correct)) {
+      const found = options.find((o) => o.toLowerCase() === correct.toLowerCase());
+      if (found) correct = found;
+      else if (/^[A-Da-d]$/.test(correct)) {
+        const idx = correct.toUpperCase().charCodeAt(0) - 65;
+        correct = options[idx] || options[0];
+      } else {
+        correct = options[0];
+      }
+    }
+    out.push({
+      question_number: out.length + 1,
+      question,
+      options,
+      correct_answer: correct,
+      explanation: item.explanation == null ? "" : String(item.explanation).slice(0, 2000),
+    });
+    if (out.length >= need) break;
+  }
+  return out;
+}
+
+function parseModelJson(text) {
+  const cleaned = cleanJsonText(text);
+  let parsed;
+  try {
+    parsed = JSON.parse(cleaned);
+  } catch {
+    const m = cleaned.match(/\{[\s\S]*\}/) || cleaned.match(/\[[\s\S]*\]/);
+    if (!m) throw new Error("Model returned non-JSON");
+    parsed = JSON.parse(m[0]);
+  }
+  if (Array.isArray(parsed)) return parsed;
+  if (parsed && Array.isArray(parsed.questions)) return parsed.questions;
+  return [];
+}
+
+async function callGemini(apiKey, systemPrompt, userPrompt) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      system_instruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: "user", parts: [{ text: userPrompt }] }],
+      generationConfig: {
+        temperature: 0.4,
+        responseMimeType: "application/json",
+      },
+    }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg =
+      data?.error?.message ||
+      data?.message ||
+      `Gemini error (${res.status})`;
+    throw new Error(msg);
+  }
+  const text =
+    data?.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("") || "";
+  if (!text) throw new Error("Empty response from Gemini");
+  return text;
+}
+
+const SYSTEM_PROMPT = `You are an expert exam writer and exam-document parser. Produce high-quality multiple-choice questions.
+Rules:
+- Exactly 4 options per question unless the source truly has fewer (minimum 2).
+- correct_answer MUST be the full option text (not just "A" or "1").
+- explanations should be 1-3 sentences, educational.
+- Avoid repeating or paraphrasing questions listed in the avoid list.
+- Output valid JSON matching the schema.
+
+When the document already contains MCQs (e.g. "Question 12", options a/b/c/d from exit exams or Moodle):
+- EXTRACT those questions faithfully — keep the stem and all four options as written.
+- Do NOT invent new topics when the document is already an exam paper.
+- If a correct answer is marked in the text, use it. If not marked, pick the most accurate option as correct_answer and briefly justify in explanation.
+- Prefer extracting every distinct question in the provided section over inventing fillers.`;
+
+export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  if (req.method === "OPTIONS") {
+    res.statusCode = 204;
+    return res.end();
+  }
+  if (req.method !== "POST") {
+    res.statusCode = 405;
+    res.setHeader("Content-Type", "application/json");
+    return res.end(JSON.stringify({ ok: false, error: "Method not allowed" }));
+  }
+
+  try {
+    let body = req.body;
+    if (typeof body === "string") {
+      try {
+        body = JSON.parse(body || "{}");
+      } catch {
+        body = {};
+      }
+    }
+    if (!body || typeof body !== "object") body = {};
+
+    const apiKey = String(body.apiKey || getEnvApiKey() || "").trim();
+    if (!apiKey) {
+      res.statusCode = 400;
+      res.setHeader("Content-Type", "application/json");
+      return res.end(
+        JSON.stringify({
+          ok: false,
+          error: "No Gemini API key configured. Add GEMINI_API_KEY or paste a key in Setup.",
+        }),
+      );
+    }
+
+    const topic = String(body.topic || "").trim();
+    const difficulty = String(body.difficulty || "Intermediate").trim();
+    const documentText = String(body.documentText || "").trim().slice(0, 180000);
+    const documentName = String(body.documentName || "").trim();
+    const avoid = Array.isArray(body.avoid)
+      ? body.avoid.map((x) => String(x || "").trim()).filter(Boolean).slice(0, 80)
+      : [];
+    const need = clampNum(body.numQuestions, 1, HARD_MAX, 10);
+
+    if (!documentText && !topic) {
+      res.statusCode = 400;
+      res.setHeader("Content-Type", "application/json");
+      return res.end(JSON.stringify({ ok: false, error: "Enter a topic or upload a document first." }));
+    }
+
+    let userPrompt;
+    if (documentText) {
+      userPrompt = [
+        `Task: From this document section, produce EXACTLY ${need} MCQs. If the section already has exam questions with options, EXTRACT them (stems + a/b/c/d). Only invent new items when the section is prose without MCQs. Use the document only.`,
+        documentName ? `Document: ${documentName}` : "",
+        `Difficulty target: ${difficulty}`,
+        avoid.length ? `Avoid similar questions:\n- ${avoid.join("\n- ")}` : "",
+        "Return JSON: { \"questions\": [ { \"question\": string, \"options\": string[4], \"correct_answer\": string, \"explanation\": string } ] }",
+        "DOCUMENT SECTION:",
+        documentText,
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+    } else {
+      userPrompt = [
+        `Task: Generate EXACTLY ${need} MCQs.`,
+        `Topic: ${topic}`,
+        `Difficulty: ${difficulty}`,
+        avoid.length ? `Avoid similar questions:\n- ${avoid.join("\n- ")}` : "",
+        "Return JSON: { \"questions\": [ { \"question\": string, \"options\": string[4], \"correct_answer\": string, \"explanation\": string } ] }",
+      ]
+        .filter(Boolean)
+        .join("\n\n");
+    }
+
+    const raw = await callGemini(apiKey, SYSTEM_PROMPT, userPrompt);
+    const questions = normalizeQuestions(parseModelJson(raw), need);
+    if (!questions.length) {
+      throw new Error("Model returned no valid questions");
+    }
+
+    res.statusCode = 200;
+    res.setHeader("Content-Type", "application/json");
+    return res.end(JSON.stringify({ ok: true, questions }));
+  } catch (e) {
+    res.statusCode = 500;
+    res.setHeader("Content-Type", "application/json");
+    return res.end(
+      JSON.stringify({
+        ok: false,
+        error: (e && e.message) || "Generation failed",
+      }),
+    );
+  }
+}
