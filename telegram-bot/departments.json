@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-23T14:35:13.853Z",
+  "updatedAt": "2026-10-23T14:37:09.723Z",
   "departments": [
     {
       "id": "computer-science",
@@ -1652,7 +1652,729 @@
           "title": "2026",
           "year": 2026,
           "pdfUrl": "https://drive.google.com/file/d/1nnfUVLFgPWVuJMo98yp3jvm1-jt5C4qV/view?usp=drivesdk",
-          "telegramFileId": null
+          "telegramFileId": null,
+          "questions": [
+            {
+              "question_number": 1,
+              "question": "Which of the following is truly applied about Type I error during hypothesis testing?",
+              "options": [
+                "Rejecting false alternative hypothesis",
+                "Rejecting true null hypothesis",
+                "Rejecting true alternative hypothesis",
+                "Failing to reject false null hypothesis"
+              ],
+              "correct_answer": "Rejecting true null hypothesis",
+              "explanation": "A Type I error occurs when a true null hypothesis is incorrectly rejected. This is also known as a false positive, indicating that a significant effect was found when none actually exists."
+            },
+            {
+              "question_number": 2,
+              "question": "A 7 weeks old male child was born to an HIV positive mother has negative DNA PCR test and he is currently feeding a breast of his mother. How interpret the status of the child based on IMNCI guideline?",
+              "options": [
+                "HIV exposed",
+                "Unknown HIV status",
+                "Stage 2 HIV infection",
+                "HIV infected"
+              ],
+              "correct_answer": "HIV exposed",
+              "explanation": "According to IMNCI guidelines, a child born to an HIV-positive mother is considered HIV exposed until breastfeeding has ceased and a subsequent negative HIV test is obtained at least 6 weeks after cessation of breastfeeding. A negative DNA PCR test while still breastfeeding does not rule out transmission through breast milk."
+            },
+            {
+              "question_number": 3,
+              "question": "A 31years old primigravida was diagnosed gestational hypertension at 28 weeks of gestation. She presents at 32weeks with pain in abdomen. On examination: PR = 97, BP = 110/70 mmHg, hemoglobin 6 g/dl, P/A uterus is 32-34 weeks tonically contracted with fetal heart absent. P/V no bleeding seen. Differentiate the correct diagnosis of this mother?",
+              "options": [
+                "Concealed abruptio placentae",
+                "Revealed placenta previa",
+                "Concealed placenta previa",
+                "Revealed abruptio placenta"
+              ],
+              "correct_answer": "Concealed abruptio placentae",
+              "explanation": "The key indicators for concealed abruptio placentae are a tonically contracted uterus, severe abdominal pain, absent fetal heart sounds, and no visible vaginal bleeding, especially in a patient with predisposing factors like gestational hypertension. The blood is retained behind the placenta, hence 'concealed'."
+            },
+            {
+              "question_number": 4,
+              "question": "A manager in rural health center which performs planning that emphasizes the current situation of various organizational activities within a short time period and more specific with day to day activities.",
+              "options": [
+                "Strategic",
+                "Allocation",
+                "Operational",
+                "Upper level"
+              ],
+              "correct_answer": "Operational",
+              "explanation": "Operational planning focuses on day-to-day activities and short-term goals, dealing with the current situation of organizational activities. This type of planning is specific and guides daily tasks within a short time frame."
+            },
+            {
+              "question_number": 5,
+              "question": "A 23 years old female patient comes to the cardiac center for her follow up. She had incompetent valve. A nurse auscultates her murmur as Loud and slightly associated with a thrill. What is the patient’s grade of murmur?",
+              "options": [
+                "2",
+                "4",
+                "5",
+                "3"
+              ],
+              "correct_answer": "3",
+              "explanation": "Cardiac murmurs are graded on a scale of 1 to 6. A Grade 4 murmur is described as loud and associated with a palpable thrill, which is a vibratory sensation over the chest wall."
+            },
+            {
+              "question_number": 6,
+              "question": "A teacher wants to teach a 2nd year nursing students about female catheterization. Based on this situation, which one is the appropriate teaching method?",
+              "options": [
+                "Lecture",
+                "Case study",
+                "Demonstration",
+                "Role play"
+              ],
+              "correct_answer": "Demonstration",
+              "explanation": "For teaching a practical skill like female catheterization, demonstration is the most appropriate method. It allows students to visually observe the correct procedure and techniques before practicing it themselves."
+            },
+            {
+              "question_number": 7,
+              "question": "Which priority nursing intervention has to be given to the patient who was complaining difficulty of sleeping related to cough during the night time?",
+              "options": [
+                "Administering oxygen",
+                "Administering antipsychotics",
+                "Administering antitussive",
+                "Administering anti-pain"
+              ],
+              "correct_answer": "Administering antitussive",
+              "explanation": "An antitussive medication is specifically designed to suppress coughing, directly addressing the patient's complaint of difficulty sleeping due to cough. This intervention targets the root cause of the nocturnal sleep disturbance."
+            },
+            {
+              "question_number": 8,
+              "question": "Which of the following neurotransmitter is mostly associated with mood disorder?",
+              "options": [
+                "Serotonin",
+                "Dopamine",
+                "Nor-epinephrine",
+                "Nicotine"
+              ],
+              "correct_answer": "Serotonin",
+              "explanation": "Serotonin is a key neurotransmitter widely recognized for its significant role in regulating mood, sleep, appetite, and social behavior. Imbalances in serotonin levels are strongly associated with various mood disorders, including depression and anxiety."
+            },
+            {
+              "question_number": 9,
+              "question": "Mr. K was working as a nurse director in general hospital. He invest more of his energy on both quality of service rendered to patient and the welfare of staffs of his unit. Which principle of management he was practicing?",
+              "options": [
+                "Middle of road management",
+                "Team management",
+                "Country club management",
+                "Impoverished management"
+              ],
+              "correct_answer": "Team management",
+              "explanation": "Team management, according to the Managerial Grid, is characterized by a high concern for both people (staff welfare) and production (quality of service). This leadership style fosters commitment and teamwork, leading to high employee satisfaction and productivity."
+            },
+            {
+              "question_number": 10,
+              "question": "An 8 month infant admitted to the hospital with +++ edema and started the stabilization phase of severe acute malnutrition. After 6 days, the nurse checks the status of the infant for passing to transition phase. Which of the following justify this?",
+              "options": [
+                "The infant easily finish F-100 feeds",
+                "The edema improved to +1 and finish F-100 feeds",
+                "The edema improved to +1 and finish F-75 feeds",
+                "The infant easily finish F-75 feeds"
+              ],
+              "correct_answer": "The infant easily finish F-75 feeds",
+              "explanation": "The transition phase in managing severe acute malnutrition is initiated when the infant has finished F-75 feeds easily, indicating improved appetite and tolerance. This step is crucial before advancing to higher caloric density feeds like F-100."
+            },
+            {
+              "question_number": 11,
+              "question": "During monitoring and evaluation of health education at community level, what makes feasibility differ from others?",
+              "options": [
+                "Ensuring that the evaluation is ethical",
+                "Reveal and convey technically accurate information",
+                "Ensures the information needs intended users",
+                "Ensures realistic, practical, and diplomatic"
+              ],
+              "correct_answer": "Ensures realistic, practical, and diplomatic",
+              "explanation": "Feasibility, as an evaluation criterion, refers to whether the evaluation is practical, realistic, and diplomatic given the available resources, time, and context. It assesses the operational viability of the evaluation process."
+            },
+            {
+              "question_number": 12,
+              "question": "While designing a teaching plan for a patient who developed pernicious anemia due to chronic gastritis. Which of the following should be designed in teaching the patient?",
+              "options": [
+                "The production of instrinsic factors are increased",
+                "Monthly injection of Vitamin B12 is necessary",
+                "Vitamin K supplement will be given",
+                "The cells producing gastric acid have been damaged"
+              ],
+              "correct_answer": "Monthly injection of Vitamin B12 is necessary",
+              "explanation": "Pernicious anemia results from a lack of intrinsic factor, which is essential for Vitamin B12 absorption. Since intrinsic factor production is impaired, lifelong parenteral (e.g., monthly injection) Vitamin B12 supplementation is required to bypass the absorption issue."
+            },
+            {
+              "question_number": 13,
+              "question": "Ms. N was a newly employed nurse at one of hospital. She has asked a nurse the chain of communication, lines of management and span of control. How should a nurse help her?",
+              "options": [
+                "Ignoring her question",
+                "Orienting her about organizational structure",
+                "Providing her a manual of procedure",
+                "Inform her to search for the office of manager"
+              ],
+              "correct_answer": "Orienting her about organizational structure",
+              "explanation": "Questions about the chain of communication, lines of management, and span of control directly relate to the hospital's organizational structure. Orienting the new nurse about this structure will provide her with essential information for understanding her role and the hospital's hierarchy."
+            },
+            {
+              "question_number": 14,
+              "question": "While a nurse was planning to administer the medication for patient admitted to surgical ward, which medication administration precaution needs least priority before administering the medication?",
+              "options": [
+                "Side effect",
+                "Dose",
+                "Time",
+                "Route"
+              ],
+              "correct_answer": "Side effect",
+              "explanation": "While understanding potential side effects is important, ensuring the 'five rights' of medication administration (right dose, right time, right route, right patient, right medication) takes immediate priority to prevent errors. Side effects are a consideration for monitoring post-administration or for patient education, but less of an immediate precaution before administration compared to the other options."
+            },
+            {
+              "question_number": 15,
+              "question": "A 25 years old woman has been sad for the past two weeks. She is fatigued and has a hard time concentrating at work. Just a few weeks earlier she was energetic and enthusiastic, and was able to work 10 to 12 hours a day with little sleep and go dancing at night. Her husband wants a divorce because he is tired of 'these constant ups and downs.' What is the most accurate diagnosis for this case?",
+              "options": [
+                "Cyclothymic",
+                "Bipolar I",
+                "Bipolar II",
+                "Major depressive"
+              ],
+              "correct_answer": "Bipolar I",
+              "explanation": "The patient's history of distinct periods of elevated energy and enthusiasm (suggesting a manic episode) followed by a depressive episode, with significant functional impairment and relationship issues, is characteristic of Bipolar I disorder. Bipolar I requires at least one manic or mixed episode."
+            },
+            {
+              "question_number": 16,
+              "question": "Sr. Y was ordered by a physician to administer aspirin daily for patient diagnosed with myocardial infarction? What a nurse should demonstrate?",
+              "options": [
+                "Advising a patient to reject the medication because of its side effect",
+                "Administering aspirin as ordered",
+                "Administering aspirin every two days",
+                "Administering aspirin on patient's request"
+              ],
+              "correct_answer": "Administering aspirin as ordered",
+              "explanation": "Nurses are professionally and legally responsible for administering medications as prescribed by the physician, provided the order is clear, complete, and safe for the patient. Aspirin is a standard and crucial medication for myocardial infarction due to its antiplatelet effects."
+            },
+            {
+              "question_number": 17,
+              "question": "Which of the following statement better indicates the nurses' understanding of nutrition and metabolism pattern of the patient?",
+              "options": [
+                "Continuously monitoring weight of the patient",
+                "Assessing patients' immunity level",
+                "Assessing for sign and symptoms of dehydration",
+                "Assessing patients' appetite when patient complains"
+              ],
+              "correct_answer": "Assessing for sign and symptoms of dehydration",
+              "explanation": "Assessing for signs and symptoms of dehydration directly relates to the patient's fluid balance, which is a critical aspect of metabolism and nutritional status. Dehydration indicates a significant imbalance in the body's metabolic processes and fluid regulation."
+            },
+            {
+              "question_number": 18,
+              "question": "A nurse was assessing a newborn baby infant for APGAR score after a birth and she noted that the baby's heart rate was 80 beat/minute, cry with regular breathing, has active motion, coughing, pink skin color. Summarizing these findings, what is the APGAR score of the newborn?",
+              "options": [
+                "9",
+                "8",
+                "7",
+                "10"
+              ],
+              "correct_answer": "9",
+              "explanation": "The APGAR score is calculated as follows: Appearance (pink skin) = 2; Pulse (80 bpm, <100) = 1; Grimace (coughing/strong response) = 2; Activity (active motion) = 2; Respiration (cry with regular breathing) = 2. Total = 2 + 1 + 2 + 2 + 2 = 9."
+            },
+            {
+              "question_number": 19,
+              "question": "Two days following surgery, a patient suddenly develops a congested cough, shortness of breath, and fatigue. Based on these symptoms, what type of assessment should a nurse apply for this patient?",
+              "options": [
+                "Episodic",
+                "Time lapsed",
+                "Emergency",
+                "Complete"
+              ],
+              "correct_answer": "Emergency",
+              "explanation": "This patient's sudden, severe symptoms indicate an acute, potentially life-threatening situation requiring immediate assessment and intervention. An emergency assessment focuses on identifying and treating life-threatening problems."
+            },
+            {
+              "question_number": 20,
+              "question": "A mother of a 9-month-old child asks a nurse about vaccination services at the health center. How should the nurse appropriately respond to the mother?",
+              "options": [
+                "Teaching her about complementary feeding",
+                "No need of vaccination for a child",
+                "Providing measles Vaccine only",
+                "Ordering her to go to other health center"
+              ],
+              "correct_answer": "Providing measles Vaccine only",
+              "explanation": "At 9 months old, a child is typically due for their first dose of the measles vaccine according to many immunization schedules. The nurse should identify and offer the appropriate vaccination for the child's age."
+            },
+            {
+              "question_number": 21,
+              "question": "As a nurse manager at a medical ward, you notice a nurse repetitively reports incomplete nursing process data. What action should you take first as the leader?",
+              "options": [
+                "Strong disciplinary action to the respective nurse",
+                "Use it as the example to develop fear in others",
+                "Communicate with the nurse and solve the problem",
+                "Oral warning and some advice"
+              ],
+              "correct_answer": "Communicate with the nurse and solve the problem",
+              "explanation": "As a leader, the first step in addressing a performance issue is to communicate directly with the individual to understand the root cause and collaboratively find a solution. Disciplinary action or warnings without prior communication are generally not the initial approach for a manager."
+            },
+            {
+              "question_number": 22,
+              "question": "A 31-year-old man exhibits unstable relationships, impulsivity, poor self-image, and irritability. Based on these findings, what type of personality disorder is most likely?",
+              "options": [
+                "Histrionic personality disorder",
+                "Borderline personality disorder",
+                "Antisocial personality disorder",
+                "Dependent personality disorder"
+              ],
+              "correct_answer": "Borderline personality disorder",
+              "explanation": "The described symptoms, including unstable relationships, impulsivity, poor self-image, and irritability, are classic indicators of Borderline Personality Disorder. This disorder is characterized by a pervasive pattern of instability in interpersonal relationships, self-image, and affects."
+            },
+            {
+              "question_number": 23,
+              "question": "A 32-year-old Gravida 1 (G1), Para 0 (P0) at 36 weeks gestation presents with contractions every 3 minutes. She appears uncomfortable, but her cervix is 2cm dilated and 50% effaced, which was also observed the previous day with similar complaints. What is the diagnosis for this mother?",
+              "options": [
+                "Obstructed labor",
+                "False labor",
+                "Premature rapture of membrane",
+                "Prolonged labor"
+              ],
+              "correct_answer": "False labor",
+              "explanation": "False labor (Braxton Hicks contractions) is characterized by contractions that do not lead to progressive cervical dilation and effacement. Since the cervix has not changed significantly after a day of similar complaints, this indicates false labor."
+            },
+            {
+              "question_number": 24,
+              "question": "A 70-year-old male patient presents with complaints of tremor, rigidity, and gait disturbances and is diagnosed with Parkinson's disease. What is the priority nursing diagnosis for this patient?",
+              "options": [
+                "Fluid volume deficit",
+                "Ineffective breathing pattern",
+                "Risk for injury",
+                "Activity intolerance"
+              ],
+              "correct_answer": "Risk for injury",
+              "explanation": "Patients with Parkinson's disease often experience tremors, rigidity, and gait disturbances, which significantly increase their risk for falls and other injuries. Therefore, 'Risk for injury' is a priority nursing diagnosis."
+            },
+            {
+              "question_number": 25,
+              "question": "A patient has persistent and continuous pain at McBurney's point. Nursing assessment reveals rebound tenderness and muscle guarding, with the patient preferring to lie still with the right leg flexed. What is the priority diagnosis for this patient?",
+              "options": [
+                "Pancreatitis",
+                "Cholelithiasis",
+                "Appendicitis",
+                "Peritonitis"
+              ],
+              "correct_answer": "Appendicitis",
+              "explanation": "Persistent pain at McBurney's point, rebound tenderness, muscle guarding, and a preference to lie still with the right leg flexed are classic signs and symptoms of appendicitis. These findings suggest inflammation of the appendix."
+            },
+            {
+              "question_number": 26,
+              "question": "Under what circumstance does a nurse successfully demonstrate essential newborn care practices?",
+              "options": [
+                "Do not cover the baby's head.",
+                "Deliver the baby onto the dry cold surface",
+                "Never dry the baby's body with a dry warm towel",
+                "Cut the cord immediately if resuscitation needed"
+              ],
+              "correct_answer": "Cut the cord immediately if resuscitation needed",
+              "explanation": "In cases where a newborn requires resuscitation, immediate cord clamping and cutting are necessary to facilitate prompt intervention without delay. Other options describe incorrect or harmful newborn care practices."
+            },
+            {
+              "question_number": 27,
+              "question": "A clinical nurse assessing a patient admitted to a medical ward with heart failure makes a clinical judgment about the patient's problem. In which stage of the nursing process did she make this clinical judgment?",
+              "options": [
+                "Evaluation",
+                "Planning",
+                "Diagnosis",
+                "Assessment"
+              ],
+              "correct_answer": "Diagnosis",
+              "explanation": "In the nursing process, making a clinical judgment about the patient's problem, such as identifying a nursing diagnosis, occurs during the Diagnosis stage. This stage involves analyzing assessment data to identify actual or potential health problems."
+            },
+            {
+              "question_number": 28,
+              "question": "Which of the following endocrine gland hormones plays a role in decreasing blood calcium concentration?",
+              "options": [
+                "Thyroid hormone",
+                "Adrenal Cortex hormone",
+                "Parathyroid hormone",
+                "Calcitonin hormone"
+              ],
+              "correct_answer": "Calcitonin hormone",
+              "explanation": "Calcitonin, secreted by the thyroid gland, plays a crucial role in regulating calcium levels by decreasing blood calcium concentration. It primarily acts by inhibiting osteoclast activity and increasing calcium excretion by the kidneys."
+            },
+            {
+              "question_number": 29,
+              "question": "Which data collection method is recommended when a researcher has little understanding of the problem or situation under investigation?",
+              "options": [
+                "Observation",
+                "Focus group discussion",
+                "Structured questionnaires",
+                "Interview"
+              ],
+              "correct_answer": "Interview",
+              "explanation": "When a researcher has little understanding of a problem, an interview, especially an unstructured or semi-structured one, allows for in-depth exploration and flexibility to gather rich, detailed information that can help define the problem."
+            },
+            {
+              "question_number": 30,
+              "question": "During an assessment of a 3-month-old child, the nurse notes bulging fontanelles. How should this finding be interpreted?",
+              "options": [
+                "Dehydration",
+                "Septic meningitis",
+                "Malnutrition",
+                "Increased intracranial pressure"
+              ],
+              "correct_answer": "Increased intracranial pressure",
+              "explanation": "Bulging fontanelles in an infant are a significant sign of increased intracranial pressure. This can be caused by various conditions, including hydrocephalus, meningitis, or intracranial hemorrhage."
+            },
+            {
+              "question_number": 31,
+              "question": "A 56-year-old female patient presents with profound dehydration and tachycardia. Her laboratory findings show a blood glucose level of 800mg/dL, ketone-free urine, and a pH of 7.0. Based on these findings, how would you diagnose this patient?",
+              "options": [
+                "Hyperosmolar hyperglycemic ketotic syndrome",
+                "Hyperosmolar hyperglycemic non ketotic syndrome",
+                "Diabetes insipidus",
+                "Diabetic ketoacidosis"
+              ],
+              "correct_answer": "Hyperosmolar hyperglycemic non ketotic syndrome",
+              "explanation": "The findings of profound dehydration, extremely high blood glucose (800mg/dL), absence of ketones in urine, and a normal pH are characteristic of Hyperosmolar Hyperglycemic Nonketotic Syndrome (HHNS). This condition is distinct from diabetic ketoacidosis due to the lack of significant ketosis and acidosis."
+            },
+            {
+              "question_number": 32,
+              "question": "Which of the following is NOT an expected behavior from a committed and dedicated nursing professional after graduating from university/college?",
+              "options": [
+                "Participating in nursing curriculum revision and development",
+                "Giving feedback regarding the weakness and strength of the program",
+                "Continuing professional development",
+                "Criticizing the program with someone from other profession"
+              ],
+              "correct_answer": "Criticizing the program with someone from other profession",
+              "explanation": "While providing constructive feedback is expected, openly criticizing the program to someone from another profession in an unprofessional manner is generally not considered appropriate professional conduct for a dedicated nurse. Professional development and participation in curriculum improvement are positive expectations."
+            },
+            {
+              "question_number": 33,
+              "question": "What type of study design is utilized for a survey conducted in a population to find the prevalence of a disease and exposure at a specific point in time?",
+              "options": [
+                "Case serious",
+                "Cohort",
+                "Case control",
+                "Cross sectional"
+              ],
+              "correct_answer": "Cross sectional",
+              "explanation": "A cross-sectional study design is used to assess the prevalence of a disease and exposure in a defined population at a single point in time. It provides a 'snapshot' of the health status and related factors."
+            },
+            {
+              "question_number": 34,
+              "question": "A patient with a history of inflammatory bowel disease comes to the clinic with persistent diarrhea. Which characteristic is typically associated with ulcerative colitis?",
+              "options": [
+                "Toxic mega colon",
+                "Has segmented distribution",
+                "Involves the entire thickness of the bowel wall",
+                "Weight loss and abdominal pain"
+              ],
+              "correct_answer": "Toxic mega colon",
+              "explanation": "Toxic megacolon is a serious complication that is more typically associated with ulcerative colitis. Unlike Crohn's disease, ulcerative colitis usually affects only the innermost lining of the large bowel in a continuous pattern."
+            },
+            {
+              "question_number": 35,
+              "question": "You are assigned as a nurse at the medical ward and are going to administer insulin to a patient with Type 1 Diabetes Mellitus in the morning. Which of the following best describes the specific injection site for insulin?",
+              "options": [
+                "Stomach 2 inch from the umbilicus",
+                "Upper thigh only front part",
+                "Upper arm, inner aspects",
+                "Back, right and left above the waist"
+              ],
+              "correct_answer": "Stomach 2 inch from the umbilicus",
+              "explanation": "The abdominal area, specifically at least 2 inches away from the umbilicus, is a common and preferred site for insulin injection due to consistent absorption and less discomfort. It's important to rotate injection sites within this area."
+            },
+            {
+              "question_number": 36,
+              "question": "A 25-year-old woman at 16 weeks gestational age with undifferentiated HIV status comes to the clinic for an ANC visit. Which of the following advice is the correct way regarding HIV testing?",
+              "options": [
+                "You can test HIV status and once tested, helps for life time",
+                "Testing for HIV is the integrated approach of ANC visit",
+                "Testing for HIV status depends on your interest",
+                "Testing HIV depends on the risk group identification during ANC"
+              ],
+              "correct_answer": "Testing for HIV is the integrated approach of ANC visit",
+              "explanation": "Routine HIV testing is an integral part of comprehensive Antenatal Care (ANC) for all pregnant women. This approach helps in early diagnosis, treatment, and prevention of mother-to-child transmission, regardless of perceived risk."
+            },
+            {
+              "question_number": 37,
+              "question": "A patient reads 20/70 on a Snellen eye chart. Which of the following is true about this patient's condition?",
+              "options": [
+                "Had refractive error",
+                "Problem of accommodation",
+                "Peripheral vision loss",
+                "Read at 70 feet what normal eye read from 20"
+              ],
+              "correct_answer": "Had refractive error",
+              "explanation": "A 20/70 vision reading indicates that the patient can read at 20 feet what a person with normal vision can read at 70 feet. This condition is characteristic of a refractive error, such as myopia, hyperopia, or astigmatism."
+            },
+            {
+              "question_number": 38,
+              "question": "Which of the following statements about the phases of puerperium is incorrect?",
+              "options": [
+                "Early puerperium extends until the first week of postpartum",
+                "Early puerperium extends until the first 24 hours of postpartum",
+                "Remote puerperium includes the period of time required for involution of the genital organs and return of menses",
+                "Immediate puerperium is the first 24 hours after parturition and when acute post-delivery complications may occur"
+              ],
+              "correct_answer": "Early puerperium extends until the first 24 hours of postpartum",
+              "explanation": "Immediate puerperium refers to the first 24 hours after delivery. Early puerperium typically extends until the first week postpartum, making the statement that it only extends until the first 24 hours incorrect."
+            },
+            {
+              "question_number": 39,
+              "question": "According to cognitivism learning theory, how does the learning process primarily undertake?",
+              "options": [
+                "Rehearsing information and then storing it for long term use",
+                "Constructing one's own knowledge through past experiences",
+                "Through positive reinforcement and punishment",
+                "Through negative reinforcement and punishment"
+              ],
+              "correct_answer": "Rehearsing information and then storing it for long term use",
+              "explanation": "Cognitivism focuses on internal mental processes, such as memory, perception, and problem-solving. Rehearsing information and then storing it for long-term use is a key mechanism within the cognitive learning theory."
+            },
+            {
+              "question_number": 40,
+              "question": "When developing a research proposal, which guideline is appropriate for writing a literature review?",
+              "options": [
+                "Literature review should be written from local to global",
+                "Literature review should be written from past to current",
+                "Literature review should be written from focused to broader",
+                "Literature review should comprise only published documents"
+              ],
+              "correct_answer": "Literature review should be written from past to current",
+              "explanation": "A literature review generally presents existing research chronologically, starting with older foundational studies and progressing to more recent findings. This approach demonstrates the evolution of knowledge and identifies gaps for current research."
+            },
+            {
+              "question_number": 41,
+              "question": "An adult male patient with mental illness taking antipsychotic medication reports experiencing an orgasm but no semen during sexual intercourse. How should a nurse respond to this complaint?",
+              "options": [
+                "Educate him about the benefit and side effect of medication",
+                "Encourage him to take Viagra",
+                "Encourage him to avoid sexual intercourse",
+                "Advise him to avoid substance use"
+              ],
+              "correct_answer": "Educate him about the benefit and side effect of medication",
+              "explanation": "Retrograde ejaculation, or orgasm without semen, can be a side effect of certain antipsychotic medications. The nurse's primary role is to educate the patient about the expected side effects of his medication to help him understand and manage his condition."
+            },
+            {
+              "question_number": 42,
+              "question": "The nurse was caring for a new patient with a colostomy. What finding needs priority nursing intervention?",
+              "options": [
+                "Slight bleeding of stoma during cleaning",
+                "Foul smell stool",
+                "Pink and moist stoma",
+                "Bluish discoloration of stoma site"
+              ],
+              "correct_answer": "Bluish discoloration of stoma site",
+              "explanation": "Bluish discoloration of a stoma indicates compromised blood flow, which could lead to ischemia or necrosis. This is a medical emergency requiring immediate nursing intervention to prevent serious complications."
+            },
+            {
+              "question_number": 43,
+              "question": "A third-year university student who has an upcoming exam developed stress and was unable to read. She finally stopped reading and cleaned her family's house excessively. What is the appropriate defense mechanism she had used?",
+              "options": [
+                "Regression",
+                "Repression",
+                "Suppression",
+                "Sublimation"
+              ],
+              "correct_answer": "Sublimation",
+              "explanation": "Sublimation is a mature defense mechanism where unacceptable or anxiety-provoking impulses are unconsciously channeled into socially acceptable and often productive activities. In this case, her anxiety about the exam is redirected into cleaning."
+            },
+            {
+              "question_number": 44,
+              "question": "A 49-year-old male known chronic diabetic patient comes to the medical ward with hyperglycemia and metabolic acidosis. Which clinical manifestation clearly shows the presence of metabolic acidosis?",
+              "options": [
+                "Kussmauls respiration",
+                "Severe electrolyte loss",
+                "Hypervolemia",
+                "Blurred vision"
+              ],
+              "correct_answer": "Kussmauls respiration",
+              "explanation": "Kussmaul respirations are deep, rapid, and labored breathing patterns typically observed in severe metabolic acidosis, particularly diabetic ketoacidosis. This compensatory mechanism helps the body expel carbon dioxide to raise blood pH."
+            },
+            {
+              "question_number": 45,
+              "question": "While designing a plan of care for a 9-year-old child with TB and HIV, which of the following integration therapy is most appropriate?",
+              "options": [
+                "Treat HIV, then TB later",
+                "Initiating broad spectrum antibiotics medication",
+                "Treat TB, Then HIV later",
+                "Initiate TB treatment and start ART with nutritional support"
+              ],
+              "correct_answer": "Initiate TB treatment and start ART with nutritional support",
+              "explanation": "For children co-infected with TB and HIV, the recommended approach is to initiate TB treatment first, followed by antiretroviral therapy (ART) shortly thereafter. Nutritional support is also crucial for overall recovery and immune function."
+            },
+            {
+              "question_number": 46,
+              "question": "A 29-year-old female patient diagnosed with urethral discharge by syndromic approach. What is the preferred treatment regimen for this patient?",
+              "options": [
+                "Azithromycin 1gm PO stat + Metronidazole 500 mg po BID/7 days",
+                "Ceftriaxone 250 mg IM stat + Metronidazole 500 mg po BID/7 days",
+                "Ceftriaxone 250 mg IM stat + Spectinomycin 2gm IM Stat",
+                "Ceftriaxone 250 mg IM stat + Azithromycin 1gm PO stat"
+              ],
+              "correct_answer": "Ceftriaxone 250 mg IM stat + Azithromycin 1gm PO stat",
+              "explanation": "This combination regimen is the standard syndromic treatment for urethral discharge, targeting both Neisseria gonorrhoeae (with Ceftriaxone) and Chlamydia trachomatis (with Azithromycin), which are common causes of the condition."
+            },
+            {
+              "question_number": 47,
+              "question": "Which of the following is NOT a main purpose of performing a lumbar puncture procedure?",
+              "options": [
+                "To administer medication into the spinal canal",
+                "To measure the pressure of cerebrospinal fluid",
+                "To remove excess cerebrospinal fluid from peritoneal cavity",
+                "To administer spinal anesthesia before surgery"
+              ],
+              "correct_answer": "To remove excess cerebrospinal fluid from peritoneal cavity",
+              "explanation": "Removing excess cerebrospinal fluid from the peritoneal cavity is typically done via a shunt (e.g., ventriculoperitoneal shunt) for conditions like hydrocephalus, not through a standard lumbar puncture procedure."
+            },
+            {
+              "question_number": 48,
+              "question": "A 45-year-old male patient comes to your clinic with drug poisoning, and you are going to insert a Naso-gastric tube for lavage. Which one of the following is the most reliable and effective method to check the correct tube placement in the stomach?",
+              "options": [
+                "Immersing one end of NG Tube in water to see bubbling",
+                "Sending for X-Ray",
+                "Stethoscope to auscultate gurgling sound",
+                "Blue litmus paper to test acidity"
+              ],
+              "correct_answer": "Sending for X-Ray",
+              "explanation": "While other methods can provide presumptive evidence, an X-ray is considered the most reliable and definitive method to confirm the correct placement of a nasogastric tube in the stomach. This is crucial to prevent complications like pulmonary aspiration."
+            },
+            {
+              "question_number": 49,
+              "question": "Based on the DSM-V, which of the following best describes schizophrenia?",
+              "options": [
+                "Social and occupational dysfunction",
+                "Schizoaffective and mood disorder included",
+                "Relationship to a pervasive developmental disorder",
+                "General medical condition included"
+              ],
+              "correct_answer": "Social and occupational dysfunction",
+              "explanation": "A core diagnostic criterion for schizophrenia in the DSM-5 is significant impairment in one or more major areas of functioning, such as work, interpersonal relations, or self-care, for a significant portion of the time since the onset of the disturbance."
+            },
+            {
+              "question_number": 50,
+              "question": "A surgical nurse is going to insert a catheter for a 28-year-old male patient post-operatively. What is the proper position for this patient?",
+              "options": [
+                "Dorsal recumbent",
+                "Prone",
+                "Sims",
+                "Left lateral"
+              ],
+              "correct_answer": "Dorsal recumbent",
+              "explanation": "The dorsal recumbent position, where the patient lies on their back with knees flexed and feet flat on the bed, provides optimal exposure and access to the male perineal area for catheter insertion."
+            },
+            {
+              "question_number": 51,
+              "question": "Which drug of choice has to be administered for a pregnant woman with preeclampsia and eclampsia for treating and preventing a seizure?",
+              "options": [
+                "Magnesium sulphate",
+                "Diazepam",
+                "Antibiotic",
+                "Phenytoin"
+              ],
+              "correct_answer": "Magnesium sulphate",
+              "explanation": "Magnesium sulfate is the medication of choice for the prevention and treatment of seizures in women with severe preeclampsia and eclampsia. It acts as a central nervous system depressant and vasodilator."
+            },
+            {
+              "question_number": 52,
+              "question": "A postpartum woman has presented with headache, blurred vision, convulsion and +3 proteinuria. Her blood pressure was 140/90 mmHg. What is the most likely diagnosis of this woman?",
+              "options": [
+                "Chronic hypertension",
+                "Typical preeclampsia",
+                "Atypical preeclampsia",
+                "Typical eclampsia"
+              ],
+              "correct_answer": "Typical eclampsia",
+              "explanation": "Eclampsia is characterized by the occurrence of new-onset grand mal seizures in a woman with preeclampsia, without a history of other seizure disorders. The symptoms of headache, blurred vision, proteinuria, and convulsions are classic signs of eclampsia."
+            },
+            {
+              "question_number": 53,
+              "question": "During assessing and preparing the patient for lumbar puncture, what should the nurse set up as a priority precaution before the patient undergoes the procedure?",
+              "options": [
+                "The patient has to be stable and free of hormonal imbalance",
+                "The needle insertion site has to be free of infection",
+                "The patient has to be conscious",
+                "The patient has to be adult"
+              ],
+              "correct_answer": "The needle insertion site has to be free of infection",
+              "explanation": "A critical priority before a lumbar puncture is to ensure the insertion site is sterile and free of infection. Introducing bacteria during the procedure can lead to severe complications like meningitis."
+            },
+            {
+              "question_number": 54,
+              "question": "By placing a lightly vibrating tuning fork on the mastoid bone and then level with the canal immediately when the patient can no longer hear the sound, the patient is found to be unable to hear the sound. Based on this test, what is the correct answer?",
+              "options": [
+                "Negative Weber",
+                "Positive Rinne",
+                "Negative Rinne",
+                "Positive Weber"
+              ],
+              "correct_answer": "Negative Rinne",
+              "explanation": "The Rinne test compares bone conduction (BC) to air conduction (AC). If the patient cannot hear the tuning fork when it is moved from the mastoid bone to the ear canal, it means bone conduction is better than air conduction (BC > AC), indicating a negative Rinne and suggesting conductive hearing loss."
+            },
+            {
+              "question_number": 55,
+              "question": "A child presents with a low-grade fever, a hoarse cry, and a distinctive 'barky' cough. Vital signs include a temperature of 37.5 °C, pulse rate of 140 bt/min, respiratory rate of 36 bt/min, and oxygen saturation of 96%. What is the most probable diagnosis?",
+              "options": [
+                "Bronchitis",
+                "Croup",
+                "Pharyngitis",
+                "Bronchial asthma"
+              ],
+              "correct_answer": "Croup",
+              "explanation": "The classic symptoms of a 'barky' cough, hoarse cry, and low-grade fever in a child are highly indicative of Croup. This condition involves inflammation of the larynx, trachea, and bronchi, leading to characteristic respiratory sounds."
+            },
+            {
+              "question_number": 56,
+              "question": "An epidemiologist plans to assess latrine utilization among households in a specific geographic area ('X' Kebele). Which probability sampling method is appropriate for this type of study where a systematic approach across households is needed?",
+              "options": [
+                "Systematic random",
+                "Multistage",
+                "Stratified",
+                "Cluster"
+              ],
+              "correct_answer": "Systematic random",
+              "explanation": "Systematic random sampling involves selecting every nth individual or household from a list, which is suitable for assessing utilization across households in a defined area. This method ensures an even spread of participants throughout the population being studied."
+            },
+            {
+              "question_number": 57,
+              "question": "A nurse is preparing to administer an intramuscular medication injection to a 25-year-old female patient. Considering safety and muscle mass, which anatomical site is generally considered the safest for this procedure in adults?",
+              "options": [
+                "Umbilical",
+                "Femoral",
+                "Deltoid",
+                "Ventrogluteal"
+              ],
+              "correct_answer": "Ventrogluteal",
+              "explanation": "The ventrogluteal site is generally considered the safest and preferred site for intramuscular injections in adults. It has a thick muscle, is free of major nerves and blood vessels, and is located away from major joints, reducing the risk of injury."
+            },
+            {
+              "question_number": 58,
+              "question": "A public health team is conducting surveillance by going house to house to collect health-related data directly from residents. What type of surveillance is being performed in this scenario?",
+              "options": [
+                "Passive surveillance",
+                "Sentinel surveillance",
+                "Census surveillance",
+                "Active surveillance"
+              ],
+              "correct_answer": "Active surveillance",
+              "explanation": "Active surveillance involves health personnel proactively seeking out cases of disease or collecting data through direct contact with individuals or households. This contrasts with passive surveillance, where reports are received from healthcare providers without active searching."
+            },
+            {
+              "question_number": 59,
+              "question": "A 1-year-old child is admitted to the hospital exhibiting symptoms of diarrhea and sunken eyeballs. What should be the first-line management for this child's condition?",
+              "options": [
+                "Oral rehydration solution",
+                "Antibiotic only",
+                "Antibiotic and Zinc",
+                "Provision of zinc only"
+              ],
+              "correct_answer": "Oral rehydration solution",
+              "explanation": "For a child with diarrhea and signs of dehydration like sunken eyeballs, the immediate priority is rehydration. Oral Rehydration Solution (ORS) is the first-line management to replenish fluids and electrolytes lost due to diarrhea, preventing further complications."
+            },
+            {
+              "question_number": 60,
+              "question": "A nurse is educating a client diagnosed with acute glomerulonephritis about potential complications. Which of the following manifestations should the client be instructed to report immediately to the healthcare provider?",
+              "options": [
+                "Temperature of 36.8°C",
+                "Dry cough",
+                "Pitting edema",
+                "Weight loss"
+              ],
+              "correct_answer": "Pitting edema",
+              "explanation": "Pitting edema is a significant manifestation of fluid retention, often associated with impaired kidney function in acute glomerulonephritis. Its presence indicates a worsening condition that requires prompt medical attention to prevent further complications like fluid overload."
+            }
+          ]
         }
       ]
     },
