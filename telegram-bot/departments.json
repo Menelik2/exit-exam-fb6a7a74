@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-23T05:06:03.700Z",
+  "updatedAt": "2026-10-23T05:07:36.494Z",
   "departments": [
     {
       "id": "computer-science",
@@ -754,10 +754,384 @@
       "exams": [
         {
           "id": "nursing-1792731961359",
-          "title": "New exam",
+          "title": "Exit Exam",
           "year": 2026,
-          "pdfUrl": null,
-          "telegramFileId": null
+          "pdfUrl": "https://drive.google.com/file/d/1vmqiwYs0SsGuBXciKQ_cCvJn0eL5FjER/view?usp=drivesdk",
+          "telegramFileId": null,
+          "questions": [
+            {
+              "question_number": 1,
+              "question": "According to the exam strategy, which of the following types of words usually indicates a WRONG option?",
+              "options": [
+                "Keywords",
+                "Absolute words",
+                "Descriptive words",
+                "Action verbs"
+              ],
+              "correct_answer": "Absolute words",
+              "explanation": "The document explicitly states that absolute words such as \"always,\" \"never,\" \"all,\" \"only,\" and \"must\" are usually associated with incorrect options in the exam. It's a key test-taking strategy to identify and avoid them."
+            },
+            {
+              "question_number": 2,
+              "question": "What is the normal adult pulse (heart rate) range according to the provided nursing points?",
+              "options": [
+                "40–60 bpm",
+                "60–100 bpm",
+                "100–120 bpm",
+                "120–140 bpm"
+              ],
+              "correct_answer": "60–100 bpm",
+              "explanation": "The document lists the normal adult vital signs, stating that the pulse (HR) should be between 60–100 bpm. This is a fundamental nursing point for assessing patient health."
+            },
+            {
+              "question_number": 3,
+              "question": "A patient presents with decreased blood pressure (BP ↓) and increased heart rate (HR ↑). According to the exam trick section, what condition do these vital signs most likely indicate?",
+              "options": [
+                "Bradycardia",
+                "Respiratory distress",
+                "Shock",
+                "Hypertension"
+              ],
+              "correct_answer": "Shock",
+              "explanation": "The \"EXAM TRICK\" section specifically highlights that \"BP ↓ + HR ↑ = Shock.\" This combination of vital signs is a critical indicator of the body's response to inadequate tissue perfusion."
+            },
+            {
+              "question_number": 4,
+              "question": "A nurse reviews a patient's lab results and notes a platelet count of 100,000. According to the document, what is the primary risk associated with low platelets?",
+              "options": [
+                "Infection",
+                "Fatal arrhythmias",
+                "Bleeding",
+                "Kidney failure"
+              ],
+              "correct_answer": "Bleeding",
+              "explanation": "The document clearly states under \"Hematology Values\" that \"Low platelets = BLEEDING risk.\" Platelets are crucial for blood clotting, so a reduced count impairs the body's ability to stop bleeding."
+            },
+            {
+              "question_number": 5,
+              "question": "A patient's lab report shows a White Blood Cell (WBC) count of 12,000. Based on the provided information, what does a high WBC count typically indicate?",
+              "options": [
+                "Anemia",
+                "Bleeding risk",
+                "Infection",
+                "Dehydration"
+              ],
+              "correct_answer": "Infection",
+              "explanation": "The document explicitly links a high WBC count to infection, stating \"High WBC = INFECTION.\" White blood cells are key components of the immune system, and their increase often signifies the body's fight against pathogens."
+            },
+            {
+              "question_number": 6,
+              "question": "Which of the following electrolyte imbalances is specifically highlighted as leading to fatal arrhythmias in the \"Serum Electrolytes\" section?",
+              "options": [
+                "Decreased Calcium (↓Ca²⁺)",
+                "Increased Potassium (↑K⁺)",
+                "Decreased Magnesium (↓Mg²⁺)",
+                "Increased Sodium (↑Na⁺)"
+              ],
+              "correct_answer": "Increased Potassium (↑K⁺)",
+              "explanation": "The \"EXAM ALERT\" under Serum Electrolytes warns that \"↑K⁺ → Fatal arrhythmias.\" Elevated potassium levels can severely disrupt the electrical activity of the heart, leading to life-threatening rhythm disturbances."
+            },
+            {
+              "question_number": 7,
+              "question": "A nurse assesses a patient and observes positive Trousseau and Chvostek signs. According to the document, these signs are associated with which electrolyte imbalance?",
+              "options": [
+                "Increased Potassium (↑K⁺)",
+                "Decreased Magnesium (↓Mg²⁺)",
+                "Decreased Calcium (↓Ca²⁺)",
+                "Increased Sodium (↑Na⁺)"
+              ],
+              "correct_answer": "Decreased Calcium (↓Ca²⁺)",
+              "explanation": "The document states \"↓Ca²⁺ → Trousseau / Chvostek\" under the Serum Electrolytes section. These signs indicate neuromuscular excitability, which is characteristic of hypocalcemia."
+            },
+            {
+              "question_number": 8,
+              "question": "What is the normal pH range for arterial blood gases (ABG) as outlined in the \"ABG Normal Values\" section?",
+              "options": [
+                "7.25–7.35",
+                "7.35–7.45",
+                "7.45–7.55",
+                "7.55–7.65"
+              ],
+              "correct_answer": "7.35–7.45",
+              "explanation": "The document's \"ABG Normal Values\" section provides the mnemonic \"7-24-45-80-95,\" where 7.35–7.45 is specified as the normal pH range. This range is crucial for maintaining proper acid-base balance in the body."
+            },
+            {
+              "question_number": 9,
+              "question": "According to the \"Quick rule\" for Acid-Base Balance, which combination of pH and CO₂ values indicates respiratory acidosis?",
+              "options": [
+                "pH ↓ + CO₂ ↑",
+                "pH ↓ + HCO₃ ↓",
+                "pH ↑ + CO₂ ↓",
+                "pH ↑ + HCO₃ ↑"
+              ],
+              "correct_answer": "pH ↓ + CO₂ ↑",
+              "explanation": "The \"Quick rule\" section for Acid-Base Balance explicitly states \"pH ↓ + CO₂ ↑ → Respiratory acidosis.\" This imbalance occurs when the lungs fail to remove enough carbon dioxide, leading to an increase in carbonic acid and a drop in pH."
+            },
+            {
+              "question_number": 10,
+              "question": "If a patient's creatinine level is elevated, what critical condition does the document identify as a priority concern?",
+              "options": [
+                "Liver dysfunction",
+                "Kidney failure",
+                "Diabetes",
+                "Cardiac arrest"
+              ],
+              "correct_answer": "Kidney failure",
+              "explanation": "The \"Chemistry Values\" section includes an \"🚨\" alert stating, \"Creatinine ↑ = kidney failure (priority!).\" Creatinine is a waste product filtered by the kidneys, so elevated levels indicate impaired kidney function."
+            },
+            {
+              "question_number": 11,
+              "question": "When prioritizing patient care, what principle \"always wins\" according to the \"LAST-MINUTE EXAM POWER TIPS\"?",
+              "options": [
+                "Comfort over safety",
+                "Psychosocial over physiological",
+                "Assessment before intervention",
+                "Airway > Breathing > Circulation (ABCs)"
+              ],
+              "correct_answer": "Airway > Breathing > Circulation (ABCs)",
+              "explanation": "The \"LAST-MINUTE EXAM POWER TIPS\" explicitly state, \"ABCs always win (Airway > Breathing > Circulation).\" This fundamental principle dictates that maintaining a patent airway, adequate breathing, and effective circulation are the top priorities in patient care."
+            },
+            {
+              "question_number": 12,
+              "question": "For a nurse working at an Ethiopian Health Center, which action is specifically advised AGAINST choosing in an exam scenario?",
+              "options": [
+                "Health education",
+                "Basic nursing care",
+                "Performing a CT scan",
+                "Vital signs assessment"
+              ],
+              "correct_answer": "Performing a CT scan",
+              "explanation": "Under the \"ROLE OF NURSE\" section for Health Centers, the document explicitly advises, \"DO NOT choose CT scan.\" Health Centers focus on basic, primary care, preventive services, and referral, not advanced diagnostic procedures like CT scans."
+            },
+            {
+              "question_number": 13,
+              "question": "A child at a Health Center presents with pneumonia and chest indrawing. According to the \"PRIORITY IN HEALTH CENTER\" guidelines, what is the immediate first action after stabilizing, before referral?",
+              "options": [
+                "Administering a second dose of antibiotics",
+                "Giving the first dose antibiotic and oxygen if available",
+                "Performing a complex diagnostic procedure",
+                "Waiting for a specialist consultation"
+              ],
+              "correct_answer": "Giving the first dose antibiotic and oxygen if available",
+              "explanation": "The example provided under \"PRIORITY IN HEALTH CENTER\" for a child with pneumonia and chest indrawing states, \"Give first dose antibiotic + oxygen if available → REFER.\" This emphasizes immediate stabilization before transfer."
+            },
+            {
+              "question_number": 14,
+              "question": "In a case of Postpartum Hemorrhage (PPH) at a Health Center, what is identified as the FIRST ACTION?",
+              "options": [
+                "Immediate blood transfusion",
+                "Uterine massage + oxytocin",
+                "Preparation for a C-section",
+                "Administration of advanced ICU drugs"
+              ],
+              "correct_answer": "Uterine massage + oxytocin",
+              "explanation": "Under \"MATERNAL HEALTH,\" the document specifies for PPH FIRST ACTION: \"Uterine massage + oxytocin.\" These are critical initial interventions to manage uterine atony, a common cause of PPH."
+            },
+            {
+              "question_number": 15,
+              "question": "According to the IMNCI guidelines for Child Health, which of the following is considered a general danger sign that requires immediate referral?",
+              "options": [
+                "Mild cough",
+                "Not feeding",
+                "Occasional crying",
+                "Playing actively"
+              ],
+              "correct_answer": "Not feeding",
+              "explanation": "The \"CHILD HEALTH (IMNCI FAVORITE)\" section lists \"Danger Signs\" such as \"Not feeding,\" \"Convulsions,\" \"Fast breathing,\" \"Chest indrawing,\" and \"Lethargic/unconscious,\" explicitly stating \"Any danger sign = REFER.\""
+            },
+            {
+              "question_number": 16,
+              "question": "For a patient presenting with severe dehydration due to diarrhea at a basic level health center, what is the recommended intervention according to the document?",
+              "options": [
+                "Administering oral rehydration solution (ORS) only",
+                "No intervention, immediate referral",
+                "IV fluids + REFER",
+                "Fancy electrolyte calculations"
+              ],
+              "correct_answer": "IV fluids + REFER",
+              "explanation": "The \"FLUID & ELECTROLYTE (BASIC LEVEL)\" section specifies that for \"Severe dehydration → IV fluids + REFER.\" This indicates that while ORS is for some dehydration, severe cases require more aggressive fluid replacement and higher-level care."
+            },
+            {
+              "question_number": 17,
+              "question": "When patient safety is involved, which ethical principle is highlighted as the most important to consider according to the \"ETHICS & LEGAL\" section?",
+              "options": [
+                "Confidentiality",
+                "Beneficence",
+                "Informed consent",
+                "Non-maleficence"
+              ],
+              "correct_answer": "Non-maleficence",
+              "explanation": "The document states under \"ETHICS & LEGAL\" that \"If patient safety is involved → Non-maleficence.\" This principle emphasizes the duty to do no harm, making it paramount when a patient's safety is at risk."
+            },
+            {
+              "question_number": 18,
+              "question": "What is identified as the \"first and most effective measure\" for infection prevention in fundamental nursing?",
+              "options": [
+                "Wearing gloves",
+                "Sterilization of equipment",
+                "Hand washing",
+                "Waste segregation"
+              ],
+              "correct_answer": "Hand washing",
+              "explanation": "Under \"FUNDAMENTAL NURSING,\" the document clearly states, \"Infection Prevention: ✓ Hand washing is the first and most effective measure.\" This highlights the critical role of proper hand hygiene in preventing the spread of infections."
+            },
+            {
+              "question_number": 19,
+              "question": "According to the exam strategy on common traps, which of the following words usually indicates a WRONG option?",
+              "options": [
+                "Often",
+                "Sometimes",
+                "Always",
+                "May"
+              ],
+              "correct_answer": "Always",
+              "explanation": "The document highlights 'Always, Never, Only, Must, All' as 'Trap Words' that usually indicate a wrong option because correct answers often favor flexible and context-dependent nursing actions."
+            },
+            {
+              "question_number": 20,
+              "question": "For a child assessed under IMNCI guidelines, which of the following is identified as a key general danger sign?",
+              "options": [
+                "Mild fever",
+                "Runny nose",
+                "Lethargy/Unconsciousness",
+                "Occasional cough"
+              ],
+              "correct_answer": "Lethargy/Unconsciousness",
+              "explanation": "The document lists 'Not feeding/drinking, Chest indrawing, Convulsions, Lethargy/Unconsciousness' as key general danger signs in IMNCI that often lead to automatic referral."
+            },
+            {
+              "question_number": 21,
+              "question": "A child with diarrhea presents with 'Some Dehydration'. According to the guidelines, what is the recommended management?",
+              "options": [
+                "Start IV Fluids and REFER",
+                "Manage with ORS",
+                "Give antibiotics immediately",
+                "Observe for 24 hours without intervention"
+              ],
+              "correct_answer": "Manage with ORS",
+              "explanation": "The document states that for 'Some Dehydration', the management is to 'Manage with ORS'. Starting IV Fluids and referring is reserved for 'Severe Dehydration'."
+            },
+            {
+              "question_number": 22,
+              "question": "When a patient expresses suicidal thoughts, what is the #1 priority action for the nurse?",
+              "options": [
+                "Encourage the patient to get more rest",
+                "Provide a calm and safe environment",
+                "Leave the patient alone to reflect",
+                "Administer a sedative as the first action"
+              ],
+              "correct_answer": "Provide a calm and safe environment",
+              "explanation": "For any question involving suicide risk, violence, hallucinations, or acute psychosis, the #1 answer is Patient Safety. Correct actions include not leaving the patient alone, close observation, and providing a calm and safe environment."
+            },
+            {
+              "question_number": 23,
+              "question": "The ethical principle of 'Avoiding harm' is directly associated with which term?",
+              "options": [
+                "Autonomy",
+                "Non-maleficence",
+                "Justice",
+                "Confidentiality"
+              ],
+              "correct_answer": "Non-maleficence",
+              "explanation": "The document explicitly links 'Avoiding harm' to the ethical principle of 'Non-maleficence'. Each ethical principle is matched with its core concept."
+            },
+            {
+              "question_number": 24,
+              "question": "Which leadership style is most appropriate for a routine, self-motivated team?",
+              "options": [
+                "Autocratic style",
+                "Democratic style",
+                "Laissez-faire style",
+                "Bureaucratic style"
+              ],
+              "correct_answer": "Laissez-faire style",
+              "explanation": "The document states that a 'Routine, self-motivated team' is best managed with a 'Laissez-faire style'. Other styles are for emergencies or encouraging participation."
+            },
+            {
+              "question_number": 25,
+              "question": "In exam questions, if one option involves Recording, Registering, Documenting, or Reporting, and other options are weak or non-specific, what is often the correct answer?",
+              "options": [
+                "Assessment-related actions",
+                "Documentation-related actions",
+                "Direct patient intervention",
+                "Referring to a physician"
+              ],
+              "correct_answer": "Documentation-related actions",
+              "explanation": "The 'Documentation Hack' advises that if an option involves Recording, Registering, Documenting, or Reporting, and other options are weak, the documentation-related answer is often correct."
+            },
+            {
+              "question_number": 26,
+              "question": "A nurse identifies redness over a bedridden patient's sacral area. What is the first action to prevent further skin breakdown?",
+              "options": [
+                "Apply ointment to the area",
+                "Massage the reddened area vigorously",
+                "Reposition the patient",
+                "Inform the physician immediately"
+              ],
+              "correct_answer": "Reposition the patient",
+              "explanation": "For a bedridden patient with redness over the sacral area, the primary action is to reposition the patient to relieve pressure and prevent pressure sore development."
+            },
+            {
+              "question_number": 27,
+              "question": "A diabetic patient is observed to be sweating, confused, and hungry. What is the priority nursing action?",
+              "options": [
+                "Administer insulin",
+                "Give oral glucose",
+                "Encourage the patient to exercise",
+                "Take a blood sample for lab analysis"
+              ],
+              "correct_answer": "Give oral glucose",
+              "explanation": "The symptoms of sweating, confusion, and hunger in a diabetic patient indicate hypoglycemia. The priority action is to give oral glucose to quickly raise blood sugar levels."
+            },
+            {
+              "question_number": 28,
+              "question": "Where should used needles and blades be disposed of in a health facility?",
+              "options": [
+                "Black bin",
+                "Yellow bin",
+                "Safety box",
+                "Open container"
+              ],
+              "correct_answer": "Safety box",
+              "explanation": "The document specifies that used needles and blades, which are sharps, must be disposed of in a safety box to prevent injuries and the spread of infection."
+            },
+            {
+              "question_number": 29,
+              "question": "When a patient reports hearing voices (hallucinations), what is the most therapeutic response a nurse can make?",
+              "options": [
+                "“You are lying about hearing voices”",
+                "“The voices are not real, just ignore them”",
+                "“I understand you are hearing voices”",
+                "“Let's talk about something else”"
+              ],
+              "correct_answer": "“I understand you are hearing voices”",
+              "explanation": "For a patient experiencing hallucinations, the therapeutic approach is to acknowledge their experience without validating the hallucination itself. Stating 'I understand you are hearing voices' validates their feeling."
+            },
+            {
+              "question_number": 30,
+              "question": "The act of assigning tasks to competent staff members according to their ability is known as:",
+              "options": [
+                "Supervision",
+                "Delegation",
+                "Motivation",
+                "Evaluation"
+              ],
+              "correct_answer": "Delegation",
+              "explanation": "Assigning a task to a competent staff member, based on their ability, is defined as delegation in the context of nursing leadership and management."
+            },
+            {
+              "question_number": 31,
+              "question": "Which ethical principle is demonstrated by keeping patient information private?",
+              "options": [
+                "Justice",
+                "Autonomy",
+                "Confidentiality",
+                "Fidelity"
+              ],
+              "correct_answer": "Confidentiality",
+              "explanation": "Keeping patient information private is a direct demonstration of the ethical principle of confidentiality, which protects sensitive patient data."
+            }
+          ]
         }
       ]
     },
