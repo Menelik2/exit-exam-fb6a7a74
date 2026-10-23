@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-23T17:27:48.138Z",
+  "updatedAt": "2026-10-23T17:36:50.016Z",
   "departments": [
     {
       "id": "computer-science",
@@ -2411,19 +2411,19 @@
           "questions": [
             {
               "question_number": 1,
-              "question": "Which one of the following is false about a dual simplex ?.",
+              "question": "Which one of the following is false about a dual simplex?",
               "options": [
                 "It gives information is on the worth of resources",
                 "The dual of the dual is the dual itself",
-                "The term \" dual \"implies two or double",
+                "The term \"dual\" implies two or double",
                 "The dual provides useful economic information"
               ],
               "correct_answer": "The dual of the dual is the dual itself",
-              "explanation": "In linear programming duality, taking the dual of the dual problem returns the original primal problem, not the dual itself."
+              "explanation": "In linear programming duality theory, the dual of the dual problem is the original primal problem, not the dual itself."
             },
             {
               "question_number": 2,
-              "question": "A research proposal should address all of the following except ;",
+              "question": "A research proposal should address all of the following except;",
               "options": [
                 "The objectives to be achieved",
                 "The research process be carried out",
@@ -2431,7 +2431,7 @@
                 "The recommendations to be forwarded"
               ],
               "correct_answer": "The recommendations to be forwarded",
-              "explanation": "Recommendations are generated after data collection, analysis, and interpretation, so they belong in the final research report rather than the proposal."
+              "explanation": "A research proposal is a plan submitted before conducting research. Recommendations are generated only after data has been collected and analyzed in the final report."
             },
             {
               "question_number": 3,
@@ -2443,7 +2443,7 @@
                 "Specialty product"
               ],
               "correct_answer": "Unsought product",
-              "explanation": "Unsought products are consumer goods that a buyer either does not know about or knows about but does not normally think of purchasing until a specific need arises."
+              "explanation": "Unsought products are consumer goods that a buyer either does not know about or does not normally think of purchasing until prompted by a need."
             },
             {
               "question_number": 4,
@@ -2455,7 +2455,7 @@
                 "It is vital to an organizations well being"
               ],
               "correct_answer": "Not necessary for strategic changes",
-              "explanation": "Strategy evaluation is crucial for determining whether strategic adjustments and changes are needed to achieve organizational goals."
+              "explanation": "Strategy evaluation is fundamental to assessing performance and initiating necessary changes to strategic plans."
             },
             {
               "question_number": 5,
@@ -2467,7 +2467,7 @@
                 "Element"
               ],
               "correct_answer": "Data",
-              "explanation": "Data refers to raw facts, figures, and information collected and processed for interpretation and decision-making."
+              "explanation": "Data refers to the raw facts and figures collected, analyzed, and presented for interpretation and decision-making."
             },
             {
               "question_number": 6,
@@ -2479,11 +2479,11 @@
                 "Enhance employees ' motivation and commitment"
               ],
               "correct_answer": "Discourage potential talent development",
-              "explanation": "Effective compensation systems are designed to foster talent and motivate workers, not discourage talent development."
+              "explanation": "Compensation systems are designed to attract, motivate, retain, and develop talent rather than discourage employee growth."
             },
             {
               "question_number": 7,
-              "question": "An inspiring , Long - term \" dream \" about what the organization will achieve in the future is referred as ,",
+              "question": "An inspiring  , Long - term \" dream \" about what the organization will achieve in the future is referred as ,",
               "options": [
                 "Objective",
                 "Mission",
@@ -2491,7 +2491,7 @@
                 "Vision"
               ],
               "correct_answer": "Vision",
-              "explanation": "A vision statement outlines an inspiring, forward-looking picture of what an organization hopes to achieve in the long term."
+              "explanation": "A vision statement articulates the long-term, inspiring aspiration of what the organization hopes to accomplish in the future."
             },
             {
               "question_number": 8,
@@ -2503,7 +2503,7 @@
                 "Span of control"
               ],
               "correct_answer": "Budget allocation",
-              "explanation": "Henri Fayol's administrative principles emphasize organizing structural elements like specialization, unity of command/scalar chain, and authority rather than budget allocation."
+              "explanation": "Fayol's structural organizing principles include division of work (specialization), scalar chain (chain of command), and span of control, whereas budget allocation is an operational planning tool."
             },
             {
               "question_number": 9,
@@ -2515,19 +2515,19 @@
                 "Deals with materials resources of the firm"
               ],
               "correct_answer": "Deals with materials resources of the firm",
-              "explanation": "Financial management focuses on monetary assets, funding, and capital structure, whereas material resources are handled by operations or supply chain management."
+              "explanation": "Financial management focuses on the management of monetary resources and capital, while materials resources fall under operations and inventory management."
             },
             {
               "question_number": 10,
               "question": "Which one is false about the correlation coefficient ?",
               "options": [
                 "It measures the strength of linear association between two variables",
-                "Values of the correlation coefficient are always between -1 and +1",
-                "Values of the correlation coefficient close to zero indicate average relation",
+                "Values of the correlation  coefficient are always between  -1 and +1",
+                "Values of the correlation  coefficient close to zero indicate average relation",
                 "A value of +1 indicates strong correlation between variables."
               ],
-              "correct_answer": "Values of the correlation coefficient close to zero indicate average relation",
-              "explanation": "A correlation coefficient close to zero indicates little to no linear relationship between variables, not an average relationship."
+              "correct_answer": "Values of the correlation  coefficient close to zero indicate average relation",
+              "explanation": "A correlation coefficient close to zero indicates a weak or nonexistent linear relationship, not an average one."
             },
             {
               "question_number": 11,
@@ -2536,22 +2536,22 @@
                 "It is an endeavor to be completed within a specified time ,budget and performance requirements.",
                 "It is a temporary endeavor undertaken to create a unique product, service or result",
                 "It is a sequence of unique activities performed to meet a specific objective",
-                "Project is an amalgamation of activities done in a perpetual manner that could possibly have no ending time"
+                "Project is an amalgamation of activities done in a perpetual manner that could possibly   have no ending time"
               ],
-              "correct_answer": "Project is an amalgamation of activities done in a perpetual manner that could possibly have no ending time",
-              "explanation": "Projects are defined by being temporary with a specific beginning and end date, unlike ongoing operational routines."
+              "correct_answer": "Project is an amalgamation of activities done in a perpetual manner that could possibly   have no ending time",
+              "explanation": "Projects are temporary endeavors with a clear start and end date; ongoing, perpetual activities describe continuous operations."
             },
             {
               "question_number": 12,
               "question": "The project monitoring and controlling activities could be done by the following except :",
               "options": [
                 "Consistent loop of review",
-                "Reviewing proposal of others projects",
+                "Reviewing proposal  of others projects",
                 "Control feedback and revision",
                 "Reporting"
               ],
-              "correct_answer": "Reviewing proposal of others projects",
-              "explanation": "Monitoring and controlling involves tracking and adjusting the current project's performance, not evaluating unrelated proposals."
+              "correct_answer": "Reviewing proposal  of others projects",
+              "explanation": "Monitoring and controlling tracks the performance of the current active project, not the proposals of unrelated external projects."
             },
             {
               "question_number": 13,
@@ -2563,7 +2563,7 @@
                 "Cultural"
               ],
               "correct_answer": "Customers",
-              "explanation": "Customers belong to the micro-environment (task environment), which directly impacts the firm, while political, technological, and cultural factors form the macro-environment."
+              "explanation": "Customers are direct actors in an organization's microenvironment, whereas political, technological, and cultural factors form the macroenvironment."
             },
             {
               "question_number": 14,
@@ -2575,7 +2575,7 @@
                 "Vision of the organization"
               ],
               "correct_answer": "Mission of the organization",
-              "explanation": "An organization's mission statement defines its core purpose, philosophy, and fundamental reason for existence."
+              "explanation": "A mission statement defines an organization's core purpose, business focus, and reason for existence."
             },
             {
               "question_number": 15,
@@ -2587,22 +2587,10 @@
                 "Producer - wholesaler - retailer consumer"
               ],
               "correct_answer": "Producer - consumer",
-              "explanation": "A direct channel involves selling goods or services straight from the producer to the end consumer with no middleman."
+              "explanation": "A direct channel involves selling directly from the producer to the consumer without any intermediaries."
             },
             {
               "question_number": 16,
-              "question": "Which of the following is wrong about performance appraisal ?",
-              "options": [
-                "Formal assessment and rating of the individuals",
-                "Affects employees negatively",
-                "A tool for enhancing productivity",
-                "Helps in developmental interventions"
-              ],
-              "correct_answer": "Affects employees negatively",
-              "explanation": "Performance appraisals are intended to constructively assess performance, facilitate feedback, and promote personal and organizational growth."
-            },
-            {
-              "question_number": 17,
               "question": "The initial stage in the entrepreneurial process is ;",
               "options": [
                 "Identification and refinement of a viable opportunity",
@@ -2611,19 +2599,31 @@
                 "The identification and refinement of a viable resources"
               ],
               "correct_answer": "Identification and refinement of a viable opportunity",
-              "explanation": "The entrepreneurial process typically starts with identifying, discovering, and evaluating a viable business opportunity."
+              "explanation": "The entrepreneurial process begins with identifying, evaluating, and developing a viable market opportunity."
+            },
+            {
+              "question_number": 17,
+              "question": "with drawal behavior is commonly manifested in the form of",
+              "options": [
+                "Turnover",
+                "Motivation",
+                "Engagement",
+                "Punctuality"
+              ],
+              "correct_answer": "Turnover",
+              "explanation": "Withdrawal behaviors are actions employees take to physically or psychologically disengage from the workplace, such as turnover and absenteeism."
             },
             {
               "question_number": 18,
-              "question": "As an entrepreneur , you must identify the target customers for you product . which of the following is not possibly your customer ?",
+              "question": "Whenever consumers in different countries are charged different prices for the same product in an international context, the pricing strategy is ;",
               "options": [
-                "People who stopped buying from you and ensured never return",
-                "People who are buying from you now",
-                "People you hope will buy from you in the future",
-                "People who stopped buying from you but ypu hope to get them back"
+                "Experience curve pricing",
+                "Price Discrimination",
+                "Strategic pricing",
+                "Predatory pricing"
               ],
-              "correct_answer": "People who stopped buying from you and ensured never return",
-              "explanation": "Customers who have decisively exited and will never return cannot be considered prospective or target customers for a product."
+              "correct_answer": "Price Discrimination",
+              "explanation": "Price discrimination involves charging different prices in different markets or to different customer groups for the identical good or service."
             }
           ]
         }
