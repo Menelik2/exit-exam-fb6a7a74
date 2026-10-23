@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-23T06:15:26.617Z",
+  "updatedAt": "2026-10-23T06:18:48.218Z",
   "departments": [
     {
       "id": "computer-science",
@@ -748,9 +748,9 @@
       "exams": [
         {
           "id": "information-technology-1792736124219",
-          "title": "New exam",
+          "title": "IT Exit 2015",
           "year": 2026,
-          "pdfUrl": null,
+          "pdfUrl": "https://drive.google.com/file/d/1R_UilYrD5r3Nv5-fMctnflI64Wa5smNI/view?usp=drivesdk",
           "telegramFileId": null
         }
       ]
