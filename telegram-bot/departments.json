@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-23T05:08:05.374Z",
+  "updatedAt": "2026-10-23T06:15:26.617Z",
   "departments": [
     {
       "id": "computer-science",
@@ -745,7 +745,15 @@
       "id": "information-technology",
       "name": "Information Technology",
       "emoji": "🖥️",
-      "exams": []
+      "exams": [
+        {
+          "id": "information-technology-1792736124219",
+          "title": "New exam",
+          "year": 2026,
+          "pdfUrl": null,
+          "telegramFileId": null
+        }
+      ]
     },
     {
       "id": "nursing",
