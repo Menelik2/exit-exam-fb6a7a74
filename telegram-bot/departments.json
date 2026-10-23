@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-22T17:44:04.349Z",
+  "updatedAt": "2026-10-23T03:15:18.652Z",
   "departments": [
     {
       "id": "computer-science",
@@ -738,6 +738,13 @@
               "explanation": "Executing code in a predefined, sequential order from start to finish is a characteristic of standard or sequential programming, not event-driven programming. Event-driven programs react to events, and their execution flow is non-linear and determined by those events."
             }
           ]
+        },
+        {
+          "id": "computer-science-1792725315833",
+          "title": "New exam",
+          "year": 2026,
+          "pdfUrl": null,
+          "telegramFileId": null
         }
       ]
     },
