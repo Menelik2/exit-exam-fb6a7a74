@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-23T17:08:18.762Z",
+  "updatedAt": "2026-10-23T17:27:48.138Z",
   "departments": [
     {
       "id": "computer-science",
@@ -2407,7 +2407,225 @@
           "title": "2016",
           "year": 2026,
           "pdfUrl": "https://docs.google.com/document/d/1YTbzGInXPJmzdx1QHEmzj_HsAwTcKfw-/edit?usp=drivesdk&ouid=105723339689957248808&rtpof=true&sd=true",
-          "telegramFileId": null
+          "telegramFileId": null,
+          "questions": [
+            {
+              "question_number": 1,
+              "question": "Which one of the following is false about a dual simplex ?.",
+              "options": [
+                "It gives information is on the worth of resources",
+                "The dual of the dual is the dual itself",
+                "The term \" dual \"implies two or double",
+                "The dual provides useful economic information"
+              ],
+              "correct_answer": "The dual of the dual is the dual itself",
+              "explanation": "In linear programming duality, taking the dual of the dual problem returns the original primal problem, not the dual itself."
+            },
+            {
+              "question_number": 2,
+              "question": "A research proposal should address all of the following except ;",
+              "options": [
+                "The objectives to be achieved",
+                "The research process be carried out",
+                "The problem to be investigated",
+                "The recommendations to be forwarded"
+              ],
+              "correct_answer": "The recommendations to be forwarded",
+              "explanation": "Recommendations are generated after data collection, analysis, and interpretation, so they belong in the final research report rather than the proposal."
+            },
+            {
+              "question_number": 3,
+              "question": "A kind of products the consumer either does not the know about or knows about but does normally consider buying is ;",
+              "options": [
+                "Shopping product",
+                "Convenience",
+                "Unsought product",
+                "Specialty product"
+              ],
+              "correct_answer": "Unsought product",
+              "explanation": "Unsought products are consumer goods that a buyer either does not know about or knows about but does not normally think of purchasing until a specific need arises."
+            },
+            {
+              "question_number": 4,
+              "question": "Identify the incorrect statement about strategy evaluation ,",
+              "options": [
+                "Alert management about potential problems",
+                "Helps to correct erroneous strategic decisions",
+                "Not necessary for strategic changes",
+                "It is vital to an organizations well being"
+              ],
+              "correct_answer": "Not necessary for strategic changes",
+              "explanation": "Strategy evaluation is crucial for determining whether strategic adjustments and changes are needed to achieve organizational goals."
+            },
+            {
+              "question_number": 5,
+              "question": "Facts and figures collected , analyzed , and summarized for presentation and interpretation are...",
+              "options": [
+                "Observation",
+                "Parameter",
+                "Data",
+                "Element"
+              ],
+              "correct_answer": "Data",
+              "explanation": "Data refers to raw facts, figures, and information collected and processed for interpretation and decision-making."
+            },
+            {
+              "question_number": 6,
+              "question": "One of the following is not an objective of employee compensation ,",
+              "options": [
+                "Attract qualified employees",
+                "Promote desirable behavior and outcomes",
+                "Discourage potential talent development",
+                "Enhance employees ' motivation and commitment"
+              ],
+              "correct_answer": "Discourage potential talent development",
+              "explanation": "Effective compensation systems are designed to foster talent and motivate workers, not discourage talent development."
+            },
+            {
+              "question_number": 7,
+              "question": "An inspiring , Long - term \" dream \" about what the organization will achieve in the future is referred as ,",
+              "options": [
+                "Objective",
+                "Mission",
+                "Goal",
+                "Vision"
+              ],
+              "correct_answer": "Vision",
+              "explanation": "A vision statement outlines an inspiring, forward-looking picture of what an organization hopes to achieve in the long term."
+            },
+            {
+              "question_number": 8,
+              "question": "Based on the principles of Henri Fayol , an effective organizing function depends on the mastery of the following except ;",
+              "options": [
+                "Chain of command",
+                "Budget allocation",
+                "Works specialization",
+                "Span of control"
+              ],
+              "correct_answer": "Budget allocation",
+              "explanation": "Henri Fayol's administrative principles emphasize organizing structural elements like specialization, unity of command/scalar chain, and authority rather than budget allocation."
+            },
+            {
+              "question_number": 9,
+              "question": "Which one of the following is not true about financial management ?",
+              "options": [
+                "Concerned with maximization of economic value",
+                "One of the important functions of a firm",
+                "Deals with management of capital sources",
+                "Deals with materials resources of the firm"
+              ],
+              "correct_answer": "Deals with materials resources of the firm",
+              "explanation": "Financial management focuses on monetary assets, funding, and capital structure, whereas material resources are handled by operations or supply chain management."
+            },
+            {
+              "question_number": 10,
+              "question": "Which one is false about the correlation coefficient ?",
+              "options": [
+                "It measures the strength of linear association between two variables",
+                "Values of the correlation coefficient are always between -1 and +1",
+                "Values of the correlation coefficient close to zero indicate average relation",
+                "A value of +1 indicates strong correlation between variables."
+              ],
+              "correct_answer": "Values of the correlation coefficient close to zero indicate average relation",
+              "explanation": "A correlation coefficient close to zero indicates little to no linear relationship between variables, not an average relationship."
+            },
+            {
+              "question_number": 11,
+              "question": "Which one of the following is not among the definitions of the project management ?",
+              "options": [
+                "It is an endeavor to be completed within a specified time ,budget and performance requirements.",
+                "It is a temporary endeavor undertaken to create a unique product, service or result",
+                "It is a sequence of unique activities performed to meet a specific objective",
+                "Project is an amalgamation of activities done in a perpetual manner that could possibly have no ending time"
+              ],
+              "correct_answer": "Project is an amalgamation of activities done in a perpetual manner that could possibly have no ending time",
+              "explanation": "Projects are defined by being temporary with a specific beginning and end date, unlike ongoing operational routines."
+            },
+            {
+              "question_number": 12,
+              "question": "The project monitoring and controlling activities could be done by the following except :",
+              "options": [
+                "Consistent loop of review",
+                "Reviewing proposal of others projects",
+                "Control feedback and revision",
+                "Reporting"
+              ],
+              "correct_answer": "Reviewing proposal of others projects",
+              "explanation": "Monitoring and controlling involves tracking and adjusting the current project's performance, not evaluating unrelated proposals."
+            },
+            {
+              "question_number": 13,
+              "question": "Sort out the element of Micro environment..",
+              "options": [
+                "Political",
+                "Technological",
+                "Customers",
+                "Cultural"
+              ],
+              "correct_answer": "Customers",
+              "explanation": "Customers belong to the micro-environment (task environment), which directly impacts the firm, while political, technological, and cultural factors form the macro-environment."
+            },
+            {
+              "question_number": 14,
+              "question": "The statement that justify the primary purpose of the organization and why the organization exist is ;",
+              "options": [
+                "Operational",
+                "Strategic plan",
+                "Mission of the organization",
+                "Vision of the organization"
+              ],
+              "correct_answer": "Mission of the organization",
+              "explanation": "An organization's mission statement defines its core purpose, philosophy, and fundamental reason for existence."
+            },
+            {
+              "question_number": 15,
+              "question": "which of the following is an example a direct channel ?",
+              "options": [
+                "Producer - consumer",
+                "Producer - business distributer - business customer",
+                "Producer - retailer - consumer",
+                "Producer - wholesaler - retailer consumer"
+              ],
+              "correct_answer": "Producer - consumer",
+              "explanation": "A direct channel involves selling goods or services straight from the producer to the end consumer with no middleman."
+            },
+            {
+              "question_number": 16,
+              "question": "Which of the following is wrong about performance appraisal ?",
+              "options": [
+                "Formal assessment and rating of the individuals",
+                "Affects employees negatively",
+                "A tool for enhancing productivity",
+                "Helps in developmental interventions"
+              ],
+              "correct_answer": "Affects employees negatively",
+              "explanation": "Performance appraisals are intended to constructively assess performance, facilitate feedback, and promote personal and organizational growth."
+            },
+            {
+              "question_number": 17,
+              "question": "The initial stage in the entrepreneurial process is ;",
+              "options": [
+                "Identification and refinement of a viable opportunity",
+                "The identification of skilled labor in the labor market",
+                "The identification and refinement of working capital",
+                "The identification and refinement of a viable resources"
+              ],
+              "correct_answer": "Identification and refinement of a viable opportunity",
+              "explanation": "The entrepreneurial process typically starts with identifying, discovering, and evaluating a viable business opportunity."
+            },
+            {
+              "question_number": 18,
+              "question": "As an entrepreneur , you must identify the target customers for you product . which of the following is not possibly your customer ?",
+              "options": [
+                "People who stopped buying from you and ensured never return",
+                "People who are buying from you now",
+                "People you hope will buy from you in the future",
+                "People who stopped buying from you but ypu hope to get them back"
+              ],
+              "correct_answer": "People who stopped buying from you and ensured never return",
+              "explanation": "Customers who have decisively exited and will never return cannot be considered prospective or target customers for a product."
+            }
+          ]
         }
       ]
     }
