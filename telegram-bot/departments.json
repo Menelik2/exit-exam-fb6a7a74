@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-23T17:07:50.352Z",
+  "updatedAt": "2026-10-23T17:08:18.762Z",
   "departments": [
     {
       "id": "computer-science",
@@ -2404,9 +2404,9 @@
       "exams": [
         {
           "id": "management-1792775267854",
-          "title": "New exam",
+          "title": "2016",
           "year": 2026,
-          "pdfUrl": null,
+          "pdfUrl": "https://docs.google.com/document/d/1YTbzGInXPJmzdx1QHEmzj_HsAwTcKfw-/edit?usp=drivesdk&ouid=105723339689957248808&rtpof=true&sd=true",
           "telegramFileId": null
         }
       ]
