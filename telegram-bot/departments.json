@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-23T14:52:39.507Z",
+  "updatedAt": "2026-10-23T14:52:55.786Z",
   "departments": [
     {
       "id": "computer-science",
@@ -2378,9 +2378,9 @@
         },
         {
           "id": "nursing-1792767155937",
-          "title": "New exam",
+          "title": "2016",
           "year": 2026,
-          "pdfUrl": null,
+          "pdfUrl": "https://drive.google.com/file/d/1tAPjKayVq-zXuTXlVxh52TE2E6Hq2F_y/view?usp=drivesdk",
           "telegramFileId": null
         }
       ]
