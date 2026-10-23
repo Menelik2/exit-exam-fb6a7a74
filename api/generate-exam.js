@@ -13,9 +13,7 @@
  *   fullDocument?: boolean
  */
 
-import { timingSafeEqual } from "node:crypto";
-
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
 const HARD_MAX = 50;
 
 function getEnvApiKey() {
