@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-23T09:25:32.951Z",
+  "updatedAt": "2026-10-23T14:34:53.190Z",
   "departments": [
     {
       "id": "computer-science",
@@ -1646,6 +1646,13 @@
               "explanation": "Keeping patient information private is a direct demonstration of the ethical principle of confidentiality, which protects sensitive patient data."
             }
           ]
+        },
+        {
+          "id": "nursing-1792766090876",
+          "title": "New exam",
+          "year": 2026,
+          "pdfUrl": null,
+          "telegramFileId": null
         }
       ]
     },
