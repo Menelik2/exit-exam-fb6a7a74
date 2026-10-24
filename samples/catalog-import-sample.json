@@ -1,0 +1,84 @@
+{
+  "updatedAt": "2026-10-24T00:00:00.000Z",
+  "departments": [
+    {
+      "id": "nursing",
+      "name": "Nursing",
+      "emoji": "🩺",
+      "exams": [
+        {
+          "id": "nursing-2016-jan",
+          "title": "BSC Nurse January 2016 Exit Exam",
+          "year": 2016,
+          "pdfUrl": "https://example.com/path/to/BSC-Nurse-January-2016.pdf",
+          "telegramFileId": null,
+          "note": "Sample exam — replace pdfUrl with your public PDF link",
+          "questions": [
+            {
+              "question_number": 1,
+              "question": "Which vital sign is measured in beats per minute?",
+              "options": [
+                "Blood pressure",
+                "Heart rate",
+                "Respiratory rate",
+                "Body temperature"
+              ],
+              "correct_answer": "Heart rate",
+              "explanation": "Heart rate is recorded as beats per minute (bpm)."
+            },
+            {
+              "question_number": 2,
+              "question": "Hand hygiene is most effective when performed:",
+              "options": [
+                "Only before surgery",
+                "Before and after patient contact",
+                "Only after patient contact",
+                "Once per shift"
+              ],
+              "correct_answer": "Before and after patient contact",
+              "explanation": "WHO recommends hand hygiene before and after patient contact."
+            }
+          ]
+        },
+        {
+          "id": "nursing-2020",
+          "title": "Nursing Exit Exam 2020",
+          "year": 2020,
+          "pdfUrl": "https://example.com/nursing-2020.pdf",
+          "telegramFileId": null,
+          "note": "No questions yet — admin can Gen all Qs after import",
+          "questions": []
+        }
+      ]
+    },
+    {
+      "id": "pharmacy",
+      "name": "Pharmacy",
+      "emoji": "💊",
+      "exams": [
+        {
+          "id": "pharmacy-2019",
+          "title": "Pharmacy Exit Exam 2019",
+          "year": 2019,
+          "pdfUrl": null,
+          "telegramFileId": null,
+          "note": "Add a public PDF URL after import, then Gen all Qs",
+          "questions": [
+            {
+              "question_number": 1,
+              "question": "Which route of administration has the fastest onset of action?",
+              "options": [
+                "Oral",
+                "Intramuscular",
+                "Intravenous",
+                "Subcutaneous"
+              ],
+              "correct_answer": "Intravenous",
+              "explanation": "IV delivery puts the drug directly into the bloodstream."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
