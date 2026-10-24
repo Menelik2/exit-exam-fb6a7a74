@@ -7,63 +7,12 @@ export const DEFAULT_PIN = "admin123";
 
 export function createSeed(): Catalog {
   return {
+    departments: [],
     updatedAt: new Date().toISOString(),
-    departments: [
-      {
-        id: "computer-science",
-        name: "Computer Science",
-        emoji: "💻",
-        exams: [
-          {
-            id: "cs-sample",
-            title: "CS Exit Exam (sample)",
-            year: 2024,
-            pdfUrl: null,
-            telegramFileId: null,
-            note: "Add PDF URL or Telegram file_id",
-          },
-        ],
-      },
-      { id: "nursing", name: "Nursing", emoji: "🩺", exams: [] },
-      { id: "accounting", name: "Accounting", emoji: "📊", exams: [] },
-      { id: "law", name: "Law", emoji: "⚖️", exams: [] },
-      { id: "management", name: "Management", emoji: "📁", exams: [] },
-    ],
   };
 }
 
-/** @deprecated use createSeed() */
 export const SEED: Catalog = createSeed();
-
-function normalizeQuestions(raw: unknown): StoredQuestion[] | undefined {
-  if (!Array.isArray(raw) || raw.length === 0) return undefined;
-  const out: StoredQuestion[] = [];
-  for (let i = 0; i < Math.min(raw.length, 300); i++) {
-    const q = raw[i];
-    if (!q || typeof q !== "object") continue;
-    const row = q as Record<string, unknown>;
-    const question = String(row.question || "").trim().slice(0, 2000);
-    if (!question) continue;
-    const options = Array.isArray(row.options)
-      ? row.options.map((o) => String(o ?? "").trim()).filter(Boolean).slice(0, 6)
-      : [];
-    if (options.length < 2) continue;
-    let correct = String(row.correct_answer || "").trim();
-    if (!options.includes(correct)) {
-      const found = options.find((o) => o.toLowerCase() === correct.toLowerCase());
-      correct = found || options[0];
-    }
-    out.push({
-      question_number: out.length + 1,
-      question,
-      options,
-      correct_answer: correct,
-      explanation:
-        row.explanation == null ? undefined : String(row.explanation).slice(0, 2000),
-    });
-  }
-  return out.length ? out : undefined;
-}
 
 function isExam(x: unknown): x is ExamEntry {
   if (!x || typeof x !== "object") return false;
@@ -74,12 +23,35 @@ function isExam(x: unknown): x is ExamEntry {
 function isDept(x: unknown): x is Department {
   if (!x || typeof x !== "object") return false;
   const d = x as Record<string, unknown>;
-  return (
-    typeof d.id === "string" &&
-    typeof d.name === "string" &&
-    Array.isArray(d.exams) &&
-    d.exams.every(isExam)
-  );
+  return typeof d.id === "string" && typeof d.name === "string" && Array.isArray(d.exams);
+}
+
+function normalizeQuestions(raw: unknown): StoredQuestion[] | undefined {
+  if (!Array.isArray(raw) || raw.length === 0) return undefined;
+  const out: StoredQuestion[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const q = item as Record<string, unknown>;
+    const question = String(q.question || "").trim();
+    if (!question) continue;
+    const options = Array.isArray(q.options)
+      ? q.options.map((o) => String(o ?? "").trim()).filter(Boolean)
+      : [];
+    if (options.length < 2) continue;
+    let correct = String(q.correct_answer || "").trim();
+    if (!options.includes(correct)) {
+      const found = options.find((o) => o.toLowerCase() === correct.toLowerCase());
+      correct = found || options[0];
+    }
+    out.push({
+      question_number: out.length + 1,
+      question,
+      options,
+      correct_answer: correct,
+      explanation: q.explanation == null ? "" : String(q.explanation),
+    });
+  }
+  return out.length ? out : undefined;
 }
 
 export function normalizeCatalog(raw: unknown): Catalog | null {
@@ -185,9 +157,6 @@ export function uniqueDeptId(name: string, existing: Department[]): string {
 
 export function exportDepartmentsJson(catalog: Catalog): void {
   const payload = {
-    appUrl: "https://yeniexams.vercel.app",
-    channelUrl: "https://t.me/exitexamto",
-    channelUsername: "@exitexamto",
     updatedAt: catalog.updatedAt,
     departments: catalog.departments,
   };
@@ -195,16 +164,71 @@ export function exportDepartmentsJson(catalog: Catalog): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "departments.json";
+  a.download = `exit-exam-catalog-${new Date().toISOString().slice(0, 10)}.json`;
   document.body.appendChild(a);
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
 }
 
-export function importCatalogFromText(text: string): Catalog {
-  const parsed = JSON.parse(text) as unknown;
+/** Parse catalog JSON without writing localStorage. */
+export function parseCatalogJson(text: string): Catalog {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    throw new Error("File is not valid JSON.");
+  }
   const normalized = normalizeCatalog(parsed);
-  if (!normalized) throw new Error("Invalid JSON — expected a departments list.");
+  if (!normalized) {
+    throw new Error("Invalid catalog — expected { departments: [ { id, name, exams: [...] } ] }.");
+  }
+  if (!normalized.departments.length) {
+    throw new Error("JSON has no departments to import.");
+  }
+  return normalized;
+}
+
+/**
+ * Merge incoming departments/exams into current catalog by id.
+ * Same dept id → merge exams; same exam id → incoming wins (including questions).
+ */
+export function mergeCatalogByDepartment(current: Catalog, incoming: Catalog): Catalog {
+  const byId = new Map<string, Department>();
+  for (const d of current.departments || []) {
+    byId.set(d.id, {
+      ...d,
+      exams: [...(d.exams || [])],
+    });
+  }
+  for (const d of incoming.departments || []) {
+    const existing = byId.get(d.id);
+    if (!existing) {
+      byId.set(d.id, {
+        id: d.id,
+        name: d.name,
+        emoji: d.emoji || "📘",
+        exams: [...(d.exams || [])],
+      });
+      continue;
+    }
+    const examMap = new Map<string, ExamEntry>();
+    for (const e of existing.exams || []) examMap.set(e.id, e);
+    for (const e of d.exams || []) examMap.set(e.id, e); // incoming overwrites
+    byId.set(d.id, {
+      ...existing,
+      name: d.name || existing.name,
+      emoji: d.emoji || existing.emoji,
+      exams: Array.from(examMap.values()),
+    });
+  }
+  return {
+    departments: Array.from(byId.values()),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export function importCatalogFromText(text: string): Catalog {
+  const normalized = parseCatalogJson(text);
   return saveCatalog(normalized);
 }
