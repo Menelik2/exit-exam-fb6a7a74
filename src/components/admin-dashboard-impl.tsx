@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { LayoutDashboard, Building2, FileText, Settings, LogOut, Plus, Trash2, BookOpen, Shield, Pencil, X, Save, Loader2, Sparkles } from "lucide-react";
+import { LayoutDashboard, Building2, FileText, Settings, LogOut, Plus, Trash2, BookOpen, Shield, Pencil, X, Save } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import type { Catalog, Department, ExamEntry, TabId } from "@/components/admin-types";
+import type { Catalog, Department, TabId } from "@/components/admin-types";
 import { uniqueDeptId } from "@/components/admin-catalog";
 import { AdminCatalogActions } from "@/components/AdminCatalogActions";
 import { apiAdminLogin, apiGetCatalog, apiSaveCatalog } from "@/lib/admin-api";
-import { generateAndStoreExamQuestions } from "@/lib/admin-exam-generate";
-import type { StoredQuestion } from "@/components/admin-types";
+import { AdminExamManagement } from "@/components/AdminExamManagement";
 
 const EMPTY: Catalog = { departments: [], updatedAt: new Date(0).toISOString() };
 const TOKEN_KEY = "exit-exam-admin-token-v2";
@@ -39,14 +38,11 @@ export function AdminDashboard() {
   const [pinError, setPinError] = useState("");
   const [tab, setTab] = useState<TabId>("overview");
   const [catalog, setCatalog] = useState<Catalog>(EMPTY);
-  const [editingExam, setEditingExam] = useState<{ deptId: string; exam: ExamEntry } | null>(null);
   const [editingDept, setEditingDept] = useState<Department | null>(null);
   const [newDeptName, setNewDeptName] = useState("");
   const [saving, setSaving] = useState(false);
   const [loggingIn, setLoggingIn] = useState(false);
   const [token, setToken] = useState<string | null>(null);
-  const [genId, setGenId] = useState<string | null>(null);
-  const [genCount, setGenCount] = useState("0");
   const [appUrl, setAppUrl] = useState("https://exit.sites.bd");
   const [channelUrl, setChannelUrl] = useState("https://t.me/exitexamto");
   const [channelUsername, setChannelUsername] = useState("@exitexamto");
@@ -124,42 +120,6 @@ export function AdminDashboard() {
     }
   };
 
-  const genStore = async (deptId: string, exam: ExamEntry) => {
-    if (!exam.pdfUrl && !exam.telegramFileId) {
-      toast.error("Save a public PDF/DOCX URL first");
-      return;
-    }
-    const raw = genCount.trim().toLowerCase();
-    let n = 0;
-    if (raw && raw !== "all" && raw !== "full" && raw !== "0") {
-      n = parseInt(raw, 10);
-      if (Number.isNaN(n) || n < 0) n = 0;
-      if (n > 200) n = 200;
-    }
-    setGenId(exam.id);
-    try {
-      toast.message(n === 0 ? "Generating ALL questions from full PDF/DOCX…" : `Generating ${n} questions…`);
-      const questions = await generateAndStoreExamQuestions(exam, n);
-      const nextExam: ExamEntry = { ...exam, questions: questions as StoredQuestion[] };
-      const ok = await persist({
-        ...catalog,
-        departments: depts.map((d) =>
-          d.id === deptId
-            ? { ...d, exams: (d.exams || []).map((e) => (e.id === exam.id ? nextExam : e)) }
-            : d,
-        ),
-      });
-      if (ok) {
-        toast.success(`Stored ${questions.length} questions for users`);
-        setEditingExam((cur) => (cur && cur.exam.id === exam.id ? { ...cur, exam: nextExam } : cur));
-      }
-    } catch (e) {
-      toast.error((e as Error).message || "Generate failed");
-    } finally {
-      setGenId(null);
-    }
-  };
-
   if (!ready) return <div className="flex min-h-dvh items-center justify-center text-sm text-muted-foreground">Loading…</div>;
 
   if (!authed) {
@@ -188,7 +148,7 @@ export function AdminDashboard() {
   const nav: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
     { id: "departments", label: "Departments", icon: Building2 },
-    { id: "exams", label: "Exams", icon: FileText },
+    { id: "exams", label: "Exam management", icon: FileText },
     { id: "settings", label: "Settings", icon: Settings },
   ];
 
@@ -247,14 +207,14 @@ export function AdminDashboard() {
                 <p className="text-sm font-semibold">Workflow</p>
                 <ol className="mt-3 space-y-2 text-sm text-muted-foreground">
                   <li><span className="font-medium text-foreground">1.</span> Add a department</li>
-                  <li><span className="font-medium text-foreground">2.</span> Add an exam with a public PDF/DOCX link</li>
+                  <li><span className="font-medium text-foreground">2.</span> Create an exam with a public PDF/DOCX link</li>
                   <li><span className="font-medium text-foreground">3.</span> Generate all questions once and store them</li>
                   <li><span className="font-medium text-foreground">4.</span> Users open Department → Exam → Start quiz</li>
                 </ol>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Button type="button" onClick={() => setTab("departments")}><Building2 className="mr-1.5 h-4 w-4" /> Departments</Button>
-                <Button type="button" variant="outline" onClick={() => setTab("exams")}><FileText className="mr-1.5 h-4 w-4" /> Exams</Button>
+                <Button type="button" variant="outline" onClick={() => setTab("exams")}><FileText className="mr-1.5 h-4 w-4" /> Exam management</Button>
                 <Button type="button" variant="outline" onClick={() => setTab("settings")}><Settings className="mr-1.5 h-4 w-4" /> Settings</Button>
                 <Link to="/" className="inline-flex h-10 items-center rounded-md border px-4 text-sm font-medium hover:bg-muted"><BookOpen className="mr-1.5 h-4 w-4" /> Open practice site</Link>
               </div>
@@ -296,59 +256,7 @@ export function AdminDashboard() {
           )}
 
           {tab === "exams" && (
-            <div className="space-y-4">
-              <div>
-                <h1 className="font-display text-2xl font-semibold">Exams</h1>
-                <p className="text-sm text-muted-foreground">Save PDF URL → Generate ALL questions once → users Start quiz</p>
-              </div>
-              {depts.map((d) => (
-                <div key={d.id} className="rounded-2xl border bg-card p-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <h2 className="font-semibold">{d.emoji} {d.name}</h2>
-                    <Button size="sm" disabled={saving} onClick={async () => {
-                      const exam: ExamEntry = {
-                        id: `${d.id}-${Date.now()}`,
-                        title: "New exam",
-                        year: new Date().getFullYear(),
-                        pdfUrl: null,
-                        telegramFileId: null,
-                      };
-                      if (await persist({
-                        ...catalog,
-                        departments: depts.map((x) => x.id === d.id ? { ...x, exams: [...(x.exams || []), exam] } : x),
-                      })) setEditingExam({ deptId: d.id, exam });
-                    }}><Plus className="mr-1 h-3.5 w-3.5" /> Add exam</Button>
-                  </div>
-                  {(d.exams || []).length === 0 ? (
-                    <p className="text-sm text-muted-foreground">No exams</p>
-                  ) : (
-                    <ul className="divide-y rounded-xl border">
-                      {(d.exams || []).map((exam) => (
-                        <li key={exam.id} className="flex flex-wrap items-center gap-2 px-3 py-2">
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm font-medium">{exam.title}</p>
-                            <p className="text-[11px] text-muted-foreground">
-                              {[exam.pdfUrl ? "Has URL" : "No URL", exam.questions?.length ? `${exam.questions.length} Qs stored` : "No quiz yet"].join(" · ")}
-                            </p>
-                          </div>
-                          <Button size="sm" disabled={!!genId || saving || !(exam.pdfUrl || exam.telegramFileId)} onClick={() => void genStore(d.id, exam)}>
-                            {genId === exam.id ? <><Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />Gen…</> : <><Sparkles className="mr-1 h-3.5 w-3.5" />{exam.questions?.length ? "Re-gen all" : "Gen all Qs"}</>}
-                          </Button>
-                          <Button size="sm" variant="outline" onClick={() => setEditingExam({ deptId: d.id, exam: { ...exam } })}><Pencil className="h-3.5 w-3.5" /></Button>
-                          <Button size="sm" variant="outline" className="text-destructive" onClick={async () => {
-                            if (!confirm("Delete exam?")) return;
-                            if (await persist({
-                              ...catalog,
-                              departments: depts.map((x) => x.id === d.id ? { ...x, exams: (x.exams || []).filter((e) => e.id !== exam.id) } : x),
-                            })) toast.success("Deleted");
-                          }}><Trash2 className="h-3.5 w-3.5" /></Button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </div>
+            <AdminExamManagement catalog={catalog} saving={saving} persist={persist} />
           )}
 
           {tab === "settings" && (
@@ -420,45 +328,6 @@ export function AdminDashboard() {
                   ...catalog,
                   departments: depts.map((d) => d.id === editingDept.id ? { ...editingDept, name } : d),
                 })) { setEditingDept(null); toast.success("Saved"); }
-              }}><Save className="mr-1 h-4 w-4" /> Save</Button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {editingExam && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md space-y-3 rounded-2xl border bg-card p-5">
-            <div className="flex justify-between"><h3 className="font-semibold">Edit exam</h3><button type="button" onClick={() => setEditingExam(null)}><X className="h-4 w-4" /></button></div>
-            <div className="space-y-2">
-              <Label>Title</Label>
-              <Input value={editingExam.exam.title} onChange={(e) => setEditingExam({ ...editingExam, exam: { ...editingExam.exam, title: e.target.value } })} />
-            </div>
-            <div className="space-y-2">
-              <Label>Year</Label>
-              <Input type="number" value={editingExam.exam.year ?? ""} onChange={(e) => setEditingExam({ ...editingExam, exam: { ...editingExam.exam, year: e.target.value ? Number(e.target.value) : null } })} />
-            </div>
-            <div className="space-y-2">
-              <Label>PDF / DOCX public URL</Label>
-              <Input value={editingExam.exam.pdfUrl || ""} onChange={(e) => setEditingExam({ ...editingExam, exam: { ...editingExam.exam, pdfUrl: e.target.value || null } })} placeholder="https://..." />
-            </div>
-            <div className="space-y-2">
-              <Label>Telegram file_id (optional)</Label>
-              <Input value={editingExam.exam.telegramFileId || ""} onChange={(e) => setEditingExam({ ...editingExam, exam: { ...editingExam.exam, telegramFileId: e.target.value || null } })} />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setEditingExam(null)}>Cancel</Button>
-              <Button onClick={async () => {
-                const title = editingExam.exam.title.trim();
-                if (!title) return toast.error("Title required");
-                if (await persist({
-                  ...catalog,
-                  departments: depts.map((d) =>
-                    d.id === editingExam.deptId
-                      ? { ...d, exams: (d.exams || []).map((e) => (e.id === editingExam.exam.id ? { ...editingExam.exam, title } : e)) }
-                      : d,
-                  ),
-                })) { setEditingExam(null); toast.success("Saved"); }
               }}><Save className="mr-1 h-4 w-4" /> Save</Button>
             </div>
           </div>
