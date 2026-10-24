@@ -13,7 +13,12 @@
  *   fullDocument?: boolean
  */
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.8-flash";
+const GEMINI_MODELS = [
+  process.env.GEMINI_MODEL || "gemini-3.8-flash",
+  "gemini-3.8-flash",
+  "gemini-3.7-flash",
+  "gemini-2.5-flash",
+].filter((v, i, a) => v && a.indexOf(v) === i);
 const HARD_MAX = 50;
 
 function getEnvApiKey() {
@@ -89,8 +94,8 @@ function parseModelJson(text) {
   return [];
 }
 
-async function callGemini(apiKey, systemPrompt, userPrompt) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(apiKey)}`;
+async function callGeminiOnce(apiKey, model, systemPrompt, userPrompt) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -109,12 +114,32 @@ async function callGemini(apiKey, systemPrompt, userPrompt) {
       data?.error?.message ||
       data?.message ||
       `Gemini error (${res.status})`;
-    throw new Error(msg);
+    const err = new Error(msg);
+    err.status = res.status;
+    throw err;
   }
   const text =
     data?.candidates?.[0]?.content?.parts?.map((p) => p.text || "").join("") || "";
   if (!text) throw new Error("Empty response from Gemini");
   return text;
+}
+
+async function callGemini(apiKey, systemPrompt, userPrompt) {
+  let lastErr;
+  for (const model of GEMINI_MODELS) {
+    try {
+      return await callGeminiOnce(apiKey, model, systemPrompt, userPrompt);
+    } catch (e) {
+      lastErr = e;
+      const msg = String(e?.message || e);
+      // Retry on retired/missing model
+      if (/no longer available|not found|is not found|NOT_FOUND|404/i.test(msg)) {
+        continue;
+      }
+      throw e;
+    }
+  }
+  throw lastErr || new Error("All Gemini models failed");
 }
 
 const SYSTEM_PROMPT = `You are an expert exam writer and exam-document parser. Produce high-quality multiple-choice questions.

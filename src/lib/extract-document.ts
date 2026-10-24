@@ -6,17 +6,34 @@ const MIN_TEXT_CHARS = 40;
 const MIN_CHARS_PER_PAGE = 40;
 /** Cap OCR pages so admin stays responsive on very long scans. */
 const MAX_OCR_PAGES = 100;
-const OCR_SCALE = 1.6;
+const OCR_SCALE = 1.5;
+
+/** Independent copy — never share an ArrayBuffer that pdf.js may detach. */
+function cloneBuffer(src: ArrayBuffer): ArrayBuffer {
+  const out = new ArrayBuffer(src.byteLength);
+  new Uint8Array(out).set(new Uint8Array(src));
+  return out;
+}
+
+/** Own Uint8Array for pdf.js getDocument (transfer-safe). */
+function toPdfBytes(src: ArrayBuffer): Uint8Array {
+  const u8 = new Uint8Array(src.byteLength);
+  u8.set(new Uint8Array(src));
+  return u8;
+}
+
+async function setupPdfjs(pdfjs: typeof import("pdfjs-dist")) {
+  const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+  (pdfjs as unknown as { GlobalWorkerOptions: { workerSrc: string } }).GlobalWorkerOptions.workerSrc =
+    workerUrl;
+}
 
 async function extractPdfTextLayer(
   pdfjs: typeof import("pdfjs-dist"),
   data: ArrayBuffer,
 ): Promise<{ text: string; numPages: number }> {
-  const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
-  (pdfjs as unknown as { GlobalWorkerOptions: { workerSrc: string } }).GlobalWorkerOptions.workerSrc =
-    workerUrl;
-  // Copy into Uint8Array so pdf.js transfer does not detach the caller's buffer
-  const doc = await pdfjs.getDocument({ data: new Uint8Array(data) }).promise;
+  await setupPdfjs(pdfjs);
+  const doc = await pdfjs.getDocument({ data: toPdfBytes(data) }).promise;
   const parts: string[] = [];
   for (let i = 1; i <= doc.numPages; i++) {
     const page = await doc.getPage(i);
@@ -34,10 +51,8 @@ async function ocrPdfPages(
   data: ArrayBuffer,
   numPages: number,
 ): Promise<string> {
-  const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
-  (pdfjs as unknown as { GlobalWorkerOptions: { workerSrc: string } }).GlobalWorkerOptions.workerSrc =
-    workerUrl;
-  const doc = await pdfjs.getDocument({ data: new Uint8Array(data) }).promise;
+  await setupPdfjs(pdfjs);
+  const doc = await pdfjs.getDocument({ data: toPdfBytes(data) }).promise;
   const pages = Math.min(numPages || doc.numPages, MAX_OCR_PAGES);
 
   const Tesseract = await import("tesseract.js");
@@ -56,7 +71,7 @@ async function ocrPdfPages(
       const canvas = document.createElement("canvas");
       canvas.width = Math.ceil(viewport.width);
       canvas.height = Math.ceil(viewport.height);
-      const ctx = canvas.getContext("2d");
+      const ctx = canvas.getContext("2d", { willReadFrequently: true });
       if (!ctx) continue;
       await (
         page.render({
@@ -123,18 +138,17 @@ export async function extractDocumentText(file: File): Promise<string> {
     }
     try {
       const pdfjs = await import("pdfjs-dist");
-      // pdf.js transfers/detaches the ArrayBuffer passed to getDocument —
-      // always pass a fresh copy; never reuse a buffer after getDocument.
-      const buf = await file.arrayBuffer();
-      const { text, numPages } = await extractPdfTextLayer(pdfjs, buf.slice(0));
+      // Keep a master copy; every pdf.js call gets its own independent clone.
+      const master = cloneBuffer(await file.arrayBuffer());
+      const { text, numPages } = await extractPdfTextLayer(pdfjs, cloneBuffer(master));
       const avg = numPages > 0 ? text.length / numPages : 0;
 
       if (text.length >= MIN_TEXT_CHARS && avg >= MIN_CHARS_PER_PAGE) {
         return text;
       }
 
-      // Scanned / screenshot PDF → OCR each page (fresh copy; buf is still intact)
-      const ocrText = await ocrPdfPages(pdfjs, buf.slice(0), numPages);
+      // Scanned / screenshot PDF → OCR each page
+      const ocrText = await ocrPdfPages(pdfjs, cloneBuffer(master), numPages);
       if (ocrText.length >= MIN_TEXT_CHARS) {
         return ocrText;
       }
@@ -144,6 +158,11 @@ export async function extractDocumentText(file: File): Promise<string> {
       );
     } catch (e) {
       const msg = (e as Error)?.message || String(e);
+      if (/detached ArrayBuffer/i.test(msg)) {
+        throw new Error(
+          "PDF buffer error while reading. Close other tabs using this file and try Gen all Qs again.",
+        );
+      }
       if (/invalid pdf/i.test(msg)) {
         throw new Error(
           "Invalid PDF structure. For Google Drive files: Share → Anyone with the link, then paste the link again (or use Telegram).",
