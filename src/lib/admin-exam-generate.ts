@@ -1,4 +1,4 @@
-import { extractDocumentText } from "@/lib/extract-document";
+import { extractDocumentText, type ExtractProgress } from "@/lib/extract-document";
 import type { ExamEntry, StoredQuestion } from "@/components/admin-types";
 
 const CHUNK_SIZE = 10000;
@@ -17,14 +17,16 @@ function chunkText(text: string): string[] {
     const end = Math.min(start + CHUNK_SIZE, t.length);
     chunks.push(t.slice(start, end));
     if (end >= t.length) break;
-    start = end - CHUNK_OVERLAP;
+    start = Math.max(0, end - CHUNK_OVERLAP);
   }
   return chunks;
 }
 
-function questionsForChunk(charCount: number): number {
-  const n = Math.round(charCount / 550);
-  return Math.max(PER_CHUNK_MIN, Math.min(PER_CHUNK_MAX, n));
+function questionsForChunk(len: number): number {
+  if (len < 1500) return PER_CHUNK_MIN;
+  if (len < 4000) return 10;
+  if (len < 7000) return 14;
+  return PER_CHUNK_MAX;
 }
 
 function normKey(q: string): string {
@@ -36,7 +38,11 @@ function normKey(q: string): string {
     .trim();
 }
 
-async function loadDocumentText(exam: ExamEntry): Promise<string> {
+async function loadDocumentText(
+  exam: ExamEntry,
+  onProgress?: (p: ExtractProgress) => void,
+): Promise<string> {
+  onProgress?.({ phase: "download", message: "Downloading exam document…" });
   const res = await fetch("/api/exam-document", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -75,12 +81,12 @@ async function loadDocumentText(exam: ExamEntry): Promise<string> {
     if (magic === "%PDF-" && !filename.toLowerCase().endsWith(".pdf")) filename += ".pdf";
     const mime = magic === "%PDF-" ? "application/pdf" : "application/octet-stream";
     const file = new File([copy], filename, { type: mime });
-    text = (await extractDocumentText(file)).trim();
+    text = (await extractDocumentText(file, { onProgress })).trim();
   }
 
   if (text.length < 40) {
     throw new Error(
-      "Could not read enough text from this file. For scanned/image PDFs, wait for OCR to finish or upload a clearer scan.",
+      "Could not read enough text from this file. For scanned/image PDFs, wait for OCR to finish (keep the tab open) or use a clearer scan.",
     );
   }
   return text.length > 400000 ? text.slice(0, 400000) : text;
@@ -99,14 +105,9 @@ async function generateBatch(
     body: JSON.stringify({
       documentName: `${documentName} (${partLabel})`,
       documentText: chunkTextContent,
-      topic: documentName,
-      difficulty: "Intermediate",
       numQuestions,
-      avoid,
-      nonce: String(Date.now()),
-      fullDocument: true,
+      avoidQuestions: avoid,
     }),
-    cache: "no-store",
   });
   const genData = (await genRes.json()) as {
     ok?: boolean;
@@ -126,12 +127,24 @@ async function generateBatch(
  * Pass numQuestions = 0 (or omit) for automatic full-document coverage.
  * Pass a positive number to request that many (still chunked for long docs).
  */
+export type GenerateProgress = ExtractProgress & {
+  questionsSoFar?: number;
+  chunk?: number;
+  totalChunks?: number;
+};
+
 export async function generateAndStoreExamQuestions(
   exam: ExamEntry,
   numQuestions: number = 0,
+  onProgress?: (p: GenerateProgress) => void,
 ): Promise<StoredQuestion[]> {
-  const fullText = await loadDocumentText(exam);
+  const fullText = await loadDocumentText(exam, onProgress);
   const chunks = chunkText(fullText);
+
+  onProgress?({
+    phase: "done",
+    message: `Text ready (${fullText.length.toLocaleString()} chars, ${chunks.length} part(s)). Generating questions…`,
+  });
 
   const wantAll = !numQuestions || numQuestions <= 0;
   let remaining = wantAll
@@ -140,6 +153,7 @@ export async function generateAndStoreExamQuestions(
 
   const collected: StoredQuestion[] = [];
   const seen = new Set<string>();
+  let consecutiveFails = 0;
 
   for (let i = 0; i < chunks.length && remaining > 0; i++) {
     const chunk = chunks[i];
@@ -155,13 +169,35 @@ export async function generateAndStoreExamQuestions(
     const avoid = collected.map((q) => q.question).slice(-50);
     const partLabel = chunks.length === 1 ? "full document" : `part ${i + 1}/${chunks.length}`;
 
+    onProgress?({
+      phase: "done",
+      chunk: i + 1,
+      totalChunks: chunks.length,
+      questionsSoFar: collected.length,
+      message: `Generating questions ${partLabel}… (${collected.length} stored so far)`,
+    });
+
     let batch: StoredQuestion[] = [];
     try {
       batch = await generateBatch(exam.title, chunk, perChunk, avoid, partLabel);
+      consecutiveFails = 0;
     } catch (e) {
-      if (collected.length === 0) throw e;
+      consecutiveFails += 1;
       console.warn(`Chunk ${i + 1} failed`, e);
-      continue;
+      if (collected.length === 0 && consecutiveFails >= 2) throw e;
+      if (collected.length === 0 && i === chunks.length - 1) throw e;
+      // retry once on first fail of this chunk
+      if (consecutiveFails === 1) {
+        try {
+          batch = await generateBatch(exam.title, chunk, Math.max(5, Math.floor(perChunk / 2)), avoid, partLabel);
+          consecutiveFails = 0;
+        } catch (e2) {
+          if (collected.length === 0 && i === chunks.length - 1) throw e2;
+          continue;
+        }
+      } else {
+        continue;
+      }
     }
 
     for (const q of batch) {
@@ -182,7 +218,7 @@ export async function generateAndStoreExamQuestions(
 
   if (collected.length === 0) {
     throw new Error(
-      "No questions generated from this document. For image PDFs, ensure OCR recovered text, then try Generate again.",
+      "No questions generated. For scanned PDFs: keep the tab open during OCR, then try Gen all Qs again. Or import questions via JSON.",
     );
   }
 
