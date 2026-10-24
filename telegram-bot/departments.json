@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-24T07:23:13.668Z",
+  "updatedAt": "2026-10-24T07:23:48.098Z",
   "departments": [
     {
       "id": "computer-science",
@@ -2375,14 +2375,6 @@
               "explanation": "Pitting edema is a significant manifestation of fluid retention, often associated with impaired kidney function in acute glomerulonephritis. Its presence indicates a worsening condition that requires prompt medical attention to prevent further complications like fluid overload."
             }
           ]
-        },
-        {
-          "id": "nursing-2016-jan",
-          "title": "BSC Nurse January 2016 Exit Exam",
-          "year": 2016,
-          "pdfUrl": null,
-          "telegramFileId": null,
-          "note": "Converted from a scanned PDF. OCR extraction may contain errors and some answer options may be incomplete. The source shows questions as not yet answered and does not provide an answer key; correct_answer and explanation are null until verified."
         }
       ]
     },
