@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-24T04:13:59.544Z",
+  "updatedAt": "2026-10-24T04:26:28.822Z",
   "departments": [
     {
       "id": "computer-science",
@@ -2626,6 +2626,13 @@
               "explanation": "Price discrimination involves charging different prices in different markets or to different customer groups for the identical good or service."
             }
           ]
+        },
+        {
+          "id": "management-1792815986059",
+          "title": "New exam",
+          "year": 2026,
+          "pdfUrl": null,
+          "telegramFileId": null
         }
       ]
     }
