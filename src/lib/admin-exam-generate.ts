@@ -141,7 +141,7 @@ export async function generateAndStoreExamQuestions(
   const fullText = await loadDocumentText(exam, onProgress);
   const chunks = chunkText(fullText);
 
-  onProgress?({
+  onProgress?.({
     phase: "done",
     message: `Text ready (${fullText.length.toLocaleString()} chars, ${chunks.length} part(s)). Generating questions…`,
   });
@@ -169,7 +169,7 @@ export async function generateAndStoreExamQuestions(
     const avoid = collected.map((q) => q.question).slice(-50);
     const partLabel = chunks.length === 1 ? "full document" : `part ${i + 1}/${chunks.length}`;
 
-    onProgress?({
+    onProgress?.({
       phase: "done",
       chunk: i + 1,
       totalChunks: chunks.length,

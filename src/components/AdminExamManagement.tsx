@@ -155,9 +155,11 @@ export function AdminExamManagement({ catalog, saving, persist }: Props) {
       return;
     }
     setGenId(exam.id);
+    const toastId = toast.loading("Starting… keep this tab open for scanned PDFs");
     try {
-      toast.message("Generating ALL questions… (image PDFs may take several minutes)");
-      const questions = await generateAndStoreExamQuestions(exam, 0);
+      const questions = await generateAndStoreExamQuestions(exam, 0, (p) => {
+        toast.loading(p.message || "Working…", { id: toastId });
+      });
       const nextExam: ExamEntry = { ...exam, questions: questions as StoredQuestion[] };
       const ok = await persist({
         ...catalog,
@@ -168,13 +170,16 @@ export function AdminExamManagement({ catalog, saving, persist }: Props) {
         ),
       });
       if (ok) {
-        toast.success(`Stored ${questions.length} questions`);
+        toast.success(`Stored ${questions.length} questions`, { id: toastId });
         if (editing?.exam.id === exam.id) {
           setEditing({ ...editing, exam: nextExam });
         }
+      } else {
+        toast.dismiss(toastId);
       }
     } catch (e) {
-      toast.error((e as Error).message || "Generate failed");
+      const msg = (e as Error).message || "Generate failed";
+      toast.error(msg, { id: toastId, duration: 12_000 });
     } finally {
       setGenId(null);
     }
