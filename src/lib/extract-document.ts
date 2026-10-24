@@ -5,8 +5,21 @@ const MIN_TEXT_CHARS = 40;
 /** Below this avg chars/page → treat as image PDF and OCR. */
 const MIN_CHARS_PER_PAGE = 40;
 /** Cap OCR pages so admin stays responsive on very long scans. */
-const MAX_OCR_PAGES = 100;
-const OCR_SCALE = 1.5;
+const MAX_OCR_PAGES = 80;
+const OCR_SCALE = 1.75;
+/** Per-page OCR timeout (ms). Long pages get one retry. */
+const OCR_PAGE_TIMEOUT_MS = 45_000;
+
+export type ExtractProgress = {
+  phase: "download" | "text" | "ocr" | "done";
+  page?: number;
+  totalPages?: number;
+  message: string;
+};
+
+export type ExtractOptions = {
+  onProgress?: (p: ExtractProgress) => void;
+};
 
 /** Independent copy — never share an ArrayBuffer that pdf.js may detach. */
 function cloneBuffer(src: ArrayBuffer): ArrayBuffer {
@@ -20,6 +33,22 @@ function toPdfBytes(src: ArrayBuffer): Uint8Array {
   const u8 = new Uint8Array(src.byteLength);
   u8.set(new Uint8Array(src));
   return u8;
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(`${label} timed out after ${Math.round(ms / 1000)}s`)), ms);
+    promise.then(
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(t);
+        reject(e);
+      },
+    );
+  });
 }
 
 async function setupPdfjs(pdfjs: typeof import("pdfjs-dist")) {
@@ -46,14 +75,44 @@ async function extractPdfTextLayer(
   return { text: parts.join("\n\n").trim(), numPages: doc.numPages };
 }
 
+async function renderPageToCanvas(
+  page: { getViewport: (o: { scale: number }) => { width: number; height: number }; render: (o: never) => { promise: Promise<void> } },
+  scale: number,
+): Promise<HTMLCanvasElement> {
+  const viewport = page.getViewport({ scale });
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.ceil(viewport.width);
+  canvas.height = Math.ceil(viewport.height);
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  if (!ctx) throw new Error("Canvas not available");
+  await (page.render({ canvasContext: ctx, viewport } as never) as { promise: Promise<void> }).promise;
+  return canvas;
+}
+
+function cleanOcrText(text: string): string {
+  return (text || "")
+    .replace(/\r/g, "")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 async function ocrPdfPages(
   pdfjs: typeof import("pdfjs-dist"),
   data: ArrayBuffer,
   numPages: number,
+  onProgress?: (p: ExtractProgress) => void,
 ): Promise<string> {
   await setupPdfjs(pdfjs);
   const doc = await pdfjs.getDocument({ data: toPdfBytes(data) }).promise;
   const pages = Math.min(numPages || doc.numPages, MAX_OCR_PAGES);
+
+  onProgress?.({
+    phase: "ocr",
+    page: 0,
+    totalPages: pages,
+    message: `Starting OCR on ${pages} page(s)… (scanned PDFs can take several minutes)`,
+  });
 
   const Tesseract = await import("tesseract.js");
   const worker = await Tesseract.createWorker("eng", 1, {
@@ -64,49 +123,67 @@ async function ocrPdfPages(
   });
 
   const parts: string[] = [];
+  let failedPages = 0;
+
   try {
     for (let i = 1; i <= pages; i++) {
-      const page = await doc.getPage(i);
-      const viewport = page.getViewport({ scale: OCR_SCALE });
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.ceil(viewport.width);
-      canvas.height = Math.ceil(viewport.height);
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) continue;
-      await (
-        page.render({
-          canvasContext: ctx,
-          viewport,
-        } as never) as { promise: Promise<void> }
-      ).promise;
+      onProgress?.({
+        phase: "ocr",
+        page: i,
+        totalPages: pages,
+        message: `OCR page ${i}/${pages}… keep this tab open`,
+      });
 
-      const {
-        data: { text },
-      } = await worker.recognize(canvas);
-
-      const cleaned = (text || "")
-        .replace(/\r/g, "")
-        .replace(/[ \t]+\n/g, "\n")
-        .replace(/\n{3,}/g, "\n\n")
-        .trim();
-      if (cleaned) parts.push(cleaned);
-
-      canvas.width = 0;
-      canvas.height = 0;
+      let pageOk = false;
+      for (let attempt = 1; attempt <= 2 && !pageOk; attempt++) {
+        try {
+          const page = await doc.getPage(i);
+          const scale = attempt === 1 ? OCR_SCALE : Math.max(1.25, OCR_SCALE - 0.25);
+          const canvas = await withTimeout(
+            renderPageToCanvas(page, scale),
+            OCR_PAGE_TIMEOUT_MS,
+            `Render page ${i}`,
+          );
+          const result = await withTimeout(
+            worker.recognize(canvas),
+            OCR_PAGE_TIMEOUT_MS,
+            `OCR page ${i}`,
+          );
+          const cleaned = cleanOcrText(result.data?.text || "");
+          if (cleaned) parts.push(cleaned);
+          canvas.width = 0;
+          canvas.height = 0;
+          pageOk = true;
+        } catch (err) {
+          console.warn(`OCR page ${i} attempt ${attempt} failed`, err);
+          if (attempt === 2) failedPages += 1;
+        }
+      }
     }
   } finally {
     await worker.terminate().catch(() => {});
   }
 
   if (doc.numPages > MAX_OCR_PAGES) {
-    parts.push(
-      `\n[OCR note: only first ${MAX_OCR_PAGES} of ${doc.numPages} pages were read.]`,
+    parts.push(`\n[OCR note: only first ${MAX_OCR_PAGES} of ${doc.numPages} pages were read.]`);
+  }
+  if (failedPages > 0) {
+    parts.push(`\n[OCR note: ${failedPages} page(s) failed and were skipped.]`);
+  }
+
+  const text = parts.join("\n\n").trim();
+  if (!text) {
+    throw new Error(
+      failedPages > 0
+        ? `OCR failed on all ${pages} page(s). Try a clearer scan, a smaller PDF, or a text-based PDF.`
+        : "OCR produced no text. The scan may be too low quality.",
     );
   }
-  return parts.join("\n\n").trim();
+  return text;
 }
 
-export async function extractDocumentText(file: File): Promise<string> {
+export async function extractDocumentText(file: File, options?: ExtractOptions): Promise<string> {
+  const onProgress = options?.onProgress;
   const name = file.name.toLowerCase();
   const type = file.type;
 
@@ -140,16 +217,19 @@ export async function extractDocumentText(file: File): Promise<string> {
       const pdfjs = await import("pdfjs-dist");
       // Keep a master copy; every pdf.js call gets its own independent clone.
       const master = cloneBuffer(await file.arrayBuffer());
+      onProgress?.({ phase: "text", message: "Reading PDF text layer…" });
       const { text, numPages } = await extractPdfTextLayer(pdfjs, cloneBuffer(master));
       const avg = numPages > 0 ? text.length / numPages : 0;
 
       if (text.length >= MIN_TEXT_CHARS && avg >= MIN_CHARS_PER_PAGE) {
+        onProgress?.({ phase: "done", message: `Extracted text from ${numPages} page(s)` });
         return text;
       }
 
       // Scanned / screenshot PDF → OCR each page
-      const ocrText = await ocrPdfPages(pdfjs, cloneBuffer(master), numPages);
+      const ocrText = await ocrPdfPages(pdfjs, cloneBuffer(master), numPages, onProgress);
       if (ocrText.length >= MIN_TEXT_CHARS) {
+        onProgress?.({ phase: "done", message: "OCR finished" });
         return ocrText;
       }
 
@@ -161,6 +241,11 @@ export async function extractDocumentText(file: File): Promise<string> {
       if (/detached ArrayBuffer/i.test(msg)) {
         throw new Error(
           "PDF buffer error while reading. Close other tabs using this file and try Gen all Qs again.",
+        );
+      }
+      if (/timed out/i.test(msg)) {
+        throw new Error(
+          `${msg} — try fewer pages (split the PDF) or a clearer scan, then Gen all Qs again.`,
         );
       }
       if (/invalid pdf/i.test(msg)) {
