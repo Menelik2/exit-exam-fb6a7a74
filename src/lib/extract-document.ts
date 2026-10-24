@@ -15,7 +15,8 @@ async function extractPdfTextLayer(
   const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
   (pdfjs as unknown as { GlobalWorkerOptions: { workerSrc: string } }).GlobalWorkerOptions.workerSrc =
     workerUrl;
-  const doc = await pdfjs.getDocument({ data }).promise;
+  // Copy into Uint8Array so pdf.js transfer does not detach the caller's buffer
+  const doc = await pdfjs.getDocument({ data: new Uint8Array(data) }).promise;
   const parts: string[] = [];
   for (let i = 1; i <= doc.numPages; i++) {
     const page = await doc.getPage(i);
@@ -36,7 +37,7 @@ async function ocrPdfPages(
   const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
   (pdfjs as unknown as { GlobalWorkerOptions: { workerSrc: string } }).GlobalWorkerOptions.workerSrc =
     workerUrl;
-  const doc = await pdfjs.getDocument({ data }).promise;
+  const doc = await pdfjs.getDocument({ data: new Uint8Array(data) }).promise;
   const pages = Math.min(numPages || doc.numPages, MAX_OCR_PAGES);
 
   const Tesseract = await import("tesseract.js");
@@ -122,17 +123,18 @@ export async function extractDocumentText(file: File): Promise<string> {
     }
     try {
       const pdfjs = await import("pdfjs-dist");
+      // pdf.js transfers/detaches the ArrayBuffer passed to getDocument —
+      // always pass a fresh copy; never reuse a buffer after getDocument.
       const buf = await file.arrayBuffer();
-      const data = buf.slice(0);
-      const { text, numPages } = await extractPdfTextLayer(pdfjs, data);
+      const { text, numPages } = await extractPdfTextLayer(pdfjs, buf.slice(0));
       const avg = numPages > 0 ? text.length / numPages : 0;
 
       if (text.length >= MIN_TEXT_CHARS && avg >= MIN_CHARS_PER_PAGE) {
         return text;
       }
 
-      // Scanned / screenshot PDF → OCR each page
-      const ocrText = await ocrPdfPages(pdfjs, data.slice(0), numPages);
+      // Scanned / screenshot PDF → OCR each page (fresh copy; buf is still intact)
+      const ocrText = await ocrPdfPages(pdfjs, buf.slice(0), numPages);
       if (ocrText.length >= MIN_TEXT_CHARS) {
         return ocrText;
       }
