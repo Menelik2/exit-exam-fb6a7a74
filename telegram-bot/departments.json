@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-24T04:26:28.822Z",
+  "updatedAt": "2026-10-24T04:29:57.677Z",
   "departments": [
     {
       "id": "computer-science",
@@ -2629,10 +2629,408 @@
         },
         {
           "id": "management-1792815986059",
-          "title": "New exam",
+          "title": "2015 exam",
           "year": 2026,
-          "pdfUrl": null,
-          "telegramFileId": null
+          "pdfUrl": "https://drive.google.com/file/d/1_Rs2fHt9t3Y1E6yd05sIp5N0Pbr096ZB/view?usp=drivesdk",
+          "telegramFileId": null,
+          "questions": [
+            {
+              "question_number": 1,
+              "question": "Identify the role which is not among decisional role of a manager",
+              "options": [
+                "Disturbance handler",
+                "Disseminator",
+                "Entrepreneur",
+                "Negotiator"
+              ],
+              "correct_answer": "Disseminator",
+              "explanation": "According to Mintzberg's managerial roles, the disseminator role is an informational role rather than a decisional role. Disturbance handler, entrepreneur, and negotiator are all classified under decisional roles."
+            },
+            {
+              "question_number": 2,
+              "question": "In which stage of the group formation do members resist control by group leaders and show hostility?",
+              "options": [
+                "Forming",
+                "Storming",
+                "Performing",
+                "Norming"
+              ],
+              "correct_answer": "Storming",
+              "explanation": "In Tuckman's stages of group development, the storming stage is characterized by intragroup conflict, resistance to leadership, and competition among members."
+            },
+            {
+              "question_number": 3,
+              "question": "Total enumeration of the target population in a study is;",
+              "options": [
+                "Population",
+                "Case",
+                "Sample",
+                "Census"
+              ],
+              "correct_answer": "Census",
+              "explanation": "A census involves a complete enumeration and collection of data from every single member of the target population."
+            },
+            {
+              "question_number": 4,
+              "question": "Which one of the following is correct about a patent",
+              "options": [
+                "An intellectual property right",
+                "Issued by government to the inventor",
+                "Granted for a number of years depending on the countries laws and type of property",
+                "All of the above"
+              ],
+              "correct_answer": "All of the above",
+              "explanation": "A patent is an exclusive intellectual property right granted by a government to an inventor for a limited period, defined by territorial laws and the nature of the invention."
+            },
+            {
+              "question_number": 5,
+              "question": "Which of the following is not correct about marketing?",
+              "options": [
+                "Marketing is the document that outlines the production of items",
+                "Marketing is the creation and delivery of standard of living to society",
+                "Marketing is a social and managerial process",
+                "Marketing is the total business activity"
+              ],
+              "correct_answer": "Marketing is the document that outlines the production of items",
+              "explanation": "A document outlining production is typically a production plan or schedule, not marketing. Marketing encompasses social and managerial processes of creating and exchanging value."
+            },
+            {
+              "question_number": 6,
+              "question": "The involvement of identifying alternative courses of action that can be implemented if and when the original plan proves inadequate because of changing circumstances is",
+              "options": [
+                "Risk reduction plan",
+                "Contingency plan",
+                "Threat avoidance plan",
+                "Crisis management plan"
+              ],
+              "correct_answer": "Contingency plan",
+              "explanation": "Contingency planning entails developing alternative strategies to be executed if specific unexpected events or changes invalidate the original operational plan."
+            },
+            {
+              "question_number": 7,
+              "question": "Which of the following is/are not the major online marketing domains that could work for international marketing activities?",
+              "options": [
+                "Business to business",
+                "Business to consumer",
+                "Consumer to consumer",
+                "None"
+              ],
+              "correct_answer": "None",
+              "explanation": "B2B, B2C, and C2C are all recognized major online marketing domains used in modern international commerce, so none of the listed domains are excluded."
+            },
+            {
+              "question_number": 8,
+              "question": "What is the objective of warehouse layout?",
+              "options": [
+                "Manage varied material flow for each product",
+                "Expose customer to high-margin items",
+                "Equalize the task time at each workstation",
+                "Balance low-cost storage with low-cost material handling"
+              ],
+              "correct_answer": "Balance low-cost storage with low-cost material handling",
+              "explanation": "The primary objective in warehouse layout design is to achieve an optimal trade-off between maximizing storage space utilization and minimizing the costs and time of material handling."
+            },
+            {
+              "question_number": 9,
+              "question": "The step in the feasibility study that determines whether there will be sufficient and sustainable demand for proposed products is;",
+              "options": [
+                "Market and demand analysis",
+                "Financial analysis",
+                "Technical analysis",
+                "None of the above"
+              ],
+              "correct_answer": "Market and demand analysis",
+              "explanation": "Market and demand analysis assesses the potential target market, customer requirements, market size, and future demand projections for the proposed offering."
+            },
+            {
+              "question_number": 10,
+              "question": "Which of the following is wrong about leaders and leadership?",
+              "options": [
+                "Leadership is the ability to influence followers",
+                "A manager can be a leader",
+                "Leaders are usually inspirational",
+                "All leaders are managers"
+              ],
+              "correct_answer": "All leaders are managers",
+              "explanation": "Not all leaders are managers; leadership can arise informally outside formal managerial positions without administrative or formal authority."
+            },
+            {
+              "question_number": 11,
+              "question": "The method used for solving an assignment problem is called",
+              "options": [
+                "MODI method",
+                "Reduced matrix method",
+                "Hungarian method",
+                "VAM method"
+              ],
+              "correct_answer": "Hungarian method",
+              "explanation": "The Hungarian method is a dedicated combinatorial optimization algorithm used to find the optimal assignment of tasks to resources at minimal cost."
+            },
+            {
+              "question_number": 12,
+              "question": "One of the following is a category of 'Growth Needs' according to Alderfer?",
+              "options": [
+                "Social",
+                "Esteem need",
+                "Safety need",
+                "Physiological need"
+              ],
+              "correct_answer": "Esteem need",
+              "explanation": "Alderfer's ERG theory condenses Maslow's hierarchy into Existence, Relatedness, and Growth. Growth needs incorporate intrinsic personal development, including internal self-esteem and self-actualization."
+            },
+            {
+              "question_number": 13,
+              "question": "Which of the following is true about market and marketer?",
+              "options": [
+                "A market is the process of selling and buying of goods and services",
+                "Marketer is the set of actual and potential buyers of a product or service",
+                "Market is the set of all actual and potential buyers of a product or service",
+                "Marketer is a place where buyers and sellers found together"
+              ],
+              "correct_answer": "Market is the set of all actual and potential buyers of a product or service",
+              "explanation": "In marketing definitions, a market consists of all actual and potential buyers who share a particular need or want, whereas a marketer is the party seeking a response from the market."
+            },
+            {
+              "question_number": 14,
+              "question": "Consequences of an equitable compensation include,",
+              "options": [
+                "Turnover",
+                "Strikes and complaints",
+                "Job dissatisfaction",
+                "Attracting qualified employees"
+              ],
+              "correct_answer": "Attracting qualified employees",
+              "explanation": "Fair and equitable compensation promotes employee motivation, lowers grievances, and helps the organization attract and retain qualified talent."
+            },
+            {
+              "question_number": 15,
+              "question": "Performance is interpreted as a cumulative effect of the following except,",
+              "options": [
+                "Right environment",
+                "Individual ego",
+                "Task requirement",
+                "Motivation and engagement"
+              ],
+              "correct_answer": "Individual ego",
+              "explanation": "Performance depends on environmental support, task clarity, skills, and motivation. Individual ego is not a constructive determinant of performance."
+            },
+            {
+              "question_number": 16,
+              "question": "A set of interdependent organizations that help make a product or service available for use or consumption by the consumer or business user is;",
+              "options": [
+                "Value delivery network",
+                "Production intermediary",
+                "Value creation summary",
+                "Marketing channel"
+              ],
+              "correct_answer": "Marketing channel",
+              "explanation": "A marketing channel (or distribution channel) consists of interdependent organizations involved in making goods and services available to end consumers or business users."
+            },
+            {
+              "question_number": 17,
+              "question": "Which one best describe elements",
+              "options": [
+                "Entities on which data are collected",
+                "Characteristic of interest",
+                "Facts and figures collected",
+                "None of the above"
+              ],
+              "correct_answer": "Characteristic of interest",
+              "explanation": "The exam document specifically designates 'Characteristic of interest' as the provided key for describing elements in this context."
+            },
+            {
+              "question_number": 18,
+              "question": "According to Kurt Lewin, the first phase in the change process is termed as,",
+              "options": [
+                "Evaluating",
+                "Refreezing",
+                "Unfreezing",
+                "Changing"
+              ],
+              "correct_answer": "Unfreezing",
+              "explanation": "Kurt Lewin's three-stage change model starts with unfreezing (preparing the organization to accept change), followed by changing/moving, and concluding with refreezing."
+            },
+            {
+              "question_number": 19,
+              "question": "Which of the following best describes the internal environmental aspects that will affect HR policy and practice?",
+              "options": [
+                "The type of business",
+                "Economic developments",
+                "The legal framework",
+                "The political sphere"
+              ],
+              "correct_answer": "The type of business",
+              "explanation": "The type of business, organization structure, and organizational culture are internal environmental factors, whereas economic, legal, and political conditions represent external environments."
+            },
+            {
+              "question_number": 20,
+              "question": "Which of the following is not a unique characteristic of a project?",
+              "options": [
+                "Finite",
+                "Infinite",
+                "Unique",
+                "Complex"
+              ],
+              "correct_answer": "Infinite",
+              "explanation": "A project is defined as a temporary endeavor with a specific beginning and end (finite), meaning it cannot be infinite."
+            },
+            {
+              "question_number": 21,
+              "question": "Differentiate the correct statement regarding the marketing environment",
+              "options": [
+                "The political-legal environment in relation to marketing is usually regarded as the regulatory environment",
+                "Suppliers are among uncontrolled environmental elements the marketing manager should not waste his/her time",
+                "The natural environment consists of economic factors that affect consumer purchasing power and spending patterns",
+                "Demographic variable is a microenvironment, the marketing managers should deal with"
+              ],
+              "correct_answer": "The political-legal environment in relation to marketing is usually regarded as the regulatory environment",
+              "explanation": "The political-legal environment sets laws, government agencies, and pressure groups that influence or limit various organizations, commonly referred to as the regulatory environment."
+            },
+            {
+              "question_number": 22,
+              "question": "Which of the following is not a reason to develop a business plan?",
+              "options": [
+                "To avoid silly mistakes",
+                "To avoid risks",
+                "To persuade funders",
+                "To focus business objective"
+              ],
+              "correct_answer": "To avoid risks",
+              "explanation": "A business plan helps identify, assess, and manage risks, but it cannot eliminate or avoid risks entirely in business."
+            },
+            {
+              "question_number": 23,
+              "question": "How much would $5000 due in 20 years de worth today if the discount rate were 7%?",
+              "options": [
+                "2085.00",
+                "2500.00",
+                "3572.00",
+                "1.292.10"
+              ],
+              "correct_answer": "1.292.10",
+              "explanation": "Present value is calculated as PV = FV / (1 + r)^n = 5000 / (1 + 0.07)^20 ≈ 1292.10."
+            },
+            {
+              "question_number": 24,
+              "question": "If a Finnish cell phone maker Nokia customizes its cell phones for every major market and created full-featured but rugged and low-cost phones especially designed for harsher living conditions, the product strategy is:",
+              "options": [
+                "Product invention",
+                "Communication adaptation",
+                "Straight product extension",
+                "Product adaptation"
+              ],
+              "correct_answer": "Product adaptation",
+              "explanation": "Product adaptation involves modifying a product to meet local conditions or preferences in foreign target markets."
+            },
+            {
+              "question_number": 25,
+              "question": "Which one involves gaining ownership or increased control over distributors and retailers?",
+              "options": [
+                "Backward integration",
+                "Forward integration",
+                "Market penetration",
+                "Horizontal integration"
+              ],
+              "correct_answer": "Forward integration",
+              "explanation": "Forward integration is a growth strategy where a company gains control of or ownership over the downstream entities in its supply chain, such as distributors and retailers."
+            },
+            {
+              "question_number": 26,
+              "question": "The unique and relatively stable patterns of behavior, thoughts, and emotions shown by individuals are",
+              "options": [
+                "Self-efficacy",
+                "Personality",
+                "Group behavior",
+                "Perception"
+              ],
+              "correct_answer": "Personality",
+              "explanation": "Personality refers to the enduring and characteristic patterns of thinking, feeling, and behaving that make a person unique."
+            },
+            {
+              "question_number": 27,
+              "question": "Discriminate the main difference between classical scientific school and classical administrative school?",
+              "options": [
+                "Whereas scientific school focused on the productivity of individuals, the classical administrative application concentrates on the total organization",
+                "Contributors to classical scientific school and classical administrative school are not common",
+                "The emphasis of the classical administrative school is on the development of managerial principles rather than work methods",
+                "Whereas the classical administrative approach focused on the productivity of individuals, the scientific school focused on the total organization"
+              ],
+              "correct_answer": "Whereas scientific school focused on the productivity of individuals, the classical administrative application concentrates on the total organization",
+              "explanation": "Scientific management (pioneered by Taylor) focused primarily on shop-floor productivity of individual workers, whereas administrative theory (pioneered by Fayol) focused on managing the total organization."
+            },
+            {
+              "question_number": 28,
+              "question": "Identify the wrong statement about vision and mission,",
+              "options": [
+                "Mission is essential for establishing objectives and formulating strategies",
+                "Mission and vision are necessary to effectively motivate the workforce",
+                "A clear business vision leads to a comprehensive mission statement",
+                "The mission is more broad and future-oriented compared to vision"
+              ],
+              "correct_answer": "The mission is more broad and future-oriented compared to vision",
+              "explanation": "Vision is typically the broad, future-oriented statement describing what the organization aspires to become, while mission describes its current purpose and business."
+            },
+            {
+              "question_number": 29,
+              "question": "Which aggregate planning options applies mainly to production not service operation?",
+              "options": [
+                "Using part-time workers",
+                "Changing inventory levels",
+                "Influencing demand",
+                "Varying workforce size"
+              ],
+              "correct_answer": "Changing inventory levels",
+              "explanation": "Services cannot store output as finished goods inventory due to the intangibility and perishability of services, making changing inventory levels applicable primarily to goods production."
+            },
+            {
+              "question_number": 30,
+              "question": "Which of the following is a combination project and functional structures?",
+              "options": [
+                "Matrix structure",
+                "Functional structure",
+                "Divisional structure",
+                "Line and staff structure"
+              ],
+              "correct_answer": "Matrix structure",
+              "explanation": "A matrix organizational structure combines functional departmentation with project or product management teams, giving employees dual reporting lines."
+            },
+            {
+              "question_number": 31,
+              "question": "Distinguish a quantitative technique for decision-making that shows a complete picture of potential alternative decision paths.",
+              "options": [
+                "The Delphi Technique",
+                "Brainstorming",
+                "Payback analysis",
+                "The decision tree"
+              ],
+              "correct_answer": "The decision tree",
+              "explanation": "A decision tree is a graphical model that displays alternative courses of action, possible states of nature, probabilities, and payoffs to aid decision-making."
+            },
+            {
+              "question_number": 32,
+              "question": "Which of the following explains the disadvantage of internal recruitment approach?",
+              "options": [
+                "Better selection",
+                "Inbreeding",
+                "Adaptability",
+                "High cost"
+              ],
+              "correct_answer": "Inbreeding",
+              "explanation": "A major disadvantage of relying exclusively on internal recruitment is 'inbreeding'—the lack of fresh ideas, innovative perspectives, and diverse experiences."
+            },
+            {
+              "question_number": 33,
+              "question": "A tax imposed by a government on goods entering at its borders is termed as;",
+              "options": [
+                "Quotas",
+                "Monetary barriers",
+                "Tariff",
+                "Boycotts"
+              ],
+              "correct_answer": "Tariff",
+              "explanation": "A tariff is a duty or tax levied by a government on imported goods as they enter national borders."
+            }
+          ]
         }
       ]
     }
