@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-24T04:30:17.556Z",
+  "updatedAt": "2026-10-24T04:31:03.978Z",
   "departments": [
     {
       "id": "computer-science",
@@ -2375,13 +2375,6 @@
               "explanation": "Pitting edema is a significant manifestation of fluid retention, often associated with impaired kidney function in acute glomerulonephritis. Its presence indicates a worsening condition that requires prompt medical attention to prevent further complications like fluid overload."
             }
           ]
-        },
-        {
-          "id": "nursing-1792767155937",
-          "title": "2016",
-          "year": 2026,
-          "pdfUrl": "https://drive.google.com/file/d/1T8AG8JGMkcOHSlIltLbmV91KDNRj8iJe/view?usp=drivesdk",
-          "telegramFileId": null
         }
       ]
     },
