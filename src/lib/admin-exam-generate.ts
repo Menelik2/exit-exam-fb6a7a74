@@ -23,7 +23,6 @@ function chunkText(text: string): string[] {
 }
 
 function questionsForChunk(charCount: number): number {
-  // ~1 question per ~500–600 chars of source text
   const n = Math.round(charCount / 550);
   return Math.max(PER_CHUNK_MIN, Math.min(PER_CHUNK_MAX, n));
 }
@@ -59,7 +58,10 @@ async function loadDocumentText(exam: ExamEntry): Promise<string> {
     if (!res.ok) throw new Error(`Document download failed (${res.status})`);
     const buf = await res.arrayBuffer();
     if (buf.byteLength < 50) throw new Error("Downloaded file is empty");
-    const header = new Uint8Array(buf.slice(0, 5));
+    // Independent copy so pdf.js cannot detach the buffer we still need
+    const copy = new ArrayBuffer(buf.byteLength);
+    new Uint8Array(copy).set(new Uint8Array(buf));
+    const header = new Uint8Array(copy, 0, 5);
     const magic = String.fromCharCode(...header);
     const nameHeader = res.headers.get("X-Exam-Filename");
     let filename = `${exam.title || "exam"}.pdf`;
@@ -72,7 +74,7 @@ async function loadDocumentText(exam: ExamEntry): Promise<string> {
     }
     if (magic === "%PDF-" && !filename.toLowerCase().endsWith(".pdf")) filename += ".pdf";
     const mime = magic === "%PDF-" ? "application/pdf" : "application/octet-stream";
-    const file = new File([buf], filename, { type: mime });
+    const file = new File([copy], filename, { type: mime });
     text = (await extractDocumentText(file)).trim();
   }
 
@@ -81,7 +83,6 @@ async function loadDocumentText(exam: ExamEntry): Promise<string> {
       "Could not read enough text from this file. For scanned/image PDFs, wait for OCR to finish or upload a clearer scan.",
     );
   }
-  // Keep more of long documents for full coverage
   return text.length > 400000 ? text.slice(0, 400000) : text;
 }
 
@@ -143,7 +144,6 @@ export async function generateAndStoreExamQuestions(
   for (let i = 0; i < chunks.length && remaining > 0; i++) {
     const chunk = chunks[i];
     const autoN = questionsForChunk(chunk.length);
-    // When user asked for a fixed total, spread across chunks
     const perChunk = wantAll
       ? Math.min(autoN, remaining)
       : Math.min(
@@ -159,7 +159,6 @@ export async function generateAndStoreExamQuestions(
     try {
       batch = await generateBatch(exam.title, chunk, perChunk, avoid, partLabel);
     } catch (e) {
-      // If one chunk fails, continue with others when we already have some Qs
       if (collected.length === 0) throw e;
       console.warn(`Chunk ${i + 1} failed`, e);
       continue;
