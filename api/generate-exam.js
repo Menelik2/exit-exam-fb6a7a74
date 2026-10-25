@@ -13,11 +13,12 @@
  *   fullDocument?: boolean
  */
 
+// Prefer the configured model, then try known fallback models when Google is
+// temporarily overloaded or a model is unavailable.
 const GEMINI_MODELS = [
-  process.env.GEMINI_MODEL || "gemini-3.8-flash",
-  "gemini-3.8-flash",
-  "gemini-3.7-flash",
+  process.env.GEMINI_MODEL || "gemini-2.5-flash",
   "gemini-2.5-flash",
+  "gemini-2.0-flash",
 ].filter((v, i, a) => v && a.indexOf(v) === i);
 const HARD_MAX = 50;
 
@@ -124,22 +125,33 @@ async function callGeminiOnce(apiKey, model, systemPrompt, userPrompt) {
   return text;
 }
 
+function isRetryableModelError(error) {
+  const status = Number(error?.status || 0);
+  const msg = String(error?.message || error);
+  return status === 408 || status === 429 || status >= 500 ||
+    /high demand|overload|overloaded|temporarily unavailable|resource_exhausted|unavailable|rate.?limit|too many requests|no longer available|not found|is not found|NOT_FOUND/i.test(msg);
+}
+
 async function callGemini(apiKey, systemPrompt, userPrompt) {
   let lastErr;
   for (const model of GEMINI_MODELS) {
-    try {
-      return await callGeminiOnce(apiKey, model, systemPrompt, userPrompt);
-    } catch (e) {
-      lastErr = e;
-      const msg = String(e?.message || e);
-      // Retry on retired/missing model
-      if (/no longer available|not found|is not found|NOT_FOUND|404/i.test(msg)) {
-        continue;
+    // Give a temporarily busy model one brief retry, then move to a fallback.
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        return await callGeminiOnce(apiKey, model, systemPrompt, userPrompt);
+      } catch (e) {
+        lastErr = e;
+        if (!isRetryableModelError(e)) throw e;
+        if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 700));
+        else break;
       }
-      throw e;
     }
   }
-  throw lastErr || new Error("All Gemini models failed");
+  const finalError = new Error(
+    "The AI service is temporarily busy or has reached its usage limit. Please try again in 1–2 minutes. If this keeps happening, check your Gemini API quota or use a different API key."
+  );
+  finalError.status = Number(lastErr?.status) === 429 ? 429 : 503;
+  throw finalError;
 }
 
 const SYSTEM_PROMPT = `You are an expert exam writer and exam-document parser. Produce high-quality multiple-choice questions.
@@ -243,8 +255,10 @@ export default async function handler(req, res) {
     res.setHeader("Content-Type", "application/json");
     return res.end(JSON.stringify({ ok: true, questions }));
   } catch (e) {
-    res.statusCode = 500;
+    const status = Number(e?.status);
+    res.statusCode = status === 429 ? 429 : status === 503 ? 503 : 500;
     res.setHeader("Content-Type", "application/json");
+    if (res.statusCode === 503) res.setHeader("Retry-After", "60");
     return res.end(
       JSON.stringify({
         ok: false,
