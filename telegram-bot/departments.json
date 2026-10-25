@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-25T16:42:04.579Z",
+  "updatedAt": "2026-10-25T16:42:16.959Z",
   "departments": [
     {
       "id": "computer-science",
@@ -3682,7 +3682,7 @@
     {
       "id": "web-development-and-database",
       "name": "Web Development And Database",
-      "emoji": "📘",
+      "emoji": "📘 COC",
       "exams": []
     }
   ]
