@@ -104,7 +104,9 @@ async function callGeminiOnce(apiKey, model, systemPrompt, userPrompt) {
       system_instruction: { parts: [{ text: systemPrompt }] },
       contents: [{ role: "user", parts: [{ text: userPrompt }] }],
       generationConfig: {
-        temperature: 0.4,
+        temperature: 0.2,
+        // MCQs with options and explanations can be long; explicitly budget output tokens.
+        maxOutputTokens: 8192,
         responseMimeType: "application/json",
       },
     }),
@@ -227,6 +229,8 @@ export default async function handler(req, res) {
         documentName ? `Document: ${documentName}` : "",
         `Difficulty target: ${difficulty}`,
         avoid.length ? `Avoid similar questions:\n- ${avoid.join("\n- ")}` : "",
+        "Keep each explanation to one short sentence (or empty if not needed) to fit the response limit.",
+        "Return only valid JSON, with no markdown fences. Keep every question and all options complete.",
         "Return JSON: { \"questions\": [ { \"question\": string, \"options\": string[4], \"correct_answer\": string, \"explanation\": string } ] }",
         "DOCUMENT SECTION:",
         documentText,
