@@ -29,6 +29,20 @@ function questionsForChunk(len: number): number {
   return PER_CHUNK_MAX;
 }
 
+/** Detect numbered MCQs in the source so "Gen all" targets the paper's actual count. */
+function detectSourceQuestionCount(text: string): number {
+  const numbers = new Set<number>();
+  const pattern = /^\s*(?:question\s*)?(\d{1,3})\s*[.)\-:]\s+\S/gim;
+  for (const match of text.matchAll(pattern)) {
+    const n = Number(match[1]);
+    if (n >= 1 && n <= 300) numbers.add(n);
+  }
+  // Numbered exams commonly start at 1 and end at the total question count.
+  if (!numbers.has(1) || numbers.size < 10) return 0;
+  const max = Math.max(...numbers);
+  return max >= numbers.size - 3 ? max : numbers.size;
+}
+
 function normKey(q: string): string {
   return q
     .trim()
@@ -153,82 +167,90 @@ export async function generateAndStoreExamQuestions(
   });
 
   const wantAll = !numQuestions || numQuestions <= 0;
-  // Gen-all mode covers every document chunk; the cap applies only to an explicit count.
+  const sourceQuestionCount = wantAll ? detectSourceQuestionCount(fullText) : 0;
+  const estimatedCount = chunks.reduce((total, chunk) => total + questionsForChunk(chunk.length), 0);
   let remaining = wantAll
-    ? chunks.reduce((total, chunk) => total + questionsForChunk(chunk.length), 0)
+    ? (sourceQuestionCount || estimatedCount)
     : Math.min(MAX_REQUESTED_QUESTIONS, Math.max(5, numQuestions));
 
   const collected: StoredQuestion[] = [];
   const seen = new Set<string>();
+  const totalChunkChars = chunks.reduce((total, chunk) => total + chunk.length, 0);
 
   for (let i = 0; i < chunks.length && remaining > 0; i++) {
     const chunk = chunks[i];
-    const autoN = questionsForChunk(chunk.length);
-    const perChunk = wantAll
-      ? Math.min(autoN, remaining)
-      : Math.min(
-          autoN,
-          Math.max(PER_CHUNK_MIN, Math.ceil(remaining / (chunks.length - i))),
-          remaining,
-        );
-
-    const avoid = collected.map((q) => q.question).slice(-50);
     const partLabel = chunks.length === 1 ? "full document" : `part ${i + 1}/${chunks.length}`;
+    const chunkBudget = wantAll
+      ? Math.min(remaining, Math.max(1, Math.round((sourceQuestionCount || estimatedCount) * chunk.length / totalChunkChars)))
+      : Math.min(remaining, questionsForChunk(chunk.length));
 
-    onProgress?.({
-      phase: "done",
-      chunk: i + 1,
-      totalChunks: chunks.length,
-      questionsSoFar: collected.length,
-      message: `Generating questions ${partLabel}… (${collected.length} stored so far)`,
-    });
-
-    let batch: StoredQuestion[] = [];
-    let lastError: unknown;
-    // Never silently skip a section: fail the run rather than store a partial exam.
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        batch = await generateBatch(
-          exam.title,
-          chunk,
-          attempt === 1 ? perChunk : Math.max(5, Math.floor(perChunk / 2)),
-          avoid,
-          partLabel,
-        );
-        if (batch.length > 0) break;
-        lastError = new Error(`No questions returned for ${partLabel}`);
-      } catch (error) {
-        lastError = error;
-      }
-      if (attempt < 3) {
-        onProgress?.({
-          phase: "done",
-          chunk: i + 1,
-          totalChunks: chunks.length,
-          questionsSoFar: collected.length,
-          message: `${partLabel} failed; retrying (${attempt}/2)…`,
-        });
-        await new Promise((resolve) => setTimeout(resolve, 800 * attempt));
-      }
-    }
-    if (batch.length === 0) {
-      const detail = lastError instanceof Error ? lastError.message : "";
-      throw new Error(`Could not generate questions for ${partLabel}. Nothing was saved; retry generation. ${detail}`.trim());
-    }
-
-    for (const q of batch) {
-      const key = normKey(q.question || "");
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      collected.push({
-        question_number: collected.length + 1,
-        question: q.question,
-        options: q.options,
-        correct_answer: q.correct_answer,
-        explanation: q.explanation,
+    let chunkAdded = 0;
+    let stalledBatches = 0;
+    while (chunkAdded < chunkBudget && remaining > 0 && stalledBatches < 2) {
+      const requested = Math.min(PER_CHUNK_MAX, chunkBudget - chunkAdded, remaining);
+      const avoid = collected.map((q) => q.question).slice(-80);
+      onProgress?.({
+        phase: "done",
+        chunk: i + 1,
+        totalChunks: chunks.length,
+        questionsSoFar: collected.length,
+        message: `Generating ${partLabel}: ${collected.length}/${sourceQuestionCount || estimatedCount} questions stored…`,
       });
-      remaining -= 1;
-      if (remaining <= 0) break;
+
+      let batch: StoredQuestion[] = [];
+      let lastError: unknown;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          batch = await generateBatch(
+            exam.title,
+            chunk,
+            attempt === 1 ? requested : Math.max(5, Math.floor(requested / 2)),
+            avoid,
+            partLabel,
+          );
+          if (batch.length > 0) break;
+          lastError = new Error(`No questions returned for ${partLabel}`);
+        } catch (error) {
+          lastError = error;
+        }
+        if (attempt < 3) {
+          onProgress?.({
+            phase: "done",
+            chunk: i + 1,
+            totalChunks: chunks.length,
+            questionsSoFar: collected.length,
+            message: `${partLabel} failed; retrying (${attempt}/2)…`,
+          });
+          await new Promise((resolve) => setTimeout(resolve, 800 * attempt));
+        }
+      }
+      if (batch.length === 0) {
+        const detail = lastError instanceof Error ? lastError.message : "";
+        if (collected.length === 0) {
+          throw new Error(`Could not generate questions for ${partLabel}. Nothing was saved; retry generation. ${detail}`.trim());
+        }
+        stalledBatches = 2;
+        break;
+      }
+
+      let addedThisBatch = 0;
+      for (const q of batch) {
+        const key = normKey(q.question || "");
+        if (!key || seen.has(key)) continue;
+        seen.add(key);
+        collected.push({
+          question_number: collected.length + 1,
+          question: q.question,
+          options: q.options,
+          correct_answer: q.correct_answer,
+          explanation: q.explanation,
+        });
+        addedThisBatch += 1;
+        chunkAdded += 1;
+        remaining -= 1;
+        if (chunkAdded >= chunkBudget || remaining <= 0) break;
+      }
+      stalledBatches = addedThisBatch === 0 ? stalledBatches + 1 : 0;
     }
   }
 
