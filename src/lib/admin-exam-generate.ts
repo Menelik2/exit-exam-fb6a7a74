@@ -4,7 +4,7 @@ import type { ExamEntry, StoredQuestion } from "@/components/admin-types";
 const CHUNK_SIZE = 10000;
 const CHUNK_OVERLAP = 400;
 /** Soft cap so catalog + UI stay usable (still covers long exams). */
-const HARD_MAX_QUESTIONS = 200;
+const MAX_REQUESTED_QUESTIONS = 200;
 const PER_CHUNK_MIN = 6;
 const PER_CHUNK_MAX = 20;
 
@@ -147,13 +147,13 @@ export async function generateAndStoreExamQuestions(
   });
 
   const wantAll = !numQuestions || numQuestions <= 0;
+  // Gen-all mode covers every document chunk; the cap applies only to an explicit count.
   let remaining = wantAll
-    ? HARD_MAX_QUESTIONS
-    : Math.min(HARD_MAX_QUESTIONS, Math.max(5, numQuestions));
+    ? chunks.reduce((total, chunk) => total + questionsForChunk(chunk.length), 0)
+    : Math.min(MAX_REQUESTED_QUESTIONS, Math.max(5, numQuestions));
 
   const collected: StoredQuestion[] = [];
   const seen = new Set<string>();
-  let consecutiveFails = 0;
 
   for (let i = 0; i < chunks.length && remaining > 0; i++) {
     const chunk = chunks[i];
@@ -178,26 +178,36 @@ export async function generateAndStoreExamQuestions(
     });
 
     let batch: StoredQuestion[] = [];
-    try {
-      batch = await generateBatch(exam.title, chunk, perChunk, avoid, partLabel);
-      consecutiveFails = 0;
-    } catch (e) {
-      consecutiveFails += 1;
-      console.warn(`Chunk ${i + 1} failed`, e);
-      if (collected.length === 0 && consecutiveFails >= 2) throw e;
-      if (collected.length === 0 && i === chunks.length - 1) throw e;
-      // retry once on first fail of this chunk
-      if (consecutiveFails === 1) {
-        try {
-          batch = await generateBatch(exam.title, chunk, Math.max(5, Math.floor(perChunk / 2)), avoid, partLabel);
-          consecutiveFails = 0;
-        } catch (e2) {
-          if (collected.length === 0 && i === chunks.length - 1) throw e2;
-          continue;
-        }
-      } else {
-        continue;
+    let lastError: unknown;
+    // Never silently skip a section: fail the run rather than store a partial exam.
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        batch = await generateBatch(
+          exam.title,
+          chunk,
+          attempt === 1 ? perChunk : Math.max(5, Math.floor(perChunk / 2)),
+          avoid,
+          partLabel,
+        );
+        if (batch.length > 0) break;
+        lastError = new Error(`No questions returned for ${partLabel}`);
+      } catch (error) {
+        lastError = error;
       }
+      if (attempt < 3) {
+        onProgress?.({
+          phase: "done",
+          chunk: i + 1,
+          totalChunks: chunks.length,
+          questionsSoFar: collected.length,
+          message: `${partLabel} failed; retrying (${attempt}/2)…`,
+        });
+        await new Promise((resolve) => setTimeout(resolve, 800 * attempt));
+      }
+    }
+    if (batch.length === 0) {
+      const detail = lastError instanceof Error ? lastError.message : "";
+      throw new Error(`Could not generate questions for ${partLabel}. Nothing was saved; retry generation. ${detail}`.trim());
     }
 
     for (const q of batch) {
