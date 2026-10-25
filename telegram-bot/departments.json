@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-25T15:35:19.925Z",
+  "updatedAt": "2026-10-25T15:36:36.229Z",
   "departments": [
     {
       "id": "computer-science",
@@ -3037,7 +3037,645 @@
           "title": "Hardware And Networking",
           "year": 2026,
           "pdfUrl": "https://docs.google.com/document/d/11Kym8MZuxI19OMetC2IoepEUc5ogXoRJ/edit?usp=drivesdk&ouid=105723339689957248808&rtpof=true&sd=true",
-          "telegramFileId": null
+          "telegramFileId": null,
+          "questions": [
+            {
+              "question_number": 1,
+              "question": "Which one of the following is an Input device?",
+              "options": [
+                "Monitor",
+                "Printer",
+                "Keyboard",
+                "Speaker"
+              ],
+              "correct_answer": "Keyboard",
+              "explanation": "An input device is used to feed data into a computer. Among the given options, a keyboard is a primary input device, while the others are output devices."
+            },
+            {
+              "question_number": 2,
+              "question": "Monitor and System unit can be connected by.",
+              "options": [
+                "PS/2 Bus",
+                "Video Graphic Adapter cable",
+                "Network Cable",
+                "Modem"
+              ],
+              "correct_answer": "Video Graphic Adapter cable",
+              "explanation": "Monitors display visual output from the system unit. A Video Graphic Adapter (VGA) cable, or modern equivalents like HDMI or DisplayPort, is specifically designed for this purpose."
+            },
+            {
+              "question_number": 3,
+              "question": "Choose the output device among the given alternatives",
+              "options": [
+                "Mouse",
+                "Scanner",
+                "Keyboard",
+                "Projector"
+              ],
+              "correct_answer": "Projector",
+              "explanation": "An output device presents information from the computer to the user. A projector is an output device that displays images onto a surface, unlike the other options which are input devices."
+            },
+            {
+              "question_number": 4,
+              "question": "An application software that is/are used to perform calculation functions and charts?",
+              "options": [
+                "Microsoft Office Word",
+                "Microsoft Office Excel",
+                "Microsoft Office Publisher",
+                "Microsoft Office Access"
+              ],
+              "correct_answer": "Microsoft Office Excel",
+              "explanation": "Microsoft Office Excel is a spreadsheet application specifically designed for organizing, analyzing, and visualizing data through calculations, formulas, and charts."
+            },
+            {
+              "question_number": 5,
+              "question": "To access and manage files of your computer, you have to login with _______account.",
+              "options": [
+                "Standard user account",
+                "Guest user account",
+                "Limited user account",
+                "Administrator user account"
+              ],
+              "correct_answer": "Administrator user account",
+              "explanation": "An Administrator user account provides full control over the computer system, including the ability to access, manage, and modify all files and system settings. Other account types have restricted permissions."
+            },
+            {
+              "question_number": 6,
+              "question": "_____controls the way in which the computer system function and provide a means by which a user can interact with computer.",
+              "options": [
+                "The platform",
+                "The operating system",
+                "Application software",
+                "Motherboard"
+              ],
+              "correct_answer": "The operating system",
+              "explanation": "The operating system (OS) is the core software that manages computer hardware and software resources, providing a user interface and enabling applications to run."
+            },
+            {
+              "question_number": 7,
+              "question": "Which of the following is not a type of MS Access database object?",
+              "options": [
+                "Table",
+                "Form",
+                "Worksheets",
+                "Modules"
+              ],
+              "correct_answer": "Worksheets",
+              "explanation": "In Microsoft Access, common database objects include Tables, Forms, Queries, Reports, and Modules. Worksheets are a feature of spreadsheet applications like Microsoft Excel, not Access."
+            },
+            {
+              "question_number": 8,
+              "question": "Electrostatic Discharge (ESD) would cause the most damage to which component?",
+              "options": [
+                "Monitor",
+                "Keyboard",
+                "Expansion board",
+                "Power supply"
+              ],
+              "correct_answer": "Expansion board",
+              "explanation": "Electrostatic Discharge (ESD) can cause significant damage to sensitive electronic components, particularly those found on expansion boards (like RAM, graphics cards, or network cards) due to their intricate circuitry."
+            },
+            {
+              "question_number": 9,
+              "question": "Which of the following is not an operating system?",
+              "options": [
+                "Windows",
+                "Linux",
+                "Oracle",
+                "DOS"
+              ],
+              "correct_answer": "Oracle",
+              "explanation": "Windows, Linux, and DOS are all types of operating systems. Oracle is primarily known as a database management system and a software company, not an operating system itself."
+            },
+            {
+              "question_number": 10,
+              "question": "Identify among the following the network device used to connect two dis-similar types of networks.",
+              "options": [
+                "Switch",
+                "Hub",
+                "Bridge",
+                "Gateway"
+              ],
+              "correct_answer": "Gateway",
+              "explanation": "A gateway is a network device that connects two networks with different protocols, allowing them to communicate. Switches, hubs, and bridges typically connect devices within the same network or similar network segments."
+            },
+            {
+              "question_number": 11,
+              "question": "The standard internet protocol is: _____.",
+              "options": [
+                "FTP",
+                "WWW",
+                "TCP/IP",
+                "UDP"
+              ],
+              "correct_answer": "TCP/IP",
+              "explanation": "TCP/IP (Transmission Control Protocol/Internet Protocol) is the foundational suite of communication protocols used for the Internet and most other computer networks."
+            },
+            {
+              "question_number": 12,
+              "question": "The verification of a login name and password is known as______.",
+              "options": [
+                "Authentication",
+                "Accessibility",
+                "Configuration",
+                "Authorization"
+              ],
+              "correct_answer": "Authentication",
+              "explanation": "Authentication is the process of verifying the identity of a user, typically by checking a login name and password against stored credentials. Authorization determines what resources an authenticated user can access."
+            },
+            {
+              "question_number": 13,
+              "question": "Servers are computers that provide resources to other computers connected to_____.",
+              "options": [
+                "Client",
+                "Mainframe",
+                "Network",
+                "Workstation"
+              ],
+              "correct_answer": "Network",
+              "explanation": "Servers are powerful computers designed to provide services and resources (like files, printing, or web pages) to other computers, known as clients, over a network."
+            },
+            {
+              "question_number": 14,
+              "question": "Which class of IP address is used in smaller organization?",
+              "options": [
+                "Class A",
+                "Class B",
+                "Class C",
+                "Class D"
+              ],
+              "correct_answer": "Class C",
+              "explanation": "Class C IP addresses are typically used for smaller organizations and local area networks, as they allow for many networks with a limited number of hosts per network."
+            },
+            {
+              "question_number": 15,
+              "question": "DHCP is the abbreviation of______",
+              "options": [
+                "Dynamic Host Control Protocol",
+                "Dynamic Host Configuration Protocol",
+                "Dynamic Hyper Control Protocol",
+                "Dynamic Hyper Configuration Protocol"
+              ],
+              "correct_answer": "Dynamic Host Configuration Protocol",
+              "explanation": "DHCP stands for Dynamic Host Configuration Protocol, which is a network management protocol used for dynamically assigning IP addresses and other communication parameters to devices connected to a network."
+            },
+            {
+              "question_number": 16,
+              "question": "IP assigned for a client by DHCP server is?",
+              "options": [
+                "For a limited period",
+                "For unlimited period",
+                "Not time dependent",
+                "None of the mentioned"
+              ],
+              "correct_answer": "For a limited period",
+              "explanation": "DHCP servers assign IP addresses to clients for a specific duration, known as a lease time. After the lease expires, the client must renew it or obtain a new IP address."
+            },
+            {
+              "question_number": 17,
+              "question": "______is used to run a PING command in windows server.",
+              "options": [
+                "Microsoft office",
+                "Command prompt",
+                "Computer device",
+                "Command line"
+              ],
+              "correct_answer": "Command prompt",
+              "explanation": "In Windows operating systems, including Windows Server, the PING command and other command-line utilities are executed through the Command Prompt, which provides a text-based interface."
+            },
+            {
+              "question_number": 18,
+              "question": "In the OSI model, encryption and decryption are functions of the_________layer.",
+              "options": [
+                "Transport",
+                "Session",
+                "Presentation",
+                "Application"
+              ],
+              "correct_answer": "Presentation",
+              "explanation": "The Presentation layer (Layer 6) of the OSI model is responsible for data translation, encryption, decryption, and compression, ensuring that data is in a format that the application layer can understand."
+            },
+            {
+              "question_number": 19,
+              "question": "Client computers need a________to join with server in server-based network.",
+              "options": [
+                "Computer",
+                "DNS",
+                "Domain",
+                "Printer"
+              ],
+              "correct_answer": "Domain",
+              "explanation": "In a server-based network, especially in Windows environments, client computers typically need to join a domain to gain centralized access to network resources and user authentication managed by domain controllers."
+            },
+            {
+              "question_number": 20,
+              "question": "What does a booting mean in the operating system?",
+              "options": [
+                "Restarting computer",
+                "Installing the program",
+                "Shutdown computer",
+                "Using CD"
+              ],
+              "correct_answer": "Restarting computer",
+              "explanation": "Booting refers to the process of starting up a computer, which involves loading the operating system into memory and initializing all necessary hardware and software components. This can happen from a powered-off state or a restart."
+            },
+            {
+              "question_number": 21,
+              "question": "Which NetWare protocol provides link-state routing?",
+              "options": [
+                "RIP - Routing Information Protocol",
+                "NLSP- NetWare Link Services Protocol",
+                "SAP- Service Advertisement Protocol",
+                "NCP - NetWare Core Protocol"
+              ],
+              "correct_answer": "NLSP- NetWare Link Services Protocol",
+              "explanation": "NLSP (NetWare Link Services Protocol) is a link-state routing protocol used in NetWare environments. Unlike RIP, which is a distance-vector protocol, NLSP maintains a complete topology map of the network."
+            },
+            {
+              "question_number": 22,
+              "question": "A second technique to reduce routing table and simplify searching process is called ____.",
+              "options": [
+                "Network-Specific Method",
+                "Network-Specific Motion",
+                "Network-Specific Maintaining",
+                "Network-Specific Membership"
+              ],
+              "correct_answer": "Network-Specific Method",
+              "explanation": "Network-Specific Method is a technique used to optimize routing tables by summarizing routes or using specific routing approaches for particular network segments, thereby simplifying the searching process for routers."
+            },
+            {
+              "question_number": 23,
+              "question": "In Multicast Routing Protocol, flooding is used to broadcast packets but it creates _____",
+              "options": [
+                "Gaps",
+                "Loops",
+                "Holes",
+                "Links"
+              ],
+              "correct_answer": "Loops",
+              "explanation": "Flooding, if not controlled by mechanisms like spanning tree protocol or reverse path forwarding, can lead to network loops where packets circulate endlessly, consuming bandwidth and resources."
+            },
+            {
+              "question_number": 24,
+              "question": "Which of the following network support resource pipelining effect?",
+              "options": [
+                "Packet-switched networks",
+                "Stream-switched networks",
+                "Circuit-switched networks",
+                "Message-switched networks"
+              ],
+              "correct_answer": "Circuit-switched networks",
+              "explanation": "Circuit-switched networks establish a dedicated communication path (circuit) between two points for the duration of the communication. This dedicated path allows for a pipelining effect, where data flows continuously without interruption once the circuit is established."
+            },
+            {
+              "question_number": 25,
+              "question": "Internet access by transmitting digital data over the wires of a local telephone network is provided by______.",
+              "options": [
+                "Digital leased line",
+                "Digital signal line",
+                "Digital subscriber line",
+                "Digital ISP line"
+              ],
+              "correct_answer": "Digital subscriber line",
+              "explanation": "Digital Subscriber Line (DSL) is a family of technologies that provide internet access by transmitting digital data over the copper wires of a local telephone network. It leverages existing telephone infrastructure to deliver broadband services."
+            },
+            {
+              "question_number": 26,
+              "question": "The size of an IP in IPv6 is________.",
+              "options": [
+                "32 bits",
+                "48 bits",
+                "64 bits",
+                "128 bits"
+              ],
+              "correct_answer": "128 bits",
+              "explanation": "IPv6 addresses are 128 bits in length, significantly larger than IPv4 addresses (32 bits). This expanded address space provides a vast number of unique addresses to accommodate the growing number of internet-connected devices."
+            },
+            {
+              "question_number": 27,
+              "question": "_____ Command is used to manipulate TCP/IP routing table.",
+              "options": [
+                "Ipconfig",
+                "Route",
+                "Traceroute",
+                "Ping"
+              ],
+              "correct_answer": "Route",
+              "explanation": "The 'route' command is specifically used in operating systems to view and manipulate the IP routing table. It allows administrators to add, delete, or modify static routes that direct network traffic."
+            },
+            {
+              "question_number": 28,
+              "question": "Speed Ethernet works on______",
+              "options": [
+                "Coaxial cable",
+                "UTP-Unshielded twisted pair cable",
+                "Optical fiber",
+                "STP-Shielded twisted pair cable"
+              ],
+              "correct_answer": "UTP-Unshielded twisted pair cable",
+              "explanation": "Fast Ethernet (100 Mbps) commonly uses Category 5 (Cat5) or higher Unshielded Twisted Pair (UTP) cable. While other media can be used, UTP is the most prevalent for standard Ethernet installations."
+            },
+            {
+              "question_number": 29,
+              "question": "Which one is not used as input elements in an organization to maintain and establish client user liaison?",
+              "options": [
+                "Determine support area",
+                "Develop support method",
+                "Assign support personnel",
+                "Ignorance of earlier condition"
+              ],
+              "correct_answer": "Ignorance of earlier condition",
+              "explanation": "To effectively maintain client user liaison, an organization must be aware of past interactions and conditions. Ignoring earlier conditions would be counterproductive to building and maintaining strong relationships."
+            },
+            {
+              "question_number": 30,
+              "question": "_______ is preparing an organization to be ready to respond effectively in the event of an emergency.",
+              "options": [
+                "Disaster recovery planning",
+                "Long term planning",
+                "Contingency or Scenario planning",
+                "Corporate planning"
+              ],
+              "correct_answer": "Disaster recovery planning",
+              "explanation": "Disaster recovery planning focuses on an organization's ability to respond to and recover from disruptive events, ensuring the continuity of critical business functions. It involves preparing procedures and resources to minimize downtime and data loss."
+            },
+            {
+              "question_number": 31,
+              "question": "The role of _______is/are responsible for coordinating, planning, and leading computer-related activities in an organization.",
+              "options": [
+                "Computer engineer",
+                "Software developer",
+                "Network technician",
+                "IT manager"
+              ],
+              "correct_answer": "IT manager",
+              "explanation": "An IT manager is responsible for overseeing the information technology department, which includes coordinating, planning, and leading computer-related activities to support an organization's goals."
+            },
+            {
+              "question_number": 32,
+              "question": "________ is the type of software testing where a group of users uses the software in totality before the final launch or deployment of the software.",
+              "options": [
+                "Coding",
+                "Programming",
+                "Pilot testing",
+                "Planning"
+              ],
+              "correct_answer": "Pilot testing",
+              "explanation": "Pilot testing involves a small group of end-users testing the software in a real-world environment before its full release. This helps identify usability issues and bugs that might not be caught during internal testing."
+            },
+            {
+              "question_number": 33,
+              "question": "_______ serves as a link between systems personnel and end users, such as a client or business unit.",
+              "options": [
+                "User logon",
+                "User Liaison",
+                "Stakeholder",
+                "Organization"
+              ],
+              "correct_answer": "User Liaison",
+              "explanation": "A user liaison acts as a bridge or communication channel between technical systems personnel and non-technical end-users. Their role is to facilitate understanding and ensure that user needs are met by the technical solutions."
+            },
+            {
+              "question_number": 34,
+              "question": "In router settings you can add and configure your routers which will manage Authentication, Accounting and Bandwidth management (Network Access Servers). Which are considered in the process?",
+              "options": [
+                "Title, NAS Type/IP, Vendor/Model/Partners/Location, Physical address, IP/Host…",
+                "Username, password, admin, URL, logical address, NAT type, LAN type…",
+                "Server, Ping, ipconfig, cmd, ADSL, domain, run…",
+                "Classes of IP address subnet mask, gateway, hub…"
+              ],
+              "correct_answer": "Title, NAS Type/IP, Vendor/Model/Partners/Location, Physical address, IP/Host…",
+              "explanation": "When configuring Network Access Servers (NAS) for AAA (Authentication, Authorization, Accounting) and bandwidth management, key parameters include identifying the device (Title, NAS Type/IP), its characteristics (Vendor/Model/Partners/Location), and its network identity (Physical address, IP/Host)."
+            },
+            {
+              "question_number": 35,
+              "question": "An initial phase system that is subset of the local/regional system's final configuration.",
+              "options": [
+                "Deploy setup",
+                "Pilot system",
+                "Start coding",
+                "Process system"
+              ],
+              "correct_answer": "Pilot system",
+              "explanation": "A pilot system is a preliminary version or a limited deployment of a system, used to test its functionality and gather feedback before a full-scale rollout. It represents a subset of the final configuration."
+            },
+            {
+              "question_number": 36,
+              "question": "_______is the process of deciding what should be achieved, what should be done to achieve it, how to do it efficiently and economically and who should do it to contribute?",
+              "options": [
+                "Policy development",
+                "Research overview",
+                "Observation report",
+                "Assist technology"
+              ],
+              "correct_answer": "Policy development",
+              "explanation": "Policy development involves defining objectives, outlining strategies, and establishing guidelines for how an organization will operate to achieve its goals efficiently and economically. It encompasses deciding 'what', 'how', and 'who'."
+            },
+            {
+              "question_number": 37,
+              "question": "A diagram showing the reporting and responsibility relationships between staff of an organisation.",
+              "options": [
+                "Culture and politics of an organization",
+                "Organizational Structure",
+                "Entity Relationship",
+                "PERT Diagram"
+              ],
+              "correct_answer": "Organizational Structure",
+              "explanation": "An organizational structure, often depicted in an organizational chart, illustrates the hierarchy, roles, and reporting relationships within an organization. It clarifies who reports to whom and defines lines of authority and responsibility."
+            },
+            {
+              "question_number": 38,
+              "question": "A contract that binds a service provider to give a certain level of service between service provider and its client.",
+              "options": [
+                "Service level agreement",
+                "Sponsor",
+                "Stakeholder",
+                "Disaster recovery plan"
+              ],
+              "correct_answer": "Service level agreement",
+              "explanation": "A Service Level Agreement (SLA) is a contract between a service provider and a client that specifies the level of service expected from the provider. It defines metrics, responsibilities, and remedies for service failures."
+            },
+            {
+              "question_number": 39,
+              "question": "An attempt to decrease the probability (may be even to 0) of the event occurring or causing damage.",
+              "options": [
+                "Prevention",
+                "Recovery",
+                "Contingency plan",
+                "Threat"
+              ],
+              "correct_answer": "Prevention",
+              "explanation": "Prevention refers to measures taken to stop an undesirable event from happening or to reduce its likelihood. The goal is to eliminate or significantly reduce the risk of damage or occurrence."
+            },
+            {
+              "question_number": 40,
+              "question": "An international organization responsible for setting out of the quality of standards.",
+              "options": [
+                "ISO",
+                "OSI",
+                "ILO",
+                "IMF"
+              ],
+              "correct_answer": "ISO",
+              "explanation": "The International Organization for Standardization (ISO) is an independent, non-governmental international organization that develops and publishes international standards. These standards ensure the quality, safety, and efficiency of products, services, and systems."
+            },
+            {
+              "question_number": 41,
+              "question": "The easiest topology to set up and maintain and having a central hub/switch that connects to nodes.",
+              "options": [
+                "A. Mesh topology",
+                "B. Ring topology",
+                "C. Bus topology",
+                "D. Star topology"
+              ],
+              "correct_answer": "D. Star topology",
+              "explanation": "Star topology is known for its ease of setup and maintenance, with all devices connecting to a central hub or switch."
+            },
+            {
+              "question_number": 42,
+              "question": "The hardware infrastructure of the Internet happens at which layers of the OSI model?",
+              "options": [
+                "A Layers 3 and 4",
+                "B. Layers 2 and 3",
+                "C. Layers 1 and 4",
+                "D. Layers 1 and 2"
+              ],
+              "correct_answer": "D. Layers 1 and 2",
+              "explanation": "The hardware infrastructure of the Internet primarily involves physical components and data link layer devices, corresponding to Layers 1 and 2 of the OSI model."
+            },
+            {
+              "question_number": 43,
+              "question": "Which of the following is/are an example of internet browsers?",
+              "options": [
+                "A. System software",
+                "B. Mozilla fire fox",
+                "C. System information",
+                "D. Operating system"
+              ],
+              "correct_answer": "B. Mozilla fire fox",
+              "explanation": "Mozilla Firefox is a popular web browser used to access information on the World Wide Web."
+            },
+            {
+              "question_number": 44,
+              "question": "What are two types of IPv6 unicast addresses?",
+              "options": [
+                "A. Multicast",
+                "B. Loopback",
+                "C. Broadcast",
+                "D. Anycast"
+              ],
+              "correct_answer": "B. Loopback",
+              "explanation": "Loopback addresses (::1) are a specific type of IPv6 unicast address used for testing the local host. Anycast is also a form of unicast address delivery."
+            },
+            {
+              "question_number": 45,
+              "question": "The process of keeping addresses in memory for future is called",
+              "options": [
+                "A. Routing",
+                "B. Resolving",
+                "C. Caching",
+                "D. Checking"
+              ],
+              "correct_answer": "C. Caching",
+              "explanation": "Caching is the process of storing data, such as addresses, in a temporary memory location for faster retrieval in the future."
+            },
+            {
+              "question_number": 46,
+              "question": "What is the business continuity plan (BCP) that focuses on the recovery of a damaged facility or components back to normal day-to-day operations?",
+              "options": [
+                "A. Cyber incident response plan",
+                "B. Occupant emergency plan",
+                "C. Disaster recovery plan",
+                "D. Crisis communications plan"
+              ],
+              "correct_answer": "C. Disaster recovery plan",
+              "explanation": "A Disaster Recovery Plan (DRP) is a critical part of business continuity planning, specifically designed to restore IT systems and operations after a disruptive event."
+            },
+            {
+              "question_number": 47,
+              "question": "When you deleted file in your computer, where does it go?",
+              "options": [
+                "A. Hard disk",
+                "B. My document",
+                "C. Recycle bin",
+                "D. Flash disk"
+              ],
+              "correct_answer": "C. Recycle bin",
+              "explanation": "When a file is deleted from a computer's main storage, it is usually moved to the Recycle Bin, allowing for potential recovery before permanent removal."
+            },
+            {
+              "question_number": 48,
+              "question": "Project plan may include a number of variables. Which one of the following is NOT a variable of project plan?",
+              "options": [
+                "A. Project scope",
+                "B. Project objectives",
+                "C. Project budget",
+                "D. Project upgrade"
+              ],
+              "correct_answer": "D. Project upgrade",
+              "explanation": "Project plans typically define scope, objectives, and budget. 'Project upgrade' refers to a subsequent phase or new project, not a variable within the current project's plan."
+            },
+            {
+              "question_number": 49,
+              "question": "When the mail server sends mail to other mail servers it becomes?",
+              "options": [
+                "A. SMTP client",
+                "B. SMTP server",
+                "C. Peer-severs",
+                "D. File server"
+              ],
+              "correct_answer": "B. SMTP server",
+              "explanation": "A mail server is fundamentally an SMTP server, responsible for sending and receiving email. While it acts as an SMTP client during the sending process, its overall role is that of an SMTP server."
+            },
+            {
+              "question_number": 50,
+              "question": "Which of the following is not an open-source operating system?",
+              "options": [
+                "A. Windows",
+                "B. Ubuntu",
+                "C. Linux",
+                "D. Android"
+              ],
+              "correct_answer": "A. Windows",
+              "explanation": "Windows is a proprietary operating system developed by Microsoft, whereas Ubuntu, Linux, and Android are all open-source."
+            },
+            {
+              "question_number": 51,
+              "question": "If all devices are connected to a central hub, then topology is called",
+              "options": [
+                "A. Tree topology",
+                "B. Star topology",
+                "C. Ring topology",
+                "D. Bus topology"
+              ],
+              "correct_answer": "B. Star topology",
+              "explanation": "In a star topology, all network devices are connected to a central hub or switch, which acts as a central point of connection."
+            },
+            {
+              "question_number": 52,
+              "question": "The primarily activity of is to prevent an external user who are identifying the IP addresses of an internal network.",
+              "options": [
+                "A. File server",
+                "B. AD server",
+                "C. Data server",
+                "D. Proxy server"
+              ],
+              "correct_answer": "D. Proxy server",
+              "explanation": "A proxy server can enhance security by acting as an intermediary, masking the internal IP addresses of a network from external users and preventing direct access."
+            },
+            {
+              "question_number": 53,
+              "question": "You have a PC with no video, which of the following is LEAST likely to be the cause?",
+              "options": [
+                "A. Defective ram (bank zero)",
+                "B. Loose video card",
+                "C. Defective microprocessor",
+                "D. Crashed hard drive"
+              ],
+              "correct_answer": "D. Crashed hard drive",
+              "explanation": "A crashed hard drive primarily affects the operating system and data access, but the computer's video output hardware usually remains functional, allowing for BIOS messages or boot errors to be displayed. Defective RAM, a loose video card, or a defective microprocessor are more likely to prevent any video output."
+            }
+          ]
         }
       ]
     }
