@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-25T15:34:06.114Z",
+  "updatedAt": "2026-10-25T15:35:19.925Z",
   "departments": [
     {
       "id": "computer-science",
@@ -3031,7 +3031,15 @@
       "id": "hardware-and-networking-services-level-5",
       "name": "Hardware And Networking Services Level 5",
       "emoji": "📘",
-      "exams": []
+      "exams": [
+        {
+          "id": "hardware-and-networking-services-level-5-1792942470293",
+          "title": "Hardware And Networking",
+          "year": 2026,
+          "pdfUrl": "https://docs.google.com/document/d/11Kym8MZuxI19OMetC2IoepEUc5ogXoRJ/edit?usp=drivesdk&ouid=105723339689957248808&rtpof=true&sd=true",
+          "telegramFileId": null
+        }
+      ]
     }
   ]
 }
