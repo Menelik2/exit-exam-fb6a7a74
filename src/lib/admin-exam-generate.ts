@@ -1,12 +1,14 @@
 import { extractDocumentText, type ExtractProgress } from "@/lib/extract-document";
 import type { ExamEntry, StoredQuestion } from "@/components/admin-types";
 
-const CHUNK_SIZE = 7000;
+const CHUNK_SIZE = 5000;
 const CHUNK_OVERLAP = 500;
 /** Soft cap so catalog + UI stay usable (still covers long exams). */
 const MAX_REQUESTED_QUESTIONS = 200;
 const PER_CHUNK_MIN = 6;
 const PER_CHUNK_MAX = 30;
+// Keep each AI response small enough to avoid JSON/output-token truncation.
+const AI_BATCH_SIZE = 8;
 
 function chunkText(text: string): string[] {
   const t = text.trim();
@@ -187,8 +189,8 @@ export async function generateAndStoreExamQuestions(
     let chunkAdded = 0;
     let stalledBatches = 0;
     while (chunkAdded < chunkBudget && remaining > 0 && stalledBatches < 2) {
-      const requested = Math.min(PER_CHUNK_MAX, chunkBudget - chunkAdded, remaining);
-      const avoid = collected.map((q) => q.question).slice(-80);
+      const requested = Math.min(AI_BATCH_SIZE, chunkBudget - chunkAdded, remaining);
+      const avoid = collected.map((q) => q.question).slice(-25);
       onProgress?.({
         phase: "done",
         chunk: i + 1,
