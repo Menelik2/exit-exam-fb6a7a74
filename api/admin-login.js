@@ -1,11 +1,24 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 
-function getAdminPassword() {
-  return (process.env.ADMIN_PASSWORD || "").trim() || "admin123";
+function getAdminPassword() { return (process.env.ADMIN_PASSWORD || "").trim(); }
+function getSessionSecret() { return (process.env.ADMIN_SESSION_SECRET || "").trim(); }
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAX_ATTEMPTS = 5;
+const loginAttempts = new Map();
+function getClientKey(req) {
+  const forwarded = String(req.headers["x-forwarded-for"] || "");
+  return forwarded.split(",").map((part) => part.trim()).filter(Boolean).pop() || String(req.headers["x-real-ip"] || "unknown");
 }
-
-function getSessionSecret() {
-  return (process.env.ADMIN_SESSION_SECRET || "").trim() || getAdminPassword();
+function isRateLimited(key) {
+  const now = Date.now(), current = loginAttempts.get(key);
+  if (!current || now - current.startedAt >= LOGIN_WINDOW_MS) { loginAttempts.set(key, { startedAt: now, count: 0 }); return false; }
+  return current.count >= LOGIN_MAX_ATTEMPTS;
+}
+function recordFailedAttempt(key) {
+  const now = Date.now(), current = loginAttempts.get(key);
+  if (!current || now - current.startedAt >= LOGIN_WINDOW_MS) loginAttempts.set(key, { startedAt: now, count: 1 });
+  else current.count += 1;
+  if (loginAttempts.size > 1000) for (const [k, v] of loginAttempts) if (now - v.startedAt >= LOGIN_WINDOW_MS) loginAttempts.delete(k);
 }
 
 function createSessionToken() {
@@ -62,40 +75,31 @@ export default async function handler(req, res) {
     return res.end(JSON.stringify({ ok: false, error: "Method not allowed" }));
   }
 
+  const adminPassword = getAdminPassword();
+  const sessionSecret = getSessionSecret();
+  if (adminPassword.length < 12 || sessionSecret.length < 32) {
+    res.statusCode = 503;
+    return res.end(JSON.stringify({ ok: false, token: null, error: "Admin authentication is not configured. Set ADMIN_PASSWORD (12+ characters) and ADMIN_SESSION_SECRET (32+ characters), then redeploy." }));
+  }
+  const clientKey = getClientKey(req);
+  if (isRateLimited(clientKey)) {
+    res.setHeader("Retry-After", String(Math.ceil(LOGIN_WINDOW_MS / 1000)));
+    res.statusCode = 429;
+    return res.end(JSON.stringify({ ok: false, token: null, error: "Too many login attempts. Try again in 15 minutes." }));
+  }
   try {
     const body = await readBody(req);
-    const password = String(body.password ?? (body.data && body.data.password) ?? "").trim();
-    const expected = getAdminPassword();
-    const ok = password.length > 0 && safeEqualString(password, expected);
-
-    if (!ok) {
-      res.statusCode = 200;
-      return res.end(
-        JSON.stringify({
-          ok: false,
-          token: null,
-          usingEnvPassword: Boolean((process.env.ADMIN_PASSWORD || "").trim()),
-          error: "Incorrect password",
-        }),
-      );
+    const password = String(body.password ?? (body.data && body.data.password) ?? "");
+    if (!password || !safeEqualString(password, adminPassword)) {
+      recordFailedAttempt(clientKey);
+      res.statusCode = 401;
+      return res.end(JSON.stringify({ ok: false, token: null, error: "Incorrect password" }));
     }
-
+    loginAttempts.delete(clientKey);
     res.statusCode = 200;
-    return res.end(
-      JSON.stringify({
-        ok: true,
-        token: createSessionToken(),
-        usingEnvPassword: Boolean((process.env.ADMIN_PASSWORD || "").trim()),
-      }),
-    );
-  } catch (e) {
+    return res.end(JSON.stringify({ ok: true, token: createSessionToken(), usingEnvPassword: true }));
+  } catch {
     res.statusCode = 500;
-    return res.end(
-      JSON.stringify({
-        ok: false,
-        token: null,
-        error: (e && e.message) || "Login failed",
-      }),
-    );
+    return res.end(JSON.stringify({ ok: false, token: null, error: "Login failed" }));
   }
 }
