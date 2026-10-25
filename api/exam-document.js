@@ -89,25 +89,47 @@ async function readLimitedBody(res, maxBytes = MAX_DOCUMENT_BYTES) {
 }
 async function fetchOnce(rawUrl) {
   let url = validateDocumentUrl(rawUrl), res;
-  for (let redirects = 0; redirects <= 5; redirects += 1) {
-    const controller = new AbortController(), timeout = setTimeout(() => controller.abort(), 15000);
-    try {
-      res = await fetch(url, { cache: "no-store", redirect: "manual", signal: controller.signal,
-        headers: { "User-Agent": "ExitExamDocumentFetcher/1.0", Accept: "application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document, text/plain, */*" } });
-    } finally { clearTimeout(timeout); }
-    if (![301,302,303,307,308].includes(res.status)) break;
-    const location = res.headers.get("location");
-    await res.body?.cancel();
-    if (!location || redirects === 5) throw new Error("Document link redirected too many times.");
-    url = validateDocumentUrl(new URL(location, url).toString());
+  let activeController = null, activeTimeout = null;
+  try {
+    for (let redirects = 0; redirects <= 5; redirects += 1) {
+      activeController = new AbortController();
+      activeTimeout = setTimeout(() => activeController.abort(), 20000);
+      try {
+        res = await fetch(url, {
+          cache: "no-store",
+          redirect: "manual",
+          signal: activeController.signal,
+          headers: {
+            "User-Agent": "ExitExamDocumentFetcher/1.0",
+            Accept: "application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document, text/plain, */*",
+          },
+        });
+      } catch (error) {
+        clearTimeout(activeTimeout);
+        activeTimeout = null;
+        throw error;
+      }
+      if (![301, 302, 303, 307, 308].includes(res.status)) break;
+      const location = res.headers.get("location");
+      await res.body?.cancel();
+      clearTimeout(activeTimeout);
+      activeTimeout = null;
+      if (!location || redirects === 5) throw new Error("Document link redirected too many times.");
+      url = validateDocumentUrl(new URL(location, url).toString());
+    }
+    if (!res || !res.ok) throw new Error(`Could not download document (${res?.status || "network error"}). Check the link is public.`);
+    const bytes = await readLimitedBody(res);
+    let filename = "exam.bin";
+    const cd = res.headers.get("content-disposition") || "";
+    const m = /filename\\*?=(?:UTF-8'')?["']?([^"';\\n]+)/i.exec(cd);
+    if (m?.[1]) {
+      try { filename = decodeURIComponent(m[1].replace(/["']/g, "").trim()); }
+      catch { filename = m[1].replace(/["']/g, "").trim(); }
+    }
+    return { bytes, filename, contentType: (res.headers.get("content-type") || "").toLowerCase(), finalUrl: url.toString() };
+  } finally {
+    if (activeTimeout) clearTimeout(activeTimeout);
   }
-  if (!res || !res.ok) throw new Error(`Could not download document (${res?.status || "network error"}). Check the link is public.`);
-  const bytes = await readLimitedBody(res);
-  let filename = "exam.bin";
-  const cd = res.headers.get("content-disposition") || "";
-  const m = /filename\\*?=(?:UTF-8'')?["']?([^"';\\n]+)/i.exec(cd);
-  if (m?.[1]) { try { filename = decodeURIComponent(m[1].replace(/["']/g, "").trim()); } catch { filename = m[1].replace(/["']/g, "").trim(); } }
-  return { bytes, filename, contentType: (res.headers.get("content-type") || "").toLowerCase(), finalUrl: url.toString() };
 }
 
 async function downloadUrl(url) {
