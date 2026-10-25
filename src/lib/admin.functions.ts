@@ -35,17 +35,6 @@ function getSessionSecret(): string { return (process.env.ADMIN_SESSION_SECRET |
 const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 const LOGIN_MAX_ATTEMPTS = 5;
 const loginAttempts = new Map<string, { startedAt: number; count: number }>();
-function isLoginRateLimited(key: string): boolean {
-  const now = Date.now(), current = loginAttempts.get(key);
-  if (!current || now - current.startedAt >= LOGIN_WINDOW_MS) { loginAttempts.set(key, { startedAt: now, count: 0 }); return false; }
-  return current.count >= LOGIN_MAX_ATTEMPTS;
-}
-function recordFailedLogin(key: string): void {
-  const now = Date.now(), current = loginAttempts.get(key);
-  if (!current || now - current.startedAt >= LOGIN_WINDOW_MS) loginAttempts.set(key, { startedAt: now, count: 1 });
-  else current.count += 1;
-  if (loginAttempts.size > 1000) for (const [k, v] of loginAttempts) if (now - v.startedAt >= LOGIN_WINDOW_MS) loginAttempts.delete(k);
-}
 function getSessionSecretConfigured(): boolean { return getAdminPassword().length >= 12 && getSessionSecret().length >= 32; }
 
 function getGithubConfig() {
@@ -64,7 +53,7 @@ function createSessionToken(): string {
 }
 
 function verifySessionToken(token: string | undefined | null): boolean {
-  if (!token || typeof token !== "string") return false;
+  if (!getSessionSecretConfigured() || !token || typeof token !== "string") return false;
   const [payload, sig] = token.split(".");
   if (!payload || !sig) return false;
   const exp = Number(payload);
@@ -236,13 +225,9 @@ export const verifyAdminPassword = createServerFn({ method: "POST" })
   .validator((input: unknown) => z.object({ password: z.string().min(1).max(200) }).parse(input))
   .handler(async ({ data }) => {
     if (!getSessionSecretConfigured()) throw new Error("Admin authentication is not configured. Set ADMIN_PASSWORD (12+ characters) and ADMIN_SESSION_SECRET (32+ characters), then redeploy.");
-    const key = "tanstack-admin-login";
-    if (isLoginRateLimited(key)) throw new Error("Too many login attempts. Try again in 15 minutes.");
     if (data.password !== getAdminPassword()) {
-      recordFailedLogin(key);
       return { ok: false as const, token: null as string | null, usingEnvPassword: true };
     }
-    loginAttempts.delete(key);
     return { ok: true as const, token: createSessionToken(), usingEnvPassword: true };
   });
 
