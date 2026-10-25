@@ -1,12 +1,12 @@
 import { extractDocumentText, type ExtractProgress } from "@/lib/extract-document";
 import type { ExamEntry, StoredQuestion } from "@/components/admin-types";
 
-const CHUNK_SIZE = 10000;
-const CHUNK_OVERLAP = 400;
+const CHUNK_SIZE = 7000;
+const CHUNK_OVERLAP = 500;
 /** Soft cap so catalog + UI stay usable (still covers long exams). */
 const MAX_REQUESTED_QUESTIONS = 200;
 const PER_CHUNK_MIN = 6;
-const PER_CHUNK_MAX = 20;
+const PER_CHUNK_MAX = 30;
 
 function chunkText(text: string): string[] {
   const t = text.trim();
@@ -24,8 +24,8 @@ function chunkText(text: string): string[] {
 
 function questionsForChunk(len: number): number {
   if (len < 1500) return PER_CHUNK_MIN;
-  if (len < 4000) return 10;
-  if (len < 7000) return 14;
+  if (len < 3000) return 10;
+  if (len < 5000) return 20;
   return PER_CHUNK_MAX;
 }
 
@@ -89,7 +89,13 @@ async function loadDocumentText(
       "Could not read enough text from this file. For scanned/image PDFs, wait for OCR to finish (keep the tab open) or use a clearer scan.",
     );
   }
-  return text.length > 400000 ? text.slice(0, 400000) : text;
+  // Never silently truncate an exam: doing so would make "Gen all Qs" incomplete.
+  if (text.length > 1_500_000) {
+    throw new Error(
+      `This document is too large to process safely (${text.length.toLocaleString()} characters). Split it into smaller exam files and generate each part separately. No questions were saved.`,
+    );
+  }
+  return text;
 }
 
 async function generateBatch(
