@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-25T16:42:16.959Z",
+  "updatedAt": "2026-10-25T16:45:51.135Z",
   "departments": [
     {
       "id": "computer-science",
@@ -3683,7 +3683,15 @@
       "id": "web-development-and-database",
       "name": "Web Development And Database",
       "emoji": "📘 COC",
-      "exams": []
+      "exams": [
+        {
+          "id": "web-development-and-database-1792946574135",
+          "title": "WDDB",
+          "year": 2026,
+          "pdfUrl": "https://docs.google.com/document/d/1I5d0RywBTZVBHIlnbE5-L3wE_Xa1Ld2C/edit?usp=drivesdk&ouid=105723339689957248808&rtpof=true&sd=true",
+          "telegramFileId": null
+        }
+      ]
     }
   ]
 }
