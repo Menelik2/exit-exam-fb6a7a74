@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-24T07:37:43.014Z",
+  "updatedAt": "2026-10-25T15:34:06.114Z",
   "departments": [
     {
       "id": "computer-science",
@@ -3026,6 +3026,12 @@
           ]
         }
       ]
+    },
+    {
+      "id": "hardware-and-networking-services-level-5",
+      "name": "Hardware And Networking Services Level 5",
+      "emoji": "📘",
+      "exams": []
     }
   ]
 }
