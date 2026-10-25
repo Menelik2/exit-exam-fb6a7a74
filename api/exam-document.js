@@ -58,36 +58,78 @@ function sniffKind(buf) {
   return "unknown";
 }
 
-async function fetchOnce(url) {
-  const res = await fetch(url, {
-    cache: "no-store",
-    redirect: "follow",
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      Accept: "*/*",
-    },
-  });
-  if (!res.ok) {
-    throw new Error(`Could not download document (${res.status}). Check the link is public.`);
+const MAX_DOCUMENT_BYTES = 15 * 1024 * 1024;
+const ALLOWED_DOCUMENT_HOSTS = new Set(["drive.google.com","docs.google.com","drive.usercontent.google.com","dropbox.com","www.dropbox.com","dl.dropboxusercontent.com"]);
+function validateDocumentUrl(raw) {
+  let url;
+  try { url = new URL(raw); } catch { throw new Error("Invalid document URL."); }
+  if (url.protocol !== "https:" || url.username || url.password) throw new Error("Only public HTTPS document links are supported.");
+  const host = url.hostname.toLowerCase().replace(/\\.$/, "");
+  if (!ALLOWED_DOCUMENT_HOSTS.has(host) && !host.endsWith(".googleusercontent.com") && !host.endsWith(".dropboxusercontent.com")) {
+    throw new Error("For security, use a public Google Drive, Google Docs, or Dropbox document link.");
   }
-  const bytes = Buffer.from(await res.arrayBuffer());
-  let filename = "exam.bin";
-  const cd = res.headers.get("content-disposition") || "";
-  const m = /filename\*?=(?:UTF-8'')?["']?([^-";\n]+)/i.exec(cd);
-  if (m?.[1]) {
-    try {
-      filename = decodeURIComponent(m[1].replace(/["']/g, "").trim());
-    } catch {
-      filename = m[1].replace(/["']/g, "").trim();
+  return url;
+}
+async function readLimitedBody(res, maxBytes = MAX_DOCUMENT_BYTES) {
+  const declared = Number(res.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > maxBytes) { await res.body?.cancel(); throw new Error("File is larger than 15MB."); }
+  if (!res.body) throw new Error("The document download returned an empty response.");
+  const reader = res.body.getReader(), chunks = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maxBytes) { await reader.cancel(); throw new Error("File is larger than 15MB."); }
+      chunks.push(Buffer.from(value));
     }
+  } finally { reader.releaseLock(); }
+  return Buffer.concat(chunks, total);
+}
+async function fetchOnce(rawUrl) {
+  let url = validateDocumentUrl(rawUrl), res;
+  let activeController = null, activeTimeout = null;
+  try {
+    for (let redirects = 0; redirects <= 5; redirects += 1) {
+      activeController = new AbortController();
+      activeTimeout = setTimeout(() => activeController.abort(), 20000);
+      try {
+        res = await fetch(url, {
+          cache: "no-store",
+          redirect: "manual",
+          signal: activeController.signal,
+          headers: {
+            "User-Agent": "ExitExamDocumentFetcher/1.0",
+            Accept: "application/pdf, application/vnd.openxmlformats-officedocument.wordprocessingml.document, text/plain, */*",
+          },
+        });
+      } catch (error) {
+        clearTimeout(activeTimeout);
+        activeTimeout = null;
+        throw error;
+      }
+      if (![301, 302, 303, 307, 308].includes(res.status)) break;
+      const location = res.headers.get("location");
+      await res.body?.cancel();
+      clearTimeout(activeTimeout);
+      activeTimeout = null;
+      if (!location || redirects === 5) throw new Error("Document link redirected too many times.");
+      url = validateDocumentUrl(new URL(location, url).toString());
+    }
+    if (!res || !res.ok) throw new Error(`Could not download document (${res?.status || "network error"}). Check the link is public.`);
+    const bytes = await readLimitedBody(res);
+    let filename = "exam.bin";
+    const cd = res.headers.get("content-disposition") || "";
+    const m = /filename\\*?=(?:UTF-8'')?["']?([^"';\\n]+)/i.exec(cd);
+    if (m?.[1]) {
+      try { filename = decodeURIComponent(m[1].replace(/["']/g, "").trim()); }
+      catch { filename = m[1].replace(/["']/g, "").trim(); }
+    }
+    return { bytes, filename, contentType: (res.headers.get("content-type") || "").toLowerCase(), finalUrl: url.toString() };
+  } finally {
+    if (activeTimeout) clearTimeout(activeTimeout);
   }
-  return {
-    bytes,
-    filename,
-    contentType: (res.headers.get("content-type") || "").toLowerCase(),
-    finalUrl: res.url || url,
-  };
 }
 
 async function downloadUrl(url) {
@@ -157,7 +199,12 @@ async function readBody(req) {
   }
   try {
     const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
+    let total = 0;
+    for await (const chunk of req) {
+      total += Buffer.byteLength(chunk);
+      if (total > 1024 * 1024) throw new Error("Request body too large");
+      chunks.push(chunk);
+    }
     const raw = Buffer.concat(chunks).toString("utf8");
     if (!raw) return {};
     return JSON.parse(raw);
@@ -227,7 +274,7 @@ export default async function handler(req, res) {
       if (!fileRes.ok) {
         return json(res, 502, { ok: false, error: `Telegram download failed (${fileRes.status})` });
       }
-      bytes = Buffer.from(await fileRes.arrayBuffer());
+      bytes = await readLimitedBody(fileRes);
     } else {
       return json(res, 400, { ok: false, error: "No document URL or Telegram file_id" });
     }
@@ -307,9 +354,11 @@ export default async function handler(req, res) {
       error: "Unsupported file type. Use PDF, DOCX, or TXT with a public link.",
     });
   } catch (e) {
-    return json(res, 500, {
+    const message = String(e && e.message || "");
+    const clientError = /larger than 15MB|Only public HTTPS|Invalid document URL|For security|redirected too many|returned an empty response/i.test(message);
+    return json(res, clientError ? 400 : 502, {
       ok: false,
-      error: (e && e.message) || "Document fetch failed",
+      error: clientError ? message : "Document fetch failed. Check that the link is public and try again.",
     });
   }
 }

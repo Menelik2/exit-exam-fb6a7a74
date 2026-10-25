@@ -30,15 +30,12 @@ export type ServerCatalog = z.infer<typeof CatalogSchema>;
 
 const CATALOG_PATH = "telegram-bot/departments.json";
 
-function getAdminPassword(): string {
-  const fromEnv = (process.env.ADMIN_PASSWORD || "").trim();
-  if (fromEnv) return fromEnv;
-  return "admin123";
-}
-
-function getSessionSecret(): string {
-  return (process.env.ADMIN_SESSION_SECRET || "").trim() || getAdminPassword();
-}
+function getAdminPassword(): string { return (process.env.ADMIN_PASSWORD || "").trim(); }
+function getSessionSecret(): string { return (process.env.ADMIN_SESSION_SECRET || "").trim(); }
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+const LOGIN_MAX_ATTEMPTS = 5;
+const loginAttempts = new Map<string, { startedAt: number; count: number }>();
+function getSessionSecretConfigured(): boolean { return getAdminPassword().length >= 12 && getSessionSecret().length >= 32; }
 
 function getGithubConfig() {
   const token = (process.env.ADMIN_GITHUB_TOKEN || process.env.GITHUB_TOKEN || "").trim();
@@ -56,7 +53,7 @@ function createSessionToken(): string {
 }
 
 function verifySessionToken(token: string | undefined | null): boolean {
-  if (!token || typeof token !== "string") return false;
+  if (!getSessionSecretConfigured() || !token || typeof token !== "string") return false;
   const [payload, sig] = token.split(".");
   if (!payload || !sig) return false;
   const exp = Number(payload);
@@ -227,20 +224,11 @@ async function githubPutFile(catalog: ServerCatalog, sha: string | null): Promis
 export const verifyAdminPassword = createServerFn({ method: "POST" })
   .validator((input: unknown) => z.object({ password: z.string().min(1).max(200) }).parse(input))
   .handler(async ({ data }) => {
-    const expected = getAdminPassword();
-    const ok = data.password === expected;
-    if (!ok) {
-      return {
-        ok: false as const,
-        token: null as string | null,
-        usingEnvPassword: Boolean((process.env.ADMIN_PASSWORD || "").trim()),
-      };
+    if (!getSessionSecretConfigured()) throw new Error("Admin authentication is not configured. Set ADMIN_PASSWORD (12+ characters) and ADMIN_SESSION_SECRET (32+ characters), then redeploy.");
+    if (data.password !== getAdminPassword()) {
+      return { ok: false as const, token: null as string | null, usingEnvPassword: true };
     }
-    return {
-      ok: true as const,
-      token: createSessionToken(),
-      usingEnvPassword: Boolean((process.env.ADMIN_PASSWORD || "").trim()),
-    };
+    return { ok: true as const, token: createSessionToken(), usingEnvPassword: true };
   });
 
 export const getAdminCatalog = createServerFn({ method: "GET" }).handler(async () => {
