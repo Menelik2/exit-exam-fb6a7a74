@@ -112,7 +112,7 @@ async function generateBatch(
       documentName: `${documentName} (${partLabel})`,
       documentText: chunkTextContent,
       numQuestions,
-      avoidQuestions: avoid,
+      avoid,
     }),
   });
   const genData = (await genRes.json()) as {
