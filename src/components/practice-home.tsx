@@ -355,8 +355,14 @@ export function PracticeHome() {
         <div className="mx-auto max-w-6xl px-3 pt-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between gap-3 rounded-2xl border border-white/60 bg-white/70 px-3 py-2.5 shadow-[0_8px_30px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:border-border/50 dark:bg-card/80 sm:px-5 sm:py-3">
             <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
-              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-600/30 sm:h-11 sm:w-11">
-                <ListChecks className="h-[18px] w-[18px]" />
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-lg ring-1 ring-black/5 sm:h-11 sm:w-11">
+                <img
+                  src="https://cdn.brandfetch.io/iddgwoCTWC/w/399/h/399/theme/dark/icon.jpeg?c=1bxid64Mup7aczewSAYMX&t=1790607735928"
+                  alt="Exit Exam logo"
+                  className="h-full w-full object-contain"
+                  loading="eager"
+                  referrerPolicy="no-referrer"
+                />
               </span>
               <div className="min-w-0">
                 <p className="truncate text-sm font-semibold tracking-tight sm:text-base">
