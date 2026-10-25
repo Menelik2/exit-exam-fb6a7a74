@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-10-25T16:45:51.135Z",
+  "updatedAt": "2026-10-25T16:50:43.072Z",
   "departments": [
     {
       "id": "computer-science",
@@ -3689,7 +3689,717 @@
           "title": "WDDB",
           "year": 2026,
           "pdfUrl": "https://docs.google.com/document/d/1I5d0RywBTZVBHIlnbE5-L3wE_Xa1Ld2C/edit?usp=drivesdk&ouid=105723339689957248808&rtpof=true&sd=true",
-          "telegramFileId": null
+          "telegramFileId": null,
+          "questions": [
+            {
+              "question_number": 1,
+              "question": "It is a video transmission interface that offers better resolution than the others and supports up to 8K (7680 x 4320) resolution at 60 Hz with an increased bandwidth of 77.37 Gbps.",
+              "options": [
+                "HDMI Port",
+                "Display Port",
+                "DVI Port",
+                "VGA Port"
+              ],
+              "correct_answer": "Display Port",
+              "explanation": "DisplayPort is designed to support higher resolutions and bandwidths, such as 8K at 60 Hz, compared to other common video interfaces."
+            },
+            {
+              "question_number": 2,
+              "question": "Which of the following is a display unit that acts as an interface between the user and the computer system?",
+              "options": [
+                "Printer",
+                "Monitor",
+                "Mouse",
+                "Scanners"
+              ],
+              "correct_answer": "Monitor",
+              "explanation": "A monitor is the primary output device that visually displays information from the computer to the user."
+            },
+            {
+              "question_number": 3,
+              "question": "Microsoft Windows, IOS, and Linux are all types of software that belong to ___________ category.",
+              "options": [
+                "Hardware systems",
+                "Application software",
+                "Operating system",
+                "Database system"
+              ],
+              "correct_answer": "Operating system",
+              "explanation": "Operating systems like Windows, iOS, and Linux manage computer hardware and software resources, providing common services for computer programs."
+            },
+            {
+              "question_number": 4,
+              "question": "A program that is designed to detect quarantine and/or delete malicious code, to prevent our computer from damage.",
+              "options": [
+                "Operating system",
+                "Internet browser",
+                "Antivirus",
+                "Games application"
+              ],
+              "correct_answer": "Antivirus",
+              "explanation": "Antivirus software is specifically developed to protect computers by identifying, preventing, and removing malicious software."
+            },
+            {
+              "question_number": 5,
+              "question": "The collection of documents that are designed to help people who need to manage, operate or maintain computer hardware or software.",
+              "options": [
+                "Technical documentation",
+                "Inventory documents",
+                "Inventory record",
+                "Hardware inventory"
+              ],
+              "correct_answer": "Technical documentation",
+              "explanation": "Technical documentation provides detailed information and instructions for the management, operation, and maintenance of computer systems."
+            },
+            {
+              "question_number": 6,
+              "question": "Which one of the following is a valid file format for Microsoft Word?",
+              "options": [
+                ".exe",
+                ".doc",
+                ".png",
+                ".pdf"
+              ],
+              "correct_answer": ".doc",
+              "explanation": ".doc (and .docx) are the standard file extensions for documents created with Microsoft Word."
+            },
+            {
+              "question_number": 7,
+              "question": "Which Microsoft office package enables users to perform mathematical computation and visualization of data?",
+              "options": [
+                "Microsoft Word",
+                "Microsoft Excel",
+                "Microsoft Publisher",
+                "Microsoft PowerPoint"
+              ],
+              "correct_answer": "Microsoft Excel",
+              "explanation": "Microsoft Excel is a spreadsheet program widely used for numerical calculations, data analysis, and creating charts for visualization."
+            },
+            {
+              "question_number": 8,
+              "question": "DHTML, HTML, and XML are an example of",
+              "options": [
+                "Data structure",
+                "Markup language",
+                "Web Browsers",
+                "Word processor"
+              ],
+              "correct_answer": "Markup language",
+              "explanation": "HTML, DHTML, and XML are all markup languages used to define the structure and content of documents, especially for web pages."
+            },
+            {
+              "question_number": 9,
+              "question": "Which of the following enables us to view data from a table based on a specific criterion?",
+              "options": [
+                "Form",
+                "Report",
+                "Query",
+                "Table"
+              ],
+              "correct_answer": "Query",
+              "explanation": "Queries are used to retrieve specific data from a database based on defined criteria."
+            },
+            {
+              "question_number": 10,
+              "question": "From the 5s procedures, which one is used to remove unnecessary items from each area?",
+              "options": [
+                "Standardize",
+                "Sustain",
+                "Sort",
+                "Shine"
+              ],
+              "correct_answer": "Sort",
+              "explanation": "Sort (Seiri) is the first step in 5S, focusing on eliminating unneeded items from the workspace."
+            },
+            {
+              "question_number": 11,
+              "question": "It is a field (or collection of fields) in one table, that refers to the PRIMARY KEY in another table Which ensures a relationship is created.",
+              "options": [
+                "Primary Key",
+                "Foreign Key",
+                "Referential Integrity",
+                "Metadata"
+              ],
+              "correct_answer": "Foreign Key",
+              "explanation": "A foreign key establishes a link between two tables by referencing the primary key of another table, creating a relationship."
+            },
+            {
+              "question_number": 12,
+              "question": "A network device used to connect two or more dissimilar networks.",
+              "options": [
+                "Gateway",
+                "Router",
+                "Hub",
+                "Switch"
+              ],
+              "correct_answer": "Gateway",
+              "explanation": "A gateway connects networks that use different protocols, allowing them to communicate and translate data between them."
+            },
+            {
+              "question_number": 13,
+              "question": "From computer maintenance procedures which one is the process of reorganizing the data stored on the hard drive so that related pieces of data are put back together, all lined up in a continuous fashion.",
+              "options": [
+                "Antivirus",
+                "Defragmenter",
+                "Disk formatter",
+                "Memory Partitioning"
+              ],
+              "correct_answer": "Defragmenter",
+              "explanation": "Defragmentation reorganizes fragmented data on a hard drive, consolidating files to improve system performance and access speed."
+            },
+            {
+              "question_number": 14,
+              "question": "Which one is a step that records client support requirements based on organizational rules, regulations, and policies?",
+              "options": [
+                "Client",
+                "Escalate",
+                "Priority",
+                "Log"
+              ],
+              "correct_answer": "Log",
+              "explanation": "Logging involves documenting client support requirements and interactions according to established procedures and policies."
+            },
+            {
+              "question_number": 15,
+              "question": "Unnecessary conveyance of products, from one location to another, or handoff from one employee to another is.",
+              "options": [
+                "Over-production waste",
+                "Processing waste",
+                "Waiting-time waste",
+                "Transport waste"
+              ],
+              "correct_answer": "Transport waste",
+              "explanation": "Transport waste refers to the unnecessary movement of materials or products, which adds no value and increases costs."
+            },
+            {
+              "question_number": 16,
+              "question": "What is a Functional Requirement?",
+              "options": [
+                "specifies the tasks the system must complete",
+                "specifies the tasks the program should not complete",
+                "specifies the system's operation capabilities and constraints and attempt to improve its functionality",
+                "defines system attributes such as security, reliability, performance, maintainability, scalability, and usability."
+              ],
+              "correct_answer": "specifies the tasks the system must complete",
+              "explanation": "Functional requirements describe what the system should do, detailing its specific behaviors and functions to meet user needs."
+            },
+            {
+              "question_number": 17,
+              "question": "Among the following which refers to describing the data description, representing data semantics, and describing the consistency constraints that apply to the data.",
+              "options": [
+                "Modeling data",
+                "Modifying data",
+                "Adding data",
+                "Refining data"
+              ],
+              "correct_answer": "Modeling data",
+              "explanation": "Data modeling involves defining the structure, semantics, and constraints of data within a database system."
+            },
+            {
+              "question_number": 18,
+              "question": "By normalizing relations or sets of relations, in a database we can minimize___________.",
+              "options": [
+                "Data",
+                "Fields",
+                "Redundancy",
+                "Database"
+              ],
+              "correct_answer": "Redundancy",
+              "explanation": "Normalization is a database design technique that reduces data redundancy and improves data integrity."
+            },
+            {
+              "question_number": 19,
+              "question": "In the three-tier architecture, the intermediate layer between database and client server is classified as",
+              "options": [
+                "Application server",
+                "Functional server",
+                "Transaction server",
+                "Disk server"
+              ],
+              "correct_answer": "Application server",
+              "explanation": "The application server in a three-tier architecture handles the business logic and acts as a mediator between the client and the database server."
+            },
+            {
+              "question_number": 20,
+              "question": "The type of diagram which specifies operations on objects is considered as______________.",
+              "options": [
+                "Entity diagram",
+                "Class diagram",
+                "Functional diagram",
+                "Attribute diagram"
+              ],
+              "correct_answer": "Class diagram",
+              "explanation": "Class diagrams in UML are used to model the static structure of a system, including classes, their attributes, operations, and relationships."
+            },
+            {
+              "question_number": 21,
+              "question": "Data schemas represent the skeleton structure of a database and it represent the _______view of the database as a whole.",
+              "options": [
+                "Analytical View",
+                "Logical View",
+                "Semantic View",
+                "Practical View"
+              ],
+              "correct_answer": "Logical View",
+              "explanation": "A data schema provides a logical view of the database, describing its structure and organization independently of its physical storage."
+            },
+            {
+              "question_number": 22,
+              "question": "What is the correct HTML for creating a hyperlink?",
+              "options": [
+                "<a>https://w.w.w.gkseries.com</a>",
+                "<a name=”https://w.w.w.gkseries.com”> Gkseries.com</a>",
+                "<a url=”https://w.w.w.gkseries.com> Gkseries.com</a>",
+                "<a href=”https://www.gkseries.com”> Gkseries.com</a>"
+              ],
+              "correct_answer": "<a href=”https://www.gkseries.com”> Gkseries.com</a>",
+              "explanation": "The <a> tag with the href attribute is the standard HTML element for creating hyperlinks."
+            },
+            {
+              "question_number": 23,
+              "question": "Which of the following is the correct syntax to make the background-color of all paragraph elements to yellow?",
+              "options": [
+                "p {background-color: yellow;}",
+                "p {background-color: #yellow;}",
+                "all {background-color: yellow;}",
+                "all p {background-color: #yellow;}"
+              ],
+              "correct_answer": "p {background-color: yellow;}",
+              "explanation": "In CSS, 'p' is the element selector for paragraphs, and 'background-color: yellow;' is the property-value pair to set the background color."
+            },
+            {
+              "question_number": 24,
+              "question": "Which of the following is generally used for performing tasks like creating the structure of the relations, deleting relation?",
+              "options": [
+                "DML(Data Manipulation Language)",
+                "Query",
+                "Relational Schema",
+                "DDL(Data Definition Language)"
+              ],
+              "correct_answer": "DDL(Data Definition Language)",
+              "explanation": "Data Definition Language (DDL) commands are used to define, modify, and delete the structure of database objects such as tables and relations."
+            },
+            {
+              "question_number": 25,
+              "question": "Which video interface is known for transmitting analog signals and typically uses a 15-pin D-sub connector?",
+              "options": [
+                "HDMI",
+                "Display Port",
+                "DVI",
+                "VGA"
+              ],
+              "correct_answer": "VGA",
+              "explanation": "VGA (Video Graphics Array) is an older standard that transmits analog video signals. It is commonly identified by its 15-pin D-sub connector."
+            },
+            {
+              "question_number": 26,
+              "question": "What is the primary role of an operating system in a computer?",
+              "options": [
+                "To run web browsers",
+                "To manage hardware and software resources",
+                "To create documents",
+                "To play games"
+              ],
+              "correct_answer": "To manage hardware and software resources",
+              "explanation": "An operating system acts as an intermediary between computer hardware and application programs. It manages the computer's memory, processes, and all of its hardware and software."
+            },
+            {
+              "question_number": 27,
+              "question": "Which Microsoft Office application is primarily used for creating professional presentations with slides?",
+              "options": [
+                "Microsoft Word",
+                "Microsoft Excel",
+                "Microsoft Publisher",
+                "Microsoft PowerPoint"
+              ],
+              "correct_answer": "Microsoft PowerPoint",
+              "explanation": "Microsoft PowerPoint is a presentation program that allows users to create slide shows composed of text, graphics, and other multimedia. It is widely used for business and educational presentations."
+            },
+            {
+              "question_number": 28,
+              "question": "In a relational database, what uniquely identifies each record in a table?",
+              "options": [
+                "Foreign Key",
+                "Candidate Key",
+                "Primary Key",
+                "Secondary Key"
+              ],
+              "correct_answer": "Primary Key",
+              "explanation": "A Primary Key is a special relational database table column (or combination of columns) designated to uniquely identify all table records. It must contain unique values and cannot contain NULL values."
+            },
+            {
+              "question_number": 29,
+              "question": "Which network device broadcasts incoming data to all connected devices within the same local area network segment?",
+              "options": [
+                "Router",
+                "Switch",
+                "Hub",
+                "Gateway"
+              ],
+              "correct_answer": "Hub",
+              "explanation": "A hub is a basic network device that connects multiple Ethernet devices together, making them act as a single network segment. It broadcasts all incoming data packets to every other port."
+            },
+            {
+              "question_number": 30,
+              "question": "Which HTML tag is used to define the largest heading in a document?",
+              "options": [
+                "<h1>",
+                "<head>",
+                "<heading>",
+                "<h6>"
+              ],
+              "correct_answer": "<h1>",
+              "explanation": "The <h1> tag defines the most important heading in an HTML document, typically displayed with the largest font size by default. Headings range from <h1> (largest) to <h6> (smallest)."
+            },
+            {
+              "question_number": 31,
+              "question": "Which one of the following SQL command helps to add a record in to a row using SQL in a database?",
+              "options": [
+                "INSERT",
+                "CREATE",
+                "ADD",
+                "MAKE"
+              ],
+              "correct_answer": "INSERT",
+              "explanation": "The INSERT command is used in SQL to add new rows of data into a table."
+            },
+            {
+              "question_number": 32,
+              "question": "Among the following, which one is used for communication between the Web server and the database server?",
+              "options": [
+                "Middleware",
+                "Java database connectivity (JDBC)",
+                "Common Gateway Interface (CGI) script",
+                "Native support"
+              ],
+              "correct_answer": "Common Gateway Interface (CGI) script",
+              "explanation": "CGI scripts provide a standard way for web servers to pass user requests to an application program and receive data back to forward to the user."
+            },
+            {
+              "question_number": 33,
+              "question": "Below the following, one is a process of analyzing the data objects and their relationship to the other objects.",
+              "options": [
+                "Data Modeling",
+                "System Modeling",
+                "Web Modeling",
+                "Storage Modeling"
+              ],
+              "correct_answer": "Data Modeling",
+              "explanation": "Data modeling is the process of creating a visual representation of either a whole database system or parts of it to show the relationships between different data elements."
+            },
+            {
+              "question_number": 34,
+              "question": "you are looking for a website hosting service to host your online shopping website. What is the criteria that will put first when you compare a hosting company?",
+              "options": [
+                "Customer Service",
+                "Email availability",
+                "Security Features",
+                "Uptime"
+              ],
+              "correct_answer": "Uptime",
+              "explanation": "For an online shopping website, uptime is critical because any downtime directly results in lost sales and customer dissatisfaction."
+            },
+            {
+              "question_number": 35,
+              "question": "Among the following, which one is the cheapest type of hosting?",
+              "options": [
+                "Shared web hosting service",
+                "Free web hosting service",
+                "Dedicated web hosting service",
+                "VPS Web Hosting services"
+              ],
+              "correct_answer": "Free web hosting service",
+              "explanation": "Free web hosting services typically offer the lowest cost, though they often come with limitations on features, performance, and support."
+            },
+            {
+              "question_number": 36,
+              "question": "Which process involves developing an approximation of the costs of resources needed to complete a project?",
+              "options": [
+                "Determining the budget",
+                "Finalizing the cost baseline",
+                "Controlling costs",
+                "Estimating costs"
+              ],
+              "correct_answer": "Estimating costs",
+              "explanation": "Estimating costs is the process of developing an approximation of the monetary resources needed to complete project activities."
+            },
+            {
+              "question_number": 37,
+              "question": "A database user who maintains a Database Management System and necessarily responsible for looking after its overall usage and apply limitations to maintain isolation enforce security is:",
+              "options": [
+                "Database Designers",
+                "Database Administrators",
+                "End Users",
+                "Database Architects"
+              ],
+              "correct_answer": "Database Administrators",
+              "explanation": "Database Administrators (DBAs) are responsible for the overall maintenance, security, and performance of a database management system."
+            },
+            {
+              "question_number": 38,
+              "question": "Which feature of OOPS described the reusability of code?",
+              "options": [
+                "Inheritance",
+                "Abstraction",
+                "Encapsulation",
+                "Polymorphism"
+              ],
+              "correct_answer": "Inheritance",
+              "explanation": "Inheritance allows a new class to reuse, extend, or modify the behavior and properties of an existing class, promoting code reusability."
+            },
+            {
+              "question_number": 39,
+              "question": "Assume that you are asked to design the logical view of database for ABC PLC. As database expert which one clearly shows the skeleton structure that defines how the data is organized and how the relationships are associated?",
+              "options": [
+                "Database Schema",
+                "Database Architecture",
+                "Database Manipulation",
+                "Database Retrieval"
+              ],
+              "correct_answer": "Database Schema",
+              "explanation": "A database schema defines the logical structure of a database, including how data is organized and the relationships between different data elements."
+            },
+            {
+              "question_number": 40,
+              "question": "Mr. Alemu is a Database Manager at XYZ Company. He is required to plan and organize the overall works done in his respective responsibility. Then, which task is going to be executed at last by Mr. Alemu?",
+              "options": [
+                "Setting the organizational objectives",
+                "Escalation of problems",
+                "Implementation of the work plan outlined.",
+                "Reviewing and evaluating work plans and activities as per the set plan."
+              ],
+              "correct_answer": "Reviewing and evaluating work plans and activities as per the set plan.",
+              "explanation": "In a typical management cycle, reviewing and evaluating work plans is the final step after implementation, ensuring objectives are met and identifying areas for improvement."
+            },
+            {
+              "question_number": 41,
+              "question": "A database keyword that indicates the constraint of a database whose column values of a Table are required to be assigned an initial values in the database is usually:",
+              "options": [
+                "NOT NULL",
+                "DISTINCT",
+                "VALUES",
+                "WHERE clause"
+              ],
+              "correct_answer": "NOT NULL",
+              "explanation": "The NOT NULL constraint ensures that a column cannot have a NULL value, meaning it must always be assigned an initial value."
+            },
+            {
+              "question_number": 42,
+              "question": "Which two features of object-oriented programming are the same?",
+              "options": [
+                "Abstraction and Polymorphism features are the same",
+                "Inheritance and Encapsulation features are the same",
+                "Encapsulation and Abstraction",
+                "Encapsulation and Polymorphism features are the same"
+              ],
+              "correct_answer": "Encapsulation and Abstraction",
+              "explanation": "Encapsulation is often considered a mechanism to achieve abstraction, as it bundles data and methods while hiding implementation details."
+            },
+            {
+              "question_number": 43,
+              "question": "What is the name of the feature in which we enforce the definitions of the abstract function at the compile time?",
+              "options": [
+                "Dynamic Polymorphism",
+                "Static Polymorphism",
+                "Dynamic or Static Polymorphism according to need",
+                "Polymorphism"
+              ],
+              "correct_answer": "Static Polymorphism",
+              "explanation": "Static polymorphism, also known as compile-time polymorphism, involves method overloading where the correct method is determined at compile time."
+            },
+            {
+              "question_number": 44,
+              "question": "One of the following tasks is highly important while you are setting organization’s objectives when you plan and organize works?",
+              "options": [
+                "Developing Objectives which are inconsistent with organizational aims.",
+                "Setting objectives which are difficult to measure as per the standards.",
+                "Enhancing the motivation and commitment of the group members.",
+                "Identification of objectives which are not attainable"
+              ],
+              "correct_answer": "Enhancing the motivation and commitment of the group members.",
+              "explanation": "Well-defined and communicated objectives are crucial for motivating team members and fostering their commitment to achieving organizational goals."
+            },
+            {
+              "question_number": 45,
+              "question": "What is an abstraction in object-oriented programming?",
+              "options": [
+                "Hiding the implementation and showing only the features",
+                "Hiding the important data",
+                "Hiding the implementation",
+                "Showing the important data"
+              ],
+              "correct_answer": "Hiding the implementation and showing only the features",
+              "explanation": "Abstraction focuses on presenting essential features to the user while concealing the complex implementation details."
+            },
+            {
+              "question_number": 46,
+              "question": "A UNION query is which of the following?",
+              "options": [
+                "Combines the output from no more than two queries and must include the same number of columns.",
+                "Combines the output from no more than two queries and does not include the same number of columns.",
+                "Combines the output from multiple queries and must include the same number of columns.",
+                "Combines the output from multiple queries and does not include the same number of columns."
+              ],
+              "correct_answer": "Combines the output from multiple queries and must include the same number of columns.",
+              "explanation": "The UNION operator combines the result sets of two or more SELECT statements, requiring that each SELECT statement has the same number of columns and compatible data types."
+            },
+            {
+              "question_number": 47,
+              "question": "Which SQL operator is used as a conjunction that connects the two queries to return only the required sets of data?",
+              "options": [
+                "LIKE",
+                "AND",
+                "UPDATE",
+                "FROM Clause"
+              ],
+              "correct_answer": "AND",
+              "explanation": "The AND operator is a logical conjunction used in the WHERE clause to combine multiple conditions, ensuring that all specified conditions must be true for a record to be selected."
+            },
+            {
+              "question_number": 48,
+              "question": "In SQL, what is the primary purpose of the `WHERE` clause in a `SELECT` statement?",
+              "options": [
+                "To specify the columns to be retrieved.",
+                "To sort the results of the query.",
+                "To filter the rows based on a specified condition.",
+                "To group rows that have the same values in specified columns."
+              ],
+              "correct_answer": "To filter the rows based on a specified condition.",
+              "explanation": "The `WHERE` clause is used to extract only those records that fulfill a specified condition, thereby filtering the dataset returned by the `SELECT` statement."
+            },
+            {
+              "question_number": 49,
+              "question": "Which of the following best describes the role of a Database Administrator (DBA)?",
+              "options": [
+                "Designing the user interface for database applications.",
+                "Managing and maintaining the database system, including security and performance.",
+                "Writing application code that interacts with the database.",
+                "Defining the logical structure of the database tables and relationships."
+              ],
+              "correct_answer": "Managing and maintaining the database system, including security and performance.",
+              "explanation": "Database Administrators are responsible for the overall health, security, performance, and availability of a database system."
+            },
+            {
+              "question_number": 50,
+              "question": "In Object-Oriented Programming (OOP), which principle allows an object to take on many forms, often through method overriding or overloading?",
+              "options": [
+                "Encapsulation",
+                "Inheritance",
+                "Abstraction",
+                "Polymorphism"
+              ],
+              "correct_answer": "Polymorphism",
+              "explanation": "Polymorphism enables objects of different classes to be treated as objects of a common type, allowing a single interface to represent different underlying forms or behaviors."
+            },
+            {
+              "question_number": 51,
+              "question": "Which component of a web hosting service is responsible for storing the website's files, such as HTML, CSS, images, and scripts?",
+              "options": [
+                "Domain Name System (DNS)",
+                "Web Server",
+                "Database Server",
+                "Email Server"
+              ],
+              "correct_answer": "Web Server",
+              "explanation": "A web server is a computer program that stores website files and delivers web pages to users upon request via HTTP."
+            },
+            {
+              "question_number": 52,
+              "question": "Which one of the following SQL commands contains an error?",
+              "options": [
+                "select * from emp where empid = 10003;",
+                "select empid from emp where empid = 10006;",
+                "select empid from emp;",
+                "select empid where empid = 1009 and Last name = 'GELLER';"
+              ],
+              "correct_answer": "select empid where empid = 1009 and Last name = 'GELLER';",
+              "explanation": "This SQL statement is missing the FROM clause and 'Last name' should be quoted or use an underscore if it's a single column name."
+            },
+            {
+              "question_number": 53,
+              "question": "What SQL command is used to remove existing rows from a table?",
+              "options": [
+                "DROP",
+                "REMOVE",
+                "DELETE",
+                "ERASE"
+              ],
+              "correct_answer": "DELETE",
+              "explanation": "The DELETE command is used to remove one or more rows from a table based on specified conditions."
+            },
+            {
+              "question_number": 54,
+              "question": "Which of the following is the correct SQL syntax to create a table named 'Students' with columns 'StudentID' (integer, primary key) and 'StudentName' (varchar(50))?",
+              "options": [
+                "CREATE TABLE Students (StudentID INT PRIMARY KEY, StudentName VARCHAR(50));",
+                "INSERT INTO Students (StudentID INT PRIMARY KEY, StudentName VARCHAR(50));",
+                "MAKE TABLE Students (StudentID INT PRIMARY KEY, StudentName VARCHAR(50));",
+                "BUILD TABLE Students (StudentID INT, StudentName VARCHAR(50));"
+              ],
+              "correct_answer": "CREATE TABLE Students (StudentID INT PRIMARY KEY, StudentName VARCHAR(50));",
+              "explanation": "The CREATE TABLE statement is used to define a new table in a database, specifying its name and column definitions."
+            },
+            {
+              "question_number": 55,
+              "question": "In the context of web hosting, what is the primary function of a Domain Name System (DNS)?",
+              "options": [
+                "To store website files.",
+                "To manage email accounts.",
+                "To translate domain names into IP addresses.",
+                "To provide security features for the website."
+              ],
+              "correct_answer": "To translate domain names into IP addresses.",
+              "explanation": "DNS acts like a phonebook for the internet, translating human-readable domain names into machine-readable IP addresses."
+            },
+            {
+              "question_number": 56,
+              "question": "What graphical tool is commonly used in data modeling to represent entities, their attributes, and the relationships between them?",
+              "options": [
+                "Flowchart",
+                "UML Diagram",
+                "Entity-Relationship (ER) Diagram",
+                "Gantt Chart"
+              ],
+              "correct_answer": "Entity-Relationship (ER) Diagram",
+              "explanation": "ER diagrams are visual tools that illustrate the structure of a database by showing how different entities relate to each other."
+            },
+            {
+              "question_number": 57,
+              "question": "Which of the following is a crucial responsibility of a Database Administrator (DBA) to ensure data availability and prevent loss?",
+              "options": [
+                "Designing user interfaces",
+                "Performing regular data backups",
+                "Writing application code",
+                "Marketing database products"
+              ],
+              "correct_answer": "Performing regular data backups",
+              "explanation": "Regular data backups are essential for disaster recovery, allowing a DBA to restore data in case of system failure or corruption."
+            },
+            {
+              "question_number": 58,
+              "question": "Which OOP principle involves bundling data (attributes) and methods (functions) that operate on the data into a single unit, restricting direct access to some of the object's components?",
+              "options": [
+                "Inheritance",
+                "Polymorphism",
+                "Encapsulation",
+                "Abstraction"
+              ],
+              "correct_answer": "Encapsulation",
+              "explanation": "Encapsulation protects an object's internal state by hiding its data from outside access and only exposing controlled interfaces."
+            },
+            {
+              "question_number": 59,
+              "question": "In object-oriented programming, which concept allows objects of different classes to be treated as objects of a common superclass, often through method overriding?",
+              "options": [
+                "Inheritance",
+                "Polymorphism",
+                "Encapsulation",
+                "Abstraction"
+              ],
+              "correct_answer": "Polymorphism",
+              "explanation": "Polymorphism enables a single interface to be used for different data types, allowing objects to take on many forms."
+            }
+          ]
         }
       ]
     }
