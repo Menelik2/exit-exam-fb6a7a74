@@ -26,7 +26,10 @@ const question = (stem) => ({
   correct_answer: "First",
   explanation: "Explanation",
 });
-const json = (data, status = 200) => new Response(JSON.stringify(data), {
+const json = (data, status = 200) => new Response(JSON.stringify(data.questions && data.ok !== false ? {
+  ...data, quality_check: "ai_cross_checked",
+  questions: data.questions.map((q) => ({ ...q, answer_check: "ai_cross_checked" })),
+} : data), {
   status,
   headers: { "Content-Type": "application/json" },
 });
@@ -294,20 +297,22 @@ C. Third choice ${i + 1}
 D. Fourth choice ${i + 1}
 ${marked(i) ? "Answer: B\n" : ""}`).join("\n");
 
-test("imports 100 source questions with marked answers without any AI requests", async (t) => {
-  let aiCalls = 0;
-  t.mock.method(globalThis, "fetch", async (url) => {
+test("sends marked source answers for independent checking instead of trusting them locally", async (t) => {
+  let calls = 0;
+  t.mock.method(globalThis, "fetch", async (url, options) => {
     if (url === "/api/exam-document") return json({ ok: true, text: sourcePaper(100, () => true) });
-    aiCalls++;
-    throw new Error("AI must not be called for known source answers");
+    calls++;
+    const body = JSON.parse(options.body);
+    assert.ok(body.sourceQuestions.every((q) => q.correct_answer === q.options[1]));
+    return json({ ok: true, questions: body.sourceQuestions });
   });
   const questions = await generateAndStoreExamQuestions(exam);
   assert.equal(questions.length, 100);
-  assert.equal(aiCalls, 0);
+  assert.equal(calls, 13);
   assert.equal(questions[99].correct_answer, "Second choice 100");
 });
 
-test("answers a 100-question paper in five compact requests, preserving every stem and option", async (t) => {
+test("checks a 100-question paper in thirteen bounded compact batches, preserving every stem and option", async (t) => {
   const requests = [];
   t.mock.method(globalThis, "fetch", async (url, options) => {
     if (url === "/api/exam-document") return json({ ok: true, text: sourcePaper(100) });
@@ -315,52 +320,51 @@ test("answers a 100-question paper in five compact requests, preserving every st
     requests.push(body);
     assert.equal(body.documentText, undefined, "do not send the source twice");
     assert.equal(body.avoid, undefined, "answering supplied IDs does not need an avoid list");
-    assert.ok(body.sourceQuestions.length <= 24);
+    assert.ok(body.sourceQuestions.length <= 8);
     return json({ ok: true, questions: body.sourceQuestions.map((q) => ({
       ...q, correct_answer: q.options[2], explanation: "Reason",
     })) });
   });
   const questions = await generateAndStoreExamQuestions(exam);
   assert.equal(questions.length, 100);
-  assert.equal(requests.length, 5);
+  assert.equal(requests.length, 13);
   assert.equal(questions[0].question, "Source question 1 asks which choice is correct?");
   assert.equal(questions[99].options[3], "Fourth choice 100");
   assert.equal(questions[99].correct_answer, "Third choice 100");
 });
 
-test("only sends unanswered source questions to AI and preserves source order", async (t) => {
+test("sends all source questions for checking and preserves source order", async (t) => {
   const sentIds = [];
   t.mock.method(globalThis, "fetch", async (url, options) => {
     if (url === "/api/exam-document") return json({ ok: true, text: sourcePaper(10, (i) => i % 2 === 0) });
     const body = JSON.parse(options.body);
     sentIds.push(...body.sourceQuestions.map((q) => q.question_number));
-    return json({ ok: true, questions: body.sourceQuestions.map((q) => ({ ...q, correct_answer: q.options[0] })).reverse() });
+    return json({ ok: true, questions: body.sourceQuestions.map((q) => ({ ...q, correct_answer: q.correct_answer || q.options[0] })).reverse() });
   });
   const questions = await generateAndStoreExamQuestions(exam);
-  assert.deepEqual(sentIds, [2, 4, 6, 8, 10]);
+  assert.deepEqual(sentIds, [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
   assert.equal(questions[0].correct_answer, "Second choice 1");
   assert.equal(questions[1].correct_answer, "First choice 2");
   assert.equal(questions[9].question, "Source question 10 asks which choice is correct?");
 });
 
-test("resumes compact answering without repeating completed sections or marked answers", async (t) => {
+test("resumes cross-checking without repeating completed sections", async (t) => {
   let failed = true;
   const counts = new Map();
   t.mock.method(globalThis, "fetch", async (url, options) => {
     if (url === "/api/exam-document") return json({ ok: true, text: sourcePaper(50, (i) => i % 2 === 0) });
     const body = JSON.parse(options.body);
     counts.set(body.documentName, (counts.get(body.documentName) || 0) + 1);
-    if (failed && body.documentName.includes("part 2/3")) {
+    if (failed && body.documentName.includes("part 2/7")) {
       return json({ ok: false, error: "Quota", retryable: false }, 429);
     }
-    assert.ok(body.sourceQuestions.every((q) => q.question_number % 2 === 0));
-    return json({ ok: true, questions: body.sourceQuestions.map((q) => ({ ...q, correct_answer: q.options[0] })) });
+    return json({ ok: true, questions: body.sourceQuestions.map((q) => ({ ...q, correct_answer: q.correct_answer || q.options[0] })) });
   });
-  await assert.rejects(generateAndStoreExamQuestions(exam), /38 questions kept/);
+  await assert.rejects(generateAndStoreExamQuestions(exam), /\d+ questions kept/);
   failed = false;
   const questions = await generateAndStoreExamQuestions(exam);
   assert.equal(questions.length, 50);
-  assert.deepEqual([...counts.values()], [1, 2, 1]);
+  assert.deepEqual([...counts.values()], [1, 2, 1, 1, 1, 1, 1]);
   assert.equal(questions[24].correct_answer, "Second choice 25");
   assert.equal(questions[25].correct_answer, "First choice 26");
 });
@@ -380,7 +384,7 @@ for (const structured of [false, true]) {
       const body = JSON.parse(options.body);
       assert.equal(body.apiKey, "example-browser-key");
       const questions = body.sourceQuestions
-        ? body.sourceQuestions.map((q) => ({ ...q, correct_answer: q.options[0] }))
+        ? body.sourceQuestions.map((q) => ({ ...q, correct_answer: q.correct_answer || q.options[0] }))
         : Array.from({ length: body.numQuestions }, (_, i) => question("Stem " + i));
       return json({ ok: true, questions });
     });
@@ -389,3 +393,32 @@ for (const structured of [false, true]) {
     assert.ok([...storage.values()].every((value) => !value.includes("example-browser-key")));
   });
 }
+
+test("rejects an unchecked server response instead of saving it", async (t) => {
+  t.mock.method(globalThis, "fetch", async (url) => {
+    if (url === "/api/exam-document") return json({ ok: true, text: text.slice(0, 4000) });
+    return Response.json({ ok: true, questions: [question("Unchecked question")] });
+  });
+  await assert.rejects(generateAndStoreExamQuestions(exam, 5), /required answer cross-check/);
+  assert.equal(hasPendingExamGeneration(exam, 5), false);
+});
+
+test("does not resume an older checkpoint containing unchecked answers", async (t) => {
+  const document = sourcePaper(5);
+  storage.set(`exam-generation:v1:${exam.id}:0`, JSON.stringify({
+    version: 1, source: JSON.stringify([exam.title, exam.pdfUrl, exam.telegramFileId]),
+    text: document, results: [[question("Old unchecked question")]], completed: [true],
+    strategy: "source-mcqs-v1", updatedAt: Date.now(),
+  }));
+  let calls = 0;
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    if (url === "/api/exam-document") return json({ ok: true, text: document });
+    calls++;
+    const body = JSON.parse(options.body);
+    return json({ ok: true, questions: body.sourceQuestions.map((q) => ({ ...q, correct_answer: q.options[1] })) });
+  });
+  const questions = await generateAndStoreExamQuestions(exam);
+  assert.equal(calls, 1);
+  assert.equal(questions.length, 5);
+  assert.ok(questions.every((q) => q.answer_check === "ai_cross_checked"));
+});

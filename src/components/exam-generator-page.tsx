@@ -76,6 +76,9 @@ export function ExamGeneratorPage() {
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || data?.message || "Failed to generate exam");
+      if (data?.quality_check !== "ai_cross_checked") {
+        throw new Error("The questions did not pass the required answer cross-check. Please try again.");
+      }
       const qs = data?.questions || data?.exam?.questions;
       if (!Array.isArray(qs) || qs.length === 0) throw new Error("No questions returned");
       return qs as ExamQuestion[];

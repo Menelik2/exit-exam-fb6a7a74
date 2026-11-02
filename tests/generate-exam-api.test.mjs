@@ -12,10 +12,22 @@ const response = () => ({
   end(body) { this.body = JSON.parse(body); },
 });
 
+const isReview = (options) => JSON.parse(options.body).system_instruction.parts[0].text.includes("No proposed answers");
+const reviewResponse = (options, answerFor = () => 0) => {
+  const input = JSON.parse(JSON.parse(options.body).contents[0].parts[0].text);
+  return Response.json({ candidates: [{ content: { parts: [{ text: JSON.stringify({ questions:
+    input.questions.map((q) => ({ question_number: q.question_number, verdict: "supported",
+      correct_option: answerFor(q), explanation: "The independently checked principle supports this choice.",
+      option_explanations: q.options.map((_, i) => `Option ${i + 1} is assessed against the principle.`),
+    })),
+  }) }] } }] });
+};
+
 test("uses the Flash latency setting and applies a deadline to upstream fetch", async (t) => {
   t.mock.method(globalThis, "fetch", async (_url, options) => {
     const config = JSON.parse(options.body).generationConfig;
-    assert.deepEqual(config.thinkingConfig, { thinkingBudget: 0 });
+    assert.deepEqual(config.thinkingConfig, { thinkingBudget: isReview(options) ? 1024 : 0 });
+    if (isReview(options)) return reviewResponse(options, () => 1);
     assert.equal(config.maxOutputTokens, 8192);
     assert.ok(options.signal instanceof AbortSignal);
     return Response.json({ candidates: [{ content: { parts: [{ text: JSON.stringify({ questions: [{
@@ -113,7 +125,9 @@ const modelResponse = (questions) => Response.json({
 test("maps compact answers to original IDs, stems, and options without rewriting", async (t) => {
   t.mock.method(globalThis, "fetch", async (_url, options) => {
     const body = JSON.parse(options.body);
+    if (isReview(options)) return reviewResponse(options, (q) => q.question_number === 25 ? 1 : 3);
     assert.match(body.system_instruction.parts[0].text, /zero-based index/);
+    if (isReview(options)) return reviewResponse(options, (q) => q.question_number === 25 ? 1 : 3);
     assert.deepEqual(JSON.parse(body.contents[0].parts[0].text), sourceQuestions);
     return modelResponse([
       { question_number: 26, correct_option: 3, explanation: "Reason 26", question: "Rewritten stem" },
@@ -148,7 +162,8 @@ for (const [label, answers] of [
 test("rejects invalid source batches before contacting the AI provider", async (t) => {
   let calls = 0;
   t.mock.method(globalThis, "fetch", async () => { calls++; throw new Error("Unexpected request"); });
-  for (const sources of [[], [sourceQuestions[0], sourceQuestions[0]], Array(25).fill(sourceQuestions[0])]) {
+  for (const sources of [[], [sourceQuestions[0], sourceQuestions[0]], Array(25).fill(sourceQuestions[0]),
+    [{ ...sourceQuestions[0], options: ["A", "a", "B", "C"] }]]) {
     const res = response();
     await handler({ method: "POST", body: { apiKey: "test-key", sourceQuestions: sources } }, res);
     assert.equal(res.statusCode, 400);
@@ -186,19 +201,20 @@ test("does not mistake Google's billing boilerplate for exhausted daily quota", 
 for (const [label, quotaValue] of [["daily limit", "20"], ["zero allowance", "0"]]) {
   test(`uses a healthy fallback after a model-specific ${label}`, async (t) => {
     const models = [];
-    t.mock.method(globalThis, "fetch", async (url) => {
+    t.mock.method(globalThis, "fetch", async (url, options) => {
       assert.equal(new URL(url).searchParams.get("key"), "test-key");
       const model = /models\/([^:]+):/.exec(url)[1];
       models.push(model);
       if (model === "gemini-2.5-flash") {
         return quotaResponse("GenerateRequestsPerDayPerProjectPerModel-FreeTier", { quotaValue });
       }
+      if (isReview(options)) return reviewResponse(options, () => 2);
       return modelResponse([{ question: "Fallback question", options: ["A", "B", "C", "D"], correct_answer: "C" }]);
     });
     const res = response();
     await handler(request, res);
     assert.equal(res.statusCode, 200);
-    assert.deepEqual(models, ["gemini-2.5-flash", "gemini-3.5-flash-lite"]);
+    assert.deepEqual(models, ["gemini-2.5-flash", "gemini-3.5-flash-lite", "gemini-2.5-flash", "gemini-3.5-flash-lite"]);
     assert.equal(res.body.questions[0].correct_answer, "C");
   });
 }
@@ -241,7 +257,8 @@ test("defaults to the currently supported Flash-Lite model with compatible setti
     assert.match(url, /models\/gemini-3\.5-flash-lite:/);
     const config = JSON.parse(options.body).generationConfig;
     assert.equal(config.temperature, undefined);
-    assert.equal(config.thinkingConfig, undefined);
+    assert.deepEqual(config.thinkingConfig, isReview(options) ? { thinkingLevel: "MEDIUM" } : undefined);
+    if (isReview(options)) return reviewResponse(options);
     assert.equal(config.responseMimeType, "application/json");
     return modelResponse([{ question: "Current model", options: ["A", "B", "C", "D"], correct_answer: "A" }]);
   });

@@ -11,8 +11,8 @@ const PER_CHUNK_MIN = 6;
 const PER_CHUNK_MAX = 30;
 // Keep each AI response small enough to avoid JSON/output-token truncation.
 const AI_BATCH_SIZE = 8;
-// Answer-only responses omit repeated stems/options, so larger batches fit.
-const SOURCE_BATCH_SIZE = 24;
+// Bound review output now that every option needs an explanation.
+const SOURCE_BATCH_SIZE = 8;
 // Parallelize independent sections without flooding the model/quota.
 const MAX_CONCURRENT_CHUNKS = 3;
 const GENERATION_TIMEOUT_MS = 60_000;
@@ -53,7 +53,8 @@ function readCheckpoint(exam: ExamEntry, numQuestions: number): GenerationCheckp
       !Number.isFinite(value.updatedAt) ||
       Date.now() - value.updatedAt > CHECKPOINT_MAX_AGE_MS ||
       !Array.isArray(value.results) || !value.results.every((part) => Array.isArray(part) &&
-        part.every((q) => q && typeof q.question === "string" && Array.isArray(q.options))) ||
+        part.every((q) => q && typeof q.question === "string" && Array.isArray(q.options) &&
+          q.answer_check === "ai_cross_checked")) ||
       !Array.isArray(value.completed) || !value.completed.every((done) => typeof done === "boolean") ||
       typeof value.text !== "string") return;
   checkpoints.set(key, value);
@@ -214,6 +215,7 @@ async function generateBatch(
     error?: string;
     retryable?: boolean;
     retryAfterSeconds?: number;
+    quality_check?: string;
   };
   if (!genRes.ok || genData.ok === false) {
     const serviceError = genRes.status === 429 || genRes.status === 503;
@@ -229,6 +231,10 @@ async function generateBatch(
       genRes.status,
       retryAfterMs,
     );
+  }
+  if (genData.quality_check !== "ai_cross_checked" ||
+      !genData.questions?.every((q) => q.answer_check === "ai_cross_checked")) {
+    throw new GenerationError("Questions did not pass the required answer cross-check. Nothing unchecked was saved.", false, 422);
   }
   return Array.isArray(genData.questions) ? genData.questions : [];
 }
@@ -288,13 +294,12 @@ export async function generateAndStoreExamQuestions(
   // section so a faster response cannot reorder questions from the document.
   const checkpoint = readCheckpoint(exam, numQuestions);
   const canResume = checkpoint?.text === fullText &&
-    checkpoint.strategy === (source ? "source-mcqs-v1" : undefined) &&
+    checkpoint.strategy === (source ? "source-mcqs-v2-reviewed" : "generated-v2-reviewed") &&
     checkpoint.results.length === chunks.length && checkpoint.completed.length === chunks.length;
   if (!canResume) discardExamGenerationProgress(exam, numQuestions);
   const results: StoredQuestion[][] = canResume
     ? checkpoint.results.map((part, i) => part.slice(0, budgets[i]))
-    : chunks.map((_, i) => sourceParts[i]?.filter((q) => q.correct_answer !== undefined)
-      .map((q) => ({ ...q, correct_answer: q.correct_answer! })) || []);
+    : chunks.map(() => []);
   const completed = canResume ? [...checkpoint.completed] : chunks.map(() => false);
   let nextChunk = 0;
   let generatedCount = results.reduce((total, part) => total + part.length, 0);
@@ -309,7 +314,7 @@ export async function generateAndStoreExamQuestions(
       version: 1, source: sourceKey(exam), text: fullText,
       results: results.map((part) => [...part]), completed: [...completed], updatedAt: Date.now(),
       serial: rateLimited, cooldownUntil,
-      strategy: source ? "source-mcqs-v1" : undefined,
+      strategy: source ? "source-mcqs-v2-reviewed" : "generated-v2-reviewed",
     };
     const key = checkpointKey(exam, numQuestions);
     checkpoints.set(key, value);
@@ -374,7 +379,7 @@ export async function generateAndStoreExamQuestions(
         chunk: i + 1,
         totalChunks: chunks.length,
         questionsSoFar: generatedCount,
-        message: `Generating ${partLabel}: ${generatedCount}/${target} questions ready…`,
+        message: `Generating and cross-checking ${partLabel}: ${generatedCount}/${target} questions ready…`,
       });
 
       let batch: StoredQuestion[] = [];

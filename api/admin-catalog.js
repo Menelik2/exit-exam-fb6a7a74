@@ -73,7 +73,7 @@ function normalizeQuestions(raw) {
   for (let i = 0; i < Math.min(raw.length, 300); i++) {
     const q = raw[i];
     if (!q || typeof q !== "object") continue;
-    const question = String(q.question || "").trim().slice(0, 2000);
+    const question = String(q.question || "").trim().slice(0, 10000);
     if (!question) continue;
     let options = Array.isArray(q.options)
       ? q.options.map((o) => String(o ?? "").trim()).filter(Boolean).slice(0, 6)
@@ -90,6 +90,7 @@ function normalizeQuestions(raw) {
       options,
       correct_answer: correct,
       explanation: q.explanation == null ? undefined : String(q.explanation).slice(0, 2000),
+      ...(q.answer_check === "ai_cross_checked" ? { answer_check: q.answer_check } : {}),
     });
   }
   return out.length ? out : undefined;

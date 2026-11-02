@@ -5,6 +5,7 @@ export type StoredQuestion = {
   options: string[];
   correct_answer: string;
   explanation?: string;
+  answer_check?: "ai_cross_checked";
 };
 
 export type ExamEntry = {

@@ -147,7 +147,7 @@ export function ExamAttemptView(p: AttemptProps) {
               </>
             )}
             {currentQuestion.explanation && (
-              <p className="mt-2">
+              <p className="mt-2 whitespace-pre-line">
                 <span className="font-semibold">Feedback: </span>
                 {currentQuestion.explanation}
               </p>
