@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-11-02T06:21:22.881Z",
+  "updatedAt": "2026-11-02T06:22:35.738Z",
   "departments": [
     {
       "id": "computer-science",
@@ -751,7 +751,105 @@
           "title": "IT Exit 2015",
           "year": 2026,
           "pdfUrl": "https://docs.google.com/document/d/1pEW5Q83roWYmyWmFbw-25mwZIICYOiKwhiCFAPvBRLY/edit?usp=drivesdk",
-          "telegramFileId": null
+          "telegramFileId": null,
+          "questions": [
+            {
+              "question_number": 1,
+              "question": "is a built in function that return lower bound of an array.",
+              "options": [
+                "BRbound()",
+                "LRbound()",
+                "Lowbound()",
+                "Lbound()"
+              ],
+              "correct_answer": "Lbound()",
+              "explanation": "Lbound() is a Visual Basic function used to return the smallest available subscript for the indicated dimension of an array."
+            },
+            {
+              "question_number": 2,
+              "question": "Which command is employed to create Linux file systems?",
+              "options": [
+                "fscK",
+                "mkfs",
+                "fdisk",
+                "mount"
+              ],
+              "correct_answer": "mkfs",
+              "explanation": "The `mkfs` command (make filesystem) is used in Linux to build a Linux filesystem on a device, usually a hard disk partition."
+            },
+            {
+              "question_number": 3,
+              "question": "Which of the following statements would alter the style of an anchor element when the mouse is moved over it?",
+              "options": [
+                "a:hover",
+                "a:beforeclick",
+                "a:mouseover",
+                "a:link"
+              ],
+              "correct_answer": "a:hover",
+              "explanation": "The `:hover` pseudo-class in CSS is used to select elements when a user's mouse pointer is over them, commonly used for interactive styling."
+            },
+            {
+              "question_number": 4,
+              "question": "use CSS specificity mechanism to the style that determine what color is applied to p element\np.message {color: green;}\n#home #warning p.message {color: yellow;}\nbody#home div#warning p.message {color: blue;}\n#warning p.message {color: white;}",
+              "options": [
+                "Green",
+                "Black",
+                "Blue",
+                "Yellow"
+              ],
+              "correct_answer": "Blue",
+              "explanation": "CSS specificity determines which style rule is applied; the rule `body#home div#warning p.message` has the highest specificity due to more ID selectors and element types."
+            },
+            {
+              "question_number": 5,
+              "question": "The Properties window plays an important role in the development of Visual Basic applications. It is mainly used ______.",
+              "options": [
+                "to set program related options like Program Name, Program Location, etc.",
+                "to allow the developer to graphically design program components.",
+                "to change how objects look and feel.",
+                "when opening programs stored on a hard drive."
+              ],
+              "correct_answer": "to change how objects look and feel.",
+              "explanation": "In Visual Basic, the Properties window allows developers to view and change the design-time properties of selected objects, such as their appearance and behavior."
+            },
+            {
+              "question_number": 6,
+              "question": "When a user turns on their desktop computer, nothing appears on the screen. They hear three long beeps, followed by three short beeps and three long beeps. What should you do as a next step?",
+              "options": [
+                "Look up the beep code on the manufacturer's website",
+                "Replace the motherboard",
+                "Replace the RAM",
+                "Replace the CPU"
+              ],
+              "correct_answer": "Look up the beep code on the manufacturer's website",
+              "explanation": "Beep codes are diagnostic signals from the BIOS/UEFI indicating hardware issues; consulting the manufacturer's documentation is the first step to interpret them."
+            },
+            {
+              "question_number": 7,
+              "question": "______ is embedded in android by default and used to perform storing, manipulating, or retrieving operations on android devices",
+              "options": [
+                "MonogDB",
+                "MySQL",
+                "SQLite",
+                "Oracle"
+              ],
+              "correct_answer": "SQLite",
+              "explanation": "SQLite is a lightweight, serverless, self-contained, and highly reliable SQL database engine that is embedded in Android by default for local data storage."
+            },
+            {
+              "question_number": 8,
+              "question": "If your collage prohibits using any anti- virus program in your personal computers (or Laptops) other than the one they provide in order to use the college's local network, what type of policy is this?",
+              "options": [
+                "Issue-specific policy",
+                "Program security policy",
+                "General security policy",
+                "System-specific policy"
+              ],
+              "correct_answer": "System-specific policy",
+              "explanation": "A system-specific policy defines security requirements for a particular system or network, such as mandating specific software for network access."
+            }
+          ]
         }
       ]
     },
