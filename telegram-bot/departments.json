@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-11-02T22:11:13.672Z",
+  "updatedAt": "2026-11-02T22:12:13.774Z",
   "departments": [
     {
       "id": "computer-science",
@@ -744,7 +744,237 @@
           "title": "CS 2018",
           "year": 2026,
           "pdfUrl": "https://drive.google.com/file/d/1ZLiR1Nm1USM-gJwiGSDZ1_gTeRQpy_PX/view?usp=drivesdk",
-          "telegramFileId": null
+          "telegramFileId": null,
+          "questions": [
+            {
+              "question_number": 1,
+              "question": "Consider nav ul { list-style-type: none; margin: 0; padding: 0; } What problem does this solve when creating a navigation bar?",
+              "options": [
+                "a. Removes bullet points and default spacing, allowing custom layout",
+                "b. Aligns the navbar to the right of the page",
+                "c. Adds hover effects to list items",
+                "d. Converts the list into a dropdown menu"
+              ],
+              "correct_answer": "a. Removes bullet points and default spacing, allowing custom layout",
+              "explanation": "This CSS snippet removes the default bullet points and spacing from an unordered list, which is crucial for custom navigation bar layouts."
+            },
+            {
+              "question_number": 2,
+              "question": "Which AI approach most directly supports understanding biological intelligence behavior as a scientific goal?",
+              "options": [
+                "a. Weak AI",
+                "b. Applied AI",
+                "c. Cognitive AI",
+                "d. Strong AI"
+              ],
+              "correct_answer": "c. Cognitive AI",
+              "explanation": "Cognitive AI focuses on understanding and modeling human thought processes, directly supporting the scientific goal of understanding biological intelligence."
+            },
+            {
+              "question_number": 3,
+              "question": "In client-server database architecture, what is the primary role of the server?",
+              "options": [
+                "a. Provide the GUI for end users",
+                "b. Initiate all network connections and poll clients for updates",
+                "c. Store and manage shared data, enforce ACID properties, and process client requests",
+                "d. Cache all user sessions locally for offline access"
+              ],
+              "correct_answer": "c. Store and manage shared data, enforce ACID properties, and process client requests",
+              "explanation": "The server in a client-server database architecture is responsible for central data management, ensuring data integrity, and responding to client queries."
+            },
+            {
+              "question_number": 4,
+              "question": "Which automaton is powerful enough to recognize the language L = {aⁿbⁿcⁿ | n ≥ 1}?",
+              "options": [
+                "a. DFA",
+                "b. Linear Bounded Automaton (LBA)",
+                "c. NFA",
+                "d. Pushdown Automaton (PDA)"
+              ],
+              "correct_answer": "b. Linear Bounded Automaton (LBA)",
+              "explanation": "The language {aⁿbⁿcⁿ | n ≥ 1} is context-sensitive, which requires a Linear Bounded Automaton for recognition, as PDAs cannot count three dependent variables."
+            },
+            {
+              "question_number": 5,
+              "question": "In two-phase locking (2PL), during which phase may a transaction acquire locks but not release any?",
+              "options": [
+                "a. Growing phase",
+                "b. Commit phase",
+                "c. Validation phase",
+                "d. Shrinking phase"
+              ],
+              "correct_answer": "a. Growing phase",
+              "explanation": "The growing phase in two-phase locking is when a transaction can acquire new locks but is not allowed to release any existing locks."
+            },
+            {
+              "question_number": 6,
+              "question": "To extend the connectivity of processor bus we use:",
+              "options": [
+                "a. SCSI",
+                "b. PCI",
+                "c. Controllers",
+                "d. Multi bus"
+              ],
+              "correct_answer": "d. Multi bus",
+              "explanation": "A multi-bus architecture is used to extend the connectivity and capacity of a processor bus by adding more buses."
+            },
+            {
+              "question_number": 7,
+              "question": "Combinational circuit differ from sequential circuit primarily because",
+              "options": [
+                "a. Combinational circuit cannot be built using logic circuit",
+                "b. The output of combinational circuit depends only on the present input, not on past output.",
+                "c. Sequential circuit have no feedback while combinational circuit do",
+                "d. The combinational circuit requires clock signal, but sequential circuit do not"
+              ],
+              "correct_answer": "b. The output of combinational circuit depends only on the present input, not on past output.",
+              "explanation": "Combinational circuits produce outputs based solely on current inputs, whereas sequential circuits also consider past inputs through memory elements."
+            },
+            {
+              "question_number": 8,
+              "question": "Why is Greedy Best-First Search not guaranteed to be optimal or complete?",
+              "options": [
+                "a. It ignores path cost g( n) and relies only on h( n)",
+                "b. It always chooses the shallowest node",
+                "c. It expands nodes in FIFO order",
+                "d. It requires full knowledge of the goal state in advance"
+              ],
+              "correct_answer": "a. It ignores path cost g( n) and relies only on h( n)",
+              "explanation": "Greedy Best-First Search is not optimal or complete because it prioritizes nodes based only on the heuristic estimate (h(n)), neglecting the actual path cost (g(n))."
+            },
+            {
+              "question_number": 9,
+              "question": "From the following statement which is correct about this pointer in c++?",
+              "options": [
+                "a. This pointer passed as hidden argument in all non-static variables of the class.",
+                "b. This pointer passed as hidden argument in all static variables of the class.",
+                "c. This pointer passed as hidden argument in all static function of the class.",
+                "d. This pointer passed as hidden argument in all function of the class."
+              ],
+              "correct_answer": "a. This pointer passed as hidden argument in all non-static variables of the class.",
+              "explanation": "The 'this' pointer is implicitly passed as a hidden argument to all non-static member functions of a class, pointing to the object on which the function is called."
+            },
+            {
+              "question_number": 10,
+              "question": "In class diagram, if class Car has solid diamond points to class Engine, what does this indicates?",
+              "options": [
+                "a. Car uses Engine temporarily",
+                "b. Engine can exist independently of the Car",
+                "c. Engine is the part of Car and cannot exist without it",
+                "d. Car inherits from Engine"
+              ],
+              "correct_answer": "c. Engine is the part of Car and cannot exist without it",
+              "explanation": "A solid diamond in a class diagram represents composition, indicating a strong 'part-of' relationship where the part cannot exist independently of the whole."
+            },
+            {
+              "question_number": 11,
+              "question": "The amount of time the algorithm takes on the smallest possible set of inputs is called_____",
+              "options": [
+                "a. Average time",
+                "b. Small time",
+                "c. Worst time",
+                "d. Best time"
+              ],
+              "correct_answer": "d. Best time",
+              "explanation": "Best time complexity refers to the minimum amount of time an algorithm requires to complete its execution, typically with the most favorable input."
+            },
+            {
+              "question_number": 12,
+              "question": "For a weak entity set to be meaningful, it must be associated with another entity set, called the",
+              "options": [
+                "a. Identifying set",
+                "b. Strong entity set",
+                "c. Neighbor set",
+                "d. Owner set"
+              ],
+              "correct_answer": "b. Strong entity set",
+              "explanation": "A weak entity set depends on a strong entity set, known as its owner or identifying entity set, for its existence and identification."
+            },
+            {
+              "question_number": 13,
+              "question": "Which one of the following is not the application level service?",
+              "options": [
+                "a. Proxies and agents",
+                "b. Installing a new service",
+                "c. E-mail configuration",
+                "d. Quality of service"
+              ],
+              "correct_answer": "b. Installing a new service",
+              "explanation": "Installing a new service is typically an operating system or system administration task, not an application-level service itself."
+            },
+            {
+              "question_number": 14,
+              "question": "A language that allows the DBA or user to describe and name the entities, attributes, and relationships required for the application is__________",
+              "options": [
+                "a. Transaction control language (TCL)",
+                "b. Data control language (DCL)",
+                "c. Data Manipulation Language (DML)",
+                "d. Data Definition Language (DDL)"
+              ],
+              "correct_answer": "d. Data Definition Language (DDL)",
+              "explanation": "Data Definition Language (DDL) is used to define and manage the structure of a database, including creating, modifying, and deleting schemas, tables, and other database objects."
+            },
+            {
+              "question_number": 15,
+              "question": "Which one of the following is linear data structure?",
+              "options": [
+                "a. Tree",
+                "b. Array",
+                "c. Queue",
+                "d. Linked list"
+              ],
+              "correct_answer": "b. Array",
+              "explanation": "An array is a linear data structure that stores elements in contiguous memory locations, allowing direct access by index."
+            },
+            {
+              "question_number": 16,
+              "question": "What is the main purpose of syntax-directed translation in a compiler?",
+              "options": [
+                "a. To interleave semantic analysis with syntax analysis using attributes attached to gr",
+                "b. To optimize the generated machine code for faster execution",
+                "c. To manage memory allocation during program execution",
+                "d. To convert high-level language into assembly language"
+              ],
+              "correct_answer": "a. To interleave semantic analysis with syntax analysis using attributes attached to gr",
+              "explanation": "Syntax-directed translation integrates semantic actions with parsing, using attributes associated with grammar symbols to perform translations."
+            },
+            {
+              "question_number": 17,
+              "question": "What will be the output of the following program segment?\npublic class Calculation {\npublic static void main(String[] args) {\nint sum = 0;\nfor(int j = 1; j<=10; j++) {\nsum = sum + j;\n}\nSystem.out.println(+sum);\n}",
+              "options": [
+                "a. 55",
+                "b. 44",
+                "c. 33",
+                "d. 66"
+              ],
+              "correct_answer": "a. 55",
+              "explanation": "The program calculates the sum of integers from 1 to 10, which is 55."
+            },
+            {
+              "question_number": 18,
+              "question": "Which keyword is used in Java to create a subclass that inherits from a superclass?",
+              "options": [
+                "a. Inherits",
+                "b. Superclass",
+                "c. Extends",
+                "d. Implements"
+              ],
+              "correct_answer": "c. Extends",
+              "explanation": "In Java, the 'extends' keyword is used to establish an inheritance relationship between a subclass and a superclass."
+            },
+            {
+              "question_number": 19,
+              "question": "What is the output of the following C++ code fragment?\nInt a=6, b=8;\nInt x=2, y=4;\nInt c(x>y? (a--; x): (b--; y));\nCout<<”a”<<a;\nCout<<” b=”<<b;\nCout <<” c=”<<c;",
+              "options": [
+                "a. a=6 b=5 c=4",
+                "b. a=6 b=7 c=5",
+                "c. a=8 b=6 c=5",
+                "d. a=6 b=7 c=4"
+              ],
+              "correct_answer": "d. a=6 b=7 c=4",
+              "explanation": "Since x (2) is not greater than y (4), the false part of the ternary operator executes, decrementing b to 7 and assigning y (4) to c. 'a' remains 6."
+            }
+          ]
         }
       ]
     },
