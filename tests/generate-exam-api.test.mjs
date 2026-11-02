@@ -100,3 +100,57 @@ for (const message of ["Quota exceeded: requests per day", "Quota exceeded, limi
     assert.match(res.body.error, /Check your API plan/);
   });
 }
+
+const sourceQuestions = [
+  { question_number: 25, question: "Original question 25", options: ["Original A", "Original B", "Original C", "Original D"] },
+  { question_number: 26, question: "Original question 26", options: ["Other A", "Other B", "Other C", "Other D"] },
+];
+const modelResponse = (questions) => Response.json({
+  candidates: [{ content: { parts: [{ text: JSON.stringify({ questions }) }] } }],
+});
+
+test("maps compact answers to original IDs, stems, and options without rewriting", async (t) => {
+  t.mock.method(globalThis, "fetch", async (_url, options) => {
+    const body = JSON.parse(options.body);
+    assert.match(body.system_instruction.parts[0].text, /zero-based index/);
+    assert.deepEqual(JSON.parse(body.contents[0].parts[0].text), sourceQuestions);
+    return modelResponse([
+      { question_number: 26, correct_option: 3, explanation: "Reason 26", question: "Rewritten stem" },
+      { question_number: 25, correct_option: 1, explanation: "Reason 25" },
+    ]);
+  });
+  const res = response();
+  await handler({ method: "POST", body: { apiKey: "test-key", sourceQuestions } }, res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.questions[0].question_number, 25);
+  assert.equal(res.body.questions[0].question, "Original question 25");
+  assert.deepEqual(res.body.questions[0].options, sourceQuestions[0].options);
+  assert.equal(res.body.questions[0].correct_answer, "Original B");
+  assert.equal(res.body.questions[1].correct_answer, "Other D");
+});
+
+for (const [label, answers] of [
+  ["missing answer", [{ question_number: 25, correct_option: 0 }]],
+  ["invalid option", [{ question_number: 25, correct_option: 4 }, { question_number: 26, correct_option: 0 }]],
+  ["duplicate IDs", [{ question_number: 25, correct_option: 0 }, { question_number: 25, correct_option: 1 }]],
+]) {
+  test(`rejects ${label} instead of defaulting to the first option`, async (t) => {
+    t.mock.method(globalThis, "fetch", async () => modelResponse(answers));
+    const res = response();
+    await handler({ method: "POST", body: { apiKey: "test-key", sourceQuestions } }, res);
+    assert.equal(res.statusCode, 500);
+    assert.equal(res.body.ok, false);
+    assert.equal(res.body.questions, undefined);
+  });
+}
+
+test("rejects invalid source batches before contacting the AI provider", async (t) => {
+  let calls = 0;
+  t.mock.method(globalThis, "fetch", async () => { calls++; throw new Error("Unexpected request"); });
+  for (const sources of [[], [sourceQuestions[0], sourceQuestions[0]], Array(25).fill(sourceQuestions[0])]) {
+    const res = response();
+    await handler({ method: "POST", body: { apiKey: "test-key", sourceQuestions: sources } }, res);
+    assert.equal(res.statusCode, 400);
+  }
+  assert.equal(calls, 0);
+});

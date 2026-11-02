@@ -1,5 +1,6 @@
 import { extractDocumentText, type ExtractProgress } from "@/lib/extract-document";
 import type { ExamEntry, StoredQuestion } from "@/components/admin-types";
+import { parseSourceMcqs, type SourceMcq } from "./source-mcqs.ts";
 
 const CHUNK_SIZE = 5000;
 const CHUNK_OVERLAP = 500;
@@ -9,6 +10,8 @@ const PER_CHUNK_MIN = 6;
 const PER_CHUNK_MAX = 30;
 // Keep each AI response small enough to avoid JSON/output-token truncation.
 const AI_BATCH_SIZE = 8;
+// Answer-only responses omit repeated stems/options, so larger batches fit.
+const SOURCE_BATCH_SIZE = 24;
 // Parallelize independent sections without flooding the model/quota.
 const MAX_CONCURRENT_CHUNKS = 3;
 const GENERATION_TIMEOUT_MS = 60_000;
@@ -24,6 +27,7 @@ type GenerationCheckpoint = {
   updatedAt: number;
   serial?: boolean;
   cooldownUntil?: number;
+  strategy?: string;
 };
 
 const checkpoints = new Map<string, GenerationCheckpoint>();
@@ -188,6 +192,7 @@ async function generateBatch(
   numQuestions: number,
   avoid: string[],
   partLabel: string,
+  sourceQuestions?: SourceMcq[],
 ): Promise<StoredQuestion[]> {
   const genRes = await fetch("/api/generate-exam", {
     method: "POST",
@@ -195,9 +200,10 @@ async function generateBatch(
     signal: AbortSignal.timeout(GENERATION_TIMEOUT_MS),
     body: JSON.stringify({
       documentName: `${documentName} (${partLabel})`,
-      documentText: chunkTextContent,
+      documentText: sourceQuestions ? undefined : chunkTextContent,
       numQuestions,
-      avoid,
+      avoid: sourceQuestions ? undefined : avoid,
+      sourceQuestions,
     }),
   });
   const genData = (await genRes.json().catch(() => ({}))) as {
@@ -244,24 +250,31 @@ export async function generateAndStoreExamQuestions(
   onProgress?: (p: GenerateProgress) => void,
 ): Promise<StoredQuestion[]> {
   const fullText = await loadDocumentText(exam, onProgress);
-  const chunks = chunkText(fullText);
+  const wantAll = !numQuestions || numQuestions <= 0;
+  const parsed = parseSourceMcqs(fullText);
+  const source = parsed?.slice(0, wantAll ? parsed.length
+    : Math.min(MAX_REQUESTED_QUESTIONS, Math.max(5, Math.round(numQuestions))));
+  const sourceParts: SourceMcq[][] = [];
+  for (let i = 0; source && i < source.length; i += SOURCE_BATCH_SIZE) {
+    sourceParts.push(source.slice(i, i + SOURCE_BATCH_SIZE));
+  }
+  const chunks = source ? sourceParts.map((part) => JSON.stringify(part)) : chunkText(fullText);
 
   onProgress?.({
     phase: "done",
     message: `Text ready (${fullText.length.toLocaleString()} chars, ${chunks.length} part(s)). Generating questions…`,
   });
 
-  const wantAll = !numQuestions || numQuestions <= 0;
   const sourceQuestionCount = wantAll ? detectSourceQuestionCount(fullText) : 0;
   const estimatedCount = chunks.reduce((total, chunk) => total + questionsForChunk(chunk.length), 0);
-  const target = wantAll
+  const target = source ? source.length : wantAll
     ? (sourceQuestionCount || estimatedCount)
     : Math.min(MAX_REQUESTED_QUESTIONS, Math.max(5, Math.round(numQuestions)));
 
   const totalChunkChars = chunks.reduce((total, chunk) => total + chunk.length, 0);
   let charsAllocated = 0;
   let budgetAllocated = 0;
-  const budgets = chunks.map((chunk) => {
+  const budgets = source ? sourceParts.map((part) => part.length) : chunks.map((chunk) => {
     charsAllocated += chunk.length;
     const cumulativeBudget = Math.round(target * charsAllocated / totalChunkChars);
     const budget = cumulativeBudget - budgetAllocated;
@@ -273,11 +286,13 @@ export async function generateAndStoreExamQuestions(
   // section so a faster response cannot reorder questions from the document.
   const checkpoint = readCheckpoint(exam, numQuestions);
   const canResume = checkpoint?.text === fullText &&
+    checkpoint.strategy === (source ? "source-mcqs-v1" : undefined) &&
     checkpoint.results.length === chunks.length && checkpoint.completed.length === chunks.length;
   if (!canResume) discardExamGenerationProgress(exam, numQuestions);
   const results: StoredQuestion[][] = canResume
     ? checkpoint.results.map((part, i) => part.slice(0, budgets[i]))
-    : chunks.map(() => []);
+    : chunks.map((_, i) => sourceParts[i]?.filter((q) => q.correct_answer !== undefined)
+      .map((q) => ({ ...q, correct_answer: q.correct_answer! })) || []);
   const completed = canResume ? [...checkpoint.completed] : chunks.map(() => false);
   let nextChunk = 0;
   let generatedCount = results.reduce((total, part) => total + part.length, 0);
@@ -292,6 +307,7 @@ export async function generateAndStoreExamQuestions(
       version: 1, source: sourceKey(exam), text: fullText,
       results: results.map((part) => [...part]), completed: [...completed], updatedAt: Date.now(),
       serial: rateLimited, cooldownUntil,
+      strategy: source ? "source-mcqs-v1" : undefined,
     };
     const key = checkpointKey(exam, numQuestions);
     checkpoints.set(key, value);
@@ -300,7 +316,8 @@ export async function generateAndStoreExamQuestions(
 
   if (generatedCount > 0) {
     onProgress?.({ phase: "done", questionsSoFar: generatedCount,
-      message: `Resuming with ${generatedCount} questions already generated…` });
+      message: canResume ? `Resuming with ${generatedCount} questions already generated…`
+        : `Read ${generatedCount} questions with source answers; completing the rest…` });
   }
 
   const requestBatch = async (...args: Parameters<typeof generateBatch>) => {
@@ -342,7 +359,8 @@ export async function generateAndStoreExamQuestions(
     let stalledBatches = 0;
 
     while (collected.length < chunkBudget && stalledBatches < 2 && !failure) {
-      const requested = Math.min(AI_BATCH_SIZE, chunkBudget - collected.length);
+      const requested = Math.min(source ? SOURCE_BATCH_SIZE : AI_BATCH_SIZE, chunkBudget - collected.length);
+      const unanswered = sourceParts[i]?.filter((q) => !seen.has(normKey(q.question))).slice(0, requested);
       // Include this section's questions first, including ones from earlier
       // batches, to avoid paying for repeated questions as the section fills.
       const avoid = [
@@ -367,6 +385,7 @@ export async function generateAndStoreExamQuestions(
             requested,
             avoid,
             partLabel,
+            unanswered,
           );
           if (batch.length > 0) break;
           lastError = new Error(`No questions returned for ${partLabel}`);
@@ -444,7 +463,9 @@ export async function generateAndStoreExamQuestions(
   }
 
   const seen = new Set<string>();
-  const collected = results.flat().filter((q) => {
+  const ordered = results.flat();
+  if (source) ordered.sort((a, b) => a.question_number - b.question_number);
+  const collected = ordered.filter((q) => {
     const key = normKey(q.question || "");
     if (!key || seen.has(key)) return false;
     seen.add(key);

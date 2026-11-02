@@ -285,3 +285,82 @@ test("retains progress in memory when browser storage is unavailable", async (t)
   assert.equal(questions.length, 16);
   assert.equal(calls, 3);
 });
+
+const sourcePaper = (count, marked = () => false) => Array.from({ length: count }, (_, i) =>
+  `${i + 1}. Source question ${i + 1} asks which choice is correct?
+A. First choice ${i + 1}
+B. Second choice ${i + 1}
+C. Third choice ${i + 1}
+D. Fourth choice ${i + 1}
+${marked(i) ? "Answer: B\n" : ""}`).join("\n");
+
+test("imports 100 source questions with marked answers without any AI requests", async (t) => {
+  let aiCalls = 0;
+  t.mock.method(globalThis, "fetch", async (url) => {
+    if (url === "/api/exam-document") return json({ ok: true, text: sourcePaper(100, () => true) });
+    aiCalls++;
+    throw new Error("AI must not be called for known source answers");
+  });
+  const questions = await generateAndStoreExamQuestions(exam);
+  assert.equal(questions.length, 100);
+  assert.equal(aiCalls, 0);
+  assert.equal(questions[99].correct_answer, "Second choice 100");
+});
+
+test("answers a 100-question paper in five compact requests, preserving every stem and option", async (t) => {
+  const requests = [];
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    if (url === "/api/exam-document") return json({ ok: true, text: sourcePaper(100) });
+    const body = JSON.parse(options.body);
+    requests.push(body);
+    assert.equal(body.documentText, undefined, "do not send the source twice");
+    assert.equal(body.avoid, undefined, "answering supplied IDs does not need an avoid list");
+    assert.ok(body.sourceQuestions.length <= 24);
+    return json({ ok: true, questions: body.sourceQuestions.map((q) => ({
+      ...q, correct_answer: q.options[2], explanation: "Reason",
+    })) });
+  });
+  const questions = await generateAndStoreExamQuestions(exam);
+  assert.equal(questions.length, 100);
+  assert.equal(requests.length, 5);
+  assert.equal(questions[0].question, "Source question 1 asks which choice is correct?");
+  assert.equal(questions[99].options[3], "Fourth choice 100");
+  assert.equal(questions[99].correct_answer, "Third choice 100");
+});
+
+test("only sends unanswered source questions to AI and preserves source order", async (t) => {
+  const sentIds = [];
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    if (url === "/api/exam-document") return json({ ok: true, text: sourcePaper(10, (i) => i % 2 === 0) });
+    const body = JSON.parse(options.body);
+    sentIds.push(...body.sourceQuestions.map((q) => q.question_number));
+    return json({ ok: true, questions: body.sourceQuestions.map((q) => ({ ...q, correct_answer: q.options[0] })).reverse() });
+  });
+  const questions = await generateAndStoreExamQuestions(exam);
+  assert.deepEqual(sentIds, [2, 4, 6, 8, 10]);
+  assert.equal(questions[0].correct_answer, "Second choice 1");
+  assert.equal(questions[1].correct_answer, "First choice 2");
+  assert.equal(questions[9].question, "Source question 10 asks which choice is correct?");
+});
+
+test("resumes compact answering without repeating completed sections or marked answers", async (t) => {
+  let failed = true;
+  const counts = new Map();
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    if (url === "/api/exam-document") return json({ ok: true, text: sourcePaper(50, (i) => i % 2 === 0) });
+    const body = JSON.parse(options.body);
+    counts.set(body.documentName, (counts.get(body.documentName) || 0) + 1);
+    if (failed && body.documentName.includes("part 2/3")) {
+      return json({ ok: false, error: "Quota", retryable: false }, 429);
+    }
+    assert.ok(body.sourceQuestions.every((q) => q.question_number % 2 === 0));
+    return json({ ok: true, questions: body.sourceQuestions.map((q) => ({ ...q, correct_answer: q.options[0] })) });
+  });
+  await assert.rejects(generateAndStoreExamQuestions(exam), /38 questions kept/);
+  failed = false;
+  const questions = await generateAndStoreExamQuestions(exam);
+  assert.equal(questions.length, 50);
+  assert.deepEqual([...counts.values()], [1, 2, 1]);
+  assert.equal(questions[24].correct_answer, "Second choice 25");
+  assert.equal(questions[25].correct_answer, "First choice 26");
+});

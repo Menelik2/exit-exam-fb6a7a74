@@ -68,8 +68,9 @@ async function extractPdfTextLayer(
     const page = await doc.getPage(i);
     const content = await page.getTextContent();
     const pageText = content.items
-      .map((it) => ("str" in it ? (it as { str: string }).str : ""))
-      .join(" ");
+      // Keep line boundaries so numbered stems/options can be parsed directly.
+      .map((it) => ("str" in it ? it.str + (it.hasEOL ? "\n" : " ") : ""))
+      .join("");
     parts.push(pageText);
   }
   return { text: parts.join("\n\n").trim(), numPages: doc.numPages };

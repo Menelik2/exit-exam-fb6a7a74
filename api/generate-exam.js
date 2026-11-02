@@ -208,6 +208,50 @@ When the document already contains MCQs (e.g. "Question 12", options a/b/c/d fro
 - If a correct answer is marked in the text, use it. If not marked, pick the most accurate option as correct_answer and briefly justify in explanation.
 - Prefer extracting every distinct question in the provided section over inventing fillers.`;
 
+const ANSWER_PROMPT = `Answer the supplied multiple-choice exam questions accurately.
+Return JSON only: { "questions": [{ "question_number": integer, "correct_option": integer, "explanation": string }] }.
+Use the original question_number. correct_option is a zero-based index into that question's options.
+Give one short sentence of explanation. Do not repeat stems or options. Answer every supplied question.`;
+
+function validateSourceQuestions(value) {
+  const invalid = () => {
+    const error = new Error("Supply 1–24 source questions with unique integer IDs, complete stems and 2–6 options.");
+    error.status = 400;
+    throw error;
+  };
+  if (!Array.isArray(value) || value.length < 1 || value.length > 24) invalid();
+  const ids = new Set();
+  return value.map((q) => {
+    if (!q || !Number.isInteger(q.question_number) || q.question_number < 1 ||
+        ids.has(q.question_number) || typeof q.question !== "string" || !q.question.trim() ||
+        q.question.length > 10000 || !Array.isArray(q.options) || q.options.length < 2 ||
+        q.options.length > 6 || q.options.some((o) => typeof o !== "string" || !o.trim() || o.length > 5000)) invalid();
+    ids.add(q.question_number);
+    return { question_number: q.question_number, question: q.question, options: q.options };
+  });
+}
+
+function mergeSourceAnswers(raw, source) {
+  const answers = new Map();
+  for (const answer of raw) {
+    if (answers.has(answer?.question_number)) throw new Error("Model returned duplicate answer IDs");
+    answers.set(answer?.question_number, answer);
+  }
+  if (answers.size !== source.length) throw new Error("Model did not answer every source question");
+  return source.map((q) => {
+    const answer = answers.get(q.question_number);
+    const index = answer?.correct_option;
+    if (!Number.isInteger(index) || index < 0 || index >= q.options.length) {
+      throw new Error("Model returned an invalid source answer");
+    }
+    return {
+      ...q,
+      correct_answer: q.options[index],
+      explanation: typeof answer.explanation === "string" ? answer.explanation.slice(0, 2000) : "",
+    };
+  });
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -253,15 +297,19 @@ export default async function handler(req, res) {
       ? body.avoid.map((x) => String(x || "").trim()).filter(Boolean).slice(0, 80)
       : [];
     const need = clampNum(body.numQuestions, 1, HARD_MAX, 10);
+    const sourceQuestions = body.sourceQuestions === undefined
+      ? null : validateSourceQuestions(body.sourceQuestions);
 
-    if (!documentText && !topic) {
+    if (!documentText && !topic && !sourceQuestions) {
       res.statusCode = 400;
       res.setHeader("Content-Type", "application/json");
       return res.end(JSON.stringify({ ok: false, error: "Enter a topic or upload a document first." }));
     }
 
     let userPrompt;
-    if (documentText) {
+    if (sourceQuestions) {
+      userPrompt = JSON.stringify(sourceQuestions);
+    } else if (documentText) {
       userPrompt = [
         `Task: From this document section, produce EXACTLY ${need} MCQs. If the section already has exam questions with options, EXTRACT them (stems + a/b/c/d). Only invent new items when the section is prose without MCQs. Use the document only.`,
         documentName ? `Document: ${documentName}` : "",
@@ -287,8 +335,10 @@ export default async function handler(req, res) {
         .join("\n\n");
     }
 
-    const raw = await callGemini(apiKey, SYSTEM_PROMPT, userPrompt);
-    const questions = normalizeQuestions(parseModelJson(raw), need);
+    const raw = await callGemini(apiKey, sourceQuestions ? ANSWER_PROMPT : SYSTEM_PROMPT, userPrompt);
+    const questions = sourceQuestions
+      ? mergeSourceAnswers(parseModelJson(raw), sourceQuestions)
+      : normalizeQuestions(parseModelJson(raw), need);
     if (!questions.length) {
       throw new Error("Model returned no valid questions");
     }
