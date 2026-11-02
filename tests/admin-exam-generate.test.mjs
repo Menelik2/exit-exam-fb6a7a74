@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { registerHooks } from "node:module";
-import { test } from "node:test";
+import { beforeEach, test } from "node:test";
 
 // These tests exercise the orchestration with text documents. PDF/OCR is
 // unrelated to request scheduling and needs browser-only dependencies.
@@ -15,7 +15,9 @@ registerHooks({
     return nextResolve(specifier, context);
   },
 });
-const { generateAndStoreExamQuestions } = await import("../src/lib/admin-exam-generate.ts");
+const {
+  discardExamGenerationProgress, generateAndStoreExamQuestions, hasPendingExamGeneration,
+} = await import("../src/lib/admin-exam-generate.ts");
 const exam = { id: "exam", title: "Test paper", year: 2026, pdfUrl: "https://example.com/paper.txt", telegramFileId: null };
 const text = "Study material. ".repeat(934).slice(0, 14000);
 const question = (stem) => ({
@@ -29,6 +31,14 @@ const json = (data, status = 200) => new Response(JSON.stringify(data), {
   headers: { "Content-Type": "application/json" },
 });
 const nextTurn = () => new Promise((resolve) => setImmediate(resolve));
+const storage = new Map();
+Object.defineProperty(globalThis, "sessionStorage", { configurable: true, value: {
+  getItem: (key) => storage.get(key) || null,
+  setItem: (key, value) => storage.set(key, value),
+  removeItem: (key) => storage.delete(key),
+} });
+let sequence = 0;
+beforeEach(() => { exam.id = `exam-${++sequence}`; storage.clear(); });
 
 test("generates three sections concurrently and preserves document order", async (t) => {
   const pending = [];
@@ -101,16 +111,17 @@ for (const status of [400, 401, 403, 429, 503]) {
     });
     let settled = false;
     const result = generateAndStoreExamQuestions(exam, 24);
-    const rejected = assert.rejects(result, /Nothing was saved.*Service unavailable/);
+    const rejected = assert.rejects(result, /Could not generate.*Service unavailable/);
     result.then(() => { settled = true; }, () => { settled = true; });
     await nextTurn();
     assert.equal(calls, 3);
-    pending[0](json({ ok: false, error: "Service unavailable" }, status));
+    pending[0](json({ ok: false, error: "Service unavailable", retryable: false }, status));
     await nextTurn();
     assert.equal(settled, false, "must wait for active workers before re-enabling the button");
     pending.slice(1).forEach((resolve) => resolve(json({ ok: true, questions: [question("Other")] })));
     await rejected;
     assert.equal(calls, 3, "must not retry or schedule more sections");
+    assert.equal(hasPendingExamGeneration(exam, 24), true, "keep successful in-flight work");
   });
 }
 
@@ -127,4 +138,150 @@ test("keeps batch size small and sends previous section questions in the avoid l
   assert.deepEqual(requests.map((r) => r.numQuestions), [8, 8, 1]);
   assert.equal(requests[2].avoid.length, 16);
   assert.equal(questions.length, 17);
+});
+
+test("resumes failed sections without generating completed sections again", async (t) => {
+  let fail = true;
+  const counts = new Map();
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    if (url === "/api/exam-document") return json({ ok: true, text });
+    const body = JSON.parse(options.body);
+    const section = body.documentName;
+    counts.set(section, (counts.get(section) || 0) + 1);
+    if (fail && section.includes("part 3/3")) {
+      return json({ ok: false, error: "Daily quota exhausted", retryable: false }, 429);
+    }
+    return json({ ok: true, questions: Array.from({ length: body.numQuestions }, (_, i) =>
+      question(section + i)) });
+  });
+  await assert.rejects(generateAndStoreExamQuestions(exam, 24), /16 questions kept.*Resume generation/);
+  assert.equal(hasPendingExamGeneration(exam, 24), true);
+  assert.ok(storage.size > 0);
+  fail = false;
+  // A fresh module has no in-memory checkpoint, just like a page reload.
+  const reloaded = await import("../src/lib/admin-exam-generate.ts?reloaded");
+  const questions = await reloaded.generateAndStoreExamQuestions(exam, 24);
+  assert.equal(questions.length, 24);
+  assert.deepEqual([...counts.values()], [1, 1, 2]);
+  assert.match(questions[0].question, /part 1\/3/);
+  reloaded.discardExamGenerationProgress(exam, 24);
+  assert.equal(reloaded.hasPendingExamGeneration(exam, 24), false);
+});
+
+test("resumes within an unfinished section and retains the avoid list", async (t) => {
+  let calls = 0;
+  let fail = true;
+  const requests = [];
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    if (url === "/api/exam-document") return json({ ok: true, text: text.slice(0, 4000) });
+    const body = JSON.parse(options.body);
+    requests.push(body);
+    if (++calls === 2 && fail) return json({ ok: false, error: "Quota exhausted", retryable: false }, 429);
+    return json({ ok: true, questions: Array.from({ length: body.numQuestions }, (_, i) =>
+      question(`Request ${calls} question ${i}`)) });
+  });
+  await assert.rejects(generateAndStoreExamQuestions(exam, 17), /8 questions kept/);
+  fail = false;
+  const questions = await generateAndStoreExamQuestions(exam, 17);
+  assert.equal(questions.length, 17);
+  assert.equal(calls, 4);
+  assert.equal(requests[2].avoid.length, 8);
+  assert.deepEqual(requests.map((r) => r.numQuestions), [8, 8, 8, 1]);
+});
+
+for (const status of [429, 503]) {
+  test(`shares cooldown and serializes recovery after HTTP ${status}`, async (t) => {
+    t.mock.timers.enable({ apis: ["setTimeout", "Date"], now: 1000 });
+    let calls = 0;
+    let active = 0;
+    const pending = [];
+    t.mock.method(globalThis, "fetch", async (url, options) => {
+      if (url === "/api/exam-document") return json({ ok: true, text });
+      const body = JSON.parse(options.body);
+      if (++calls <= 3) {
+        return json({ ok: false, error: "Busy", retryable: true, retryAfterSeconds: 2 }, status);
+      }
+      active++;
+      assert.equal(active, 1, "only one recovery request can be active across all workers");
+      return new Promise((resolve) => pending.push(() => {
+        active--;
+        resolve(json({ ok: true, questions: Array.from({ length: body.numQuestions }, (_, i) =>
+          question(body.documentName + i)) }));
+      }));
+    });
+    const result = generateAndStoreExamQuestions(exam, 24);
+    await nextTurn();
+    assert.equal(calls, 3);
+    t.mock.timers.tick(1999);
+    await nextTurn();
+    assert.equal(calls, 3, "do not retry early");
+    t.mock.timers.tick(1);
+    await nextTurn();
+    assert.equal(calls, 4);
+    for (let i = 0; i < 3; i++) {
+      assert.equal(pending.length, 1);
+      pending.shift()();
+      await nextTurn();
+    }
+    const questions = await result;
+    assert.equal(questions.length, 24);
+    assert.equal(calls, 6);
+  });
+}
+
+test("does not reuse checkpoints when document content changes", async (t) => {
+  let first = true;
+  let calls = 0;
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    if (url === "/api/exam-document") return json({ ok: true, text: first ? text : text.replace("Study", "Other") });
+    const body = JSON.parse(options.body);
+    calls++;
+    if (first && body.documentName.includes("part 3/3")) {
+      return json({ ok: false, error: "Quota", retryable: false }, 429);
+    }
+    return json({ ok: true, questions: Array.from({ length: body.numQuestions }, (_, i) => question(body.documentName + i)) });
+  });
+  await assert.rejects(generateAndStoreExamQuestions(exam, 24));
+  first = false;
+  const questions = await generateAndStoreExamQuestions(exam, 24);
+  assert.equal(questions.length, 24);
+  assert.equal(calls, 6, "a changed source must regenerate all sections");
+});
+
+test("bounds recovery attempts and retains batches when the service stays busy", async (t) => {
+  t.mock.timers.enable({ apis: ["setTimeout", "Date"], now: 1000 });
+  let calls = 0;
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    if (url === "/api/exam-document") return json({ ok: true, text: text.slice(0, 4000) });
+    const body = JSON.parse(options.body);
+    if (++calls > 1) return json({ ok: false, error: "Still busy", retryable: true, retryAfterSeconds: 2 }, 503);
+    return json({ ok: true, questions: Array.from({ length: body.numQuestions }, (_, i) => question("First batch " + i)) });
+  });
+  const result = generateAndStoreExamQuestions(exam, 16);
+  const rejected = assert.rejects(result, /Still busy.*8 questions kept/);
+  await nextTurn();
+  assert.equal(calls, 2);
+  t.mock.timers.tick(2000);
+  await nextTurn();
+  assert.equal(calls, 3);
+  t.mock.timers.tick(2000);
+  await rejected;
+  assert.equal(calls, 4);
+  assert.equal(hasPendingExamGeneration(exam, 16), true);
+});
+
+test("retains progress in memory when browser storage is unavailable", async (t) => {
+  t.mock.method(sessionStorage, "setItem", () => { throw new Error("Storage full"); });
+  let calls = 0;
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    if (url === "/api/exam-document") return json({ ok: true, text: text.slice(0, 4000) });
+    const body = JSON.parse(options.body);
+    if (++calls === 2) return json({ ok: false, error: "Quota", retryable: false }, 429);
+    return json({ ok: true, questions: Array.from({ length: body.numQuestions }, (_, i) => question(`Batch ${calls} item ${i}`)) });
+  });
+  await assert.rejects(generateAndStoreExamQuestions(exam, 16), /8 questions kept/);
+  assert.equal(hasPendingExamGeneration(exam, 16), true);
+  const questions = await generateAndStoreExamQuestions(exam, 16);
+  assert.equal(questions.length, 16);
+  assert.equal(calls, 3);
 });

@@ -97,6 +97,22 @@ function parseModelJson(text) {
   return [];
 }
 
+function serviceFailureDetails(data, status, retryAfterHeader) {
+  const details = Array.isArray(data?.error?.details) ? data.error.details : [];
+  const retryInfo = details.find((item) => String(item?.["@type"] || "").endsWith("RetryInfo"));
+  const retrySeconds = Number.parseFloat(retryInfo?.retryDelay || retryAfterHeader || "");
+  const quotaText = JSON.stringify(data?.error || {});
+  const quotaExhausted = status === 429 &&
+    /per.?day|daily|billing|insufficient.?quota|limit:\s*0\b/i.test(quotaText);
+  return {
+    retryable: !quotaExhausted && (status === 408 || status === 429 || status >= 500),
+    retryAfterSeconds: Number.isFinite(retrySeconds)
+      ? Math.max(1, Math.ceil(retrySeconds))
+      : status === 429 ? 30 : 5,
+    code: quotaExhausted ? "QUOTA_EXHAUSTED" : status === 429 ? "RATE_LIMITED" : "SERVICE_BUSY",
+  };
+}
+
 async function callGeminiOnce(apiKey, model, systemPrompt, userPrompt, signal) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const res = await fetch(url, {
@@ -126,6 +142,7 @@ async function callGeminiOnce(apiKey, model, systemPrompt, userPrompt, signal) {
       `Gemini error (${res.status})`;
     const err = new Error(msg);
     err.status = res.status;
+    Object.assign(err, serviceFailureDetails(data, res.status, res.headers.get("Retry-After")));
     throw err;
   }
   const text =
@@ -161,10 +178,19 @@ async function callGemini(apiKey, systemPrompt, userPrompt) {
     }
     if (signal.aborted || Number(lastErr?.status) === 429) break;
   }
-  const finalError = new Error(
-    "The AI service is temporarily busy or has reached its usage limit. Please try again in 1–2 minutes. If this keeps happening, check your Gemini API quota or use a different API key."
-  );
+  const quota = Number(lastErr?.status) === 429;
+  const exhausted = lastErr?.code === "QUOTA_EXHAUSTED";
+  const finalError = new Error(exhausted
+    ? "Gemini quota is exhausted. Check your API plan and quota, or use another configured API key."
+    : quota
+      ? "Gemini is rate limiting requests. Generation will pause before retrying."
+      : signal.aborted
+        ? "Gemini took too long to respond. Please resume generation to retry this section."
+        : "Gemini is temporarily busy. Generation will pause before retrying.");
   finalError.status = Number(lastErr?.status) === 429 ? 429 : 503;
+  finalError.retryable = !exhausted;
+  finalError.retryAfterSeconds = lastErr?.retryAfterSeconds || (quota ? 30 : 5);
+  finalError.code = signal.aborted ? "SERVICE_TIMEOUT" : lastErr?.code || "SERVICE_BUSY";
   throw finalError;
 }
 
@@ -274,11 +300,16 @@ export default async function handler(req, res) {
     const status = Number(e?.status);
     res.statusCode = [400, 401, 403, 429, 503].includes(status) ? status : 500;
     res.setHeader("Content-Type", "application/json");
-    if (res.statusCode === 503) res.setHeader("Retry-After", "60");
+    if ([429, 503].includes(res.statusCode)) {
+      res.setHeader("Retry-After", String(e?.retryAfterSeconds || 5));
+    }
     return res.end(
       JSON.stringify({
         ok: false,
         error: (e && e.message) || "Generation failed",
+        retryable: e?.retryable ?? res.statusCode >= 500,
+        retryAfterSeconds: e?.retryAfterSeconds,
+        code: e?.code,
       }),
     );
   }

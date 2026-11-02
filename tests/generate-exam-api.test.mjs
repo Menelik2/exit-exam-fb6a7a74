@@ -68,5 +68,35 @@ test("stops all fallback attempts when the shared deadline expires", async (t) =
   await handler(request, res);
   assert.equal(calls, 1);
   assert.equal(res.statusCode, 503);
-  assert.equal(res.headers["Retry-After"], "60");
+  assert.equal(res.headers["Retry-After"], "5");
+  assert.equal(res.body.code, "SERVICE_TIMEOUT");
+  assert.equal(res.body.retryable, true);
 });
+
+test("forwards Gemini cooldown metadata for temporary rate limits", async (t) => {
+  t.mock.method(globalThis, "fetch", async () => Response.json({
+    error: {
+      message: "Requests per minute exceeded",
+      details: [{ "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "12.5s" }],
+    },
+  }, { status: 429 }));
+  const res = response();
+  await handler(request, res);
+  assert.equal(res.statusCode, 429);
+  assert.equal(res.body.retryable, true);
+  assert.equal(res.body.retryAfterSeconds, 13);
+  assert.equal(res.headers["Retry-After"], "13");
+  assert.equal(res.body.code, "RATE_LIMITED");
+});
+
+for (const message of ["Quota exceeded: requests per day", "Quota exceeded, limit: 0"]) {
+  test(`does not automatically retry exhausted quota: ${message}`, async (t) => {
+    t.mock.method(globalThis, "fetch", async () => Response.json({ error: { message } }, { status: 429 }));
+    const res = response();
+    await handler(request, res);
+    assert.equal(res.statusCode, 429);
+    assert.equal(res.body.retryable, false);
+    assert.equal(res.body.code, "QUOTA_EXHAUSTED");
+    assert.match(res.body.error, /Check your API plan/);
+  });
+}
