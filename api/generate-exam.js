@@ -1,3 +1,5 @@
+import { applyIndependentReview, normalizeCandidates, reviewRequired, REVIEW_PROMPT } from "../server/answer-quality.js";
+
 /**
  * POST /api/generate-exam
  * Body:
@@ -47,41 +49,6 @@ function cleanJsonText(raw) {
   return s.trim();
 }
 
-function normalizeQuestions(raw, need) {
-  if (!Array.isArray(raw)) return [];
-  const out = [];
-  for (const item of raw) {
-    if (!item || typeof item !== "object") continue;
-    const question = String(item.question || item.stem || "").trim();
-    if (!question) continue;
-    let options = Array.isArray(item.options)
-      ? item.options.map((o) => String(o ?? "").trim()).filter(Boolean)
-      : [];
-    if (options.length < 2) continue;
-    options = options.slice(0, 6);
-    let correct = String(item.correct_answer || item.answer || "").trim();
-    if (!options.includes(correct)) {
-      const found = options.find((o) => o.toLowerCase() === correct.toLowerCase());
-      if (found) correct = found;
-      else if (/^[A-Da-d]$/.test(correct)) {
-        const idx = correct.toUpperCase().charCodeAt(0) - 65;
-        correct = options[idx] || options[0];
-      } else {
-        correct = options[0];
-      }
-    }
-    out.push({
-      question_number: out.length + 1,
-      question,
-      options,
-      correct_answer: correct,
-      explanation: item.explanation == null ? "" : String(item.explanation).slice(0, 2000),
-    });
-    if (out.length >= need) break;
-  }
-  return out;
-}
-
 function parseModelJson(text) {
   const cleaned = cleanJsonText(text);
   let parsed;
@@ -125,7 +92,7 @@ function serviceFailureDetails(data, status, retryAfterHeader) {
   };
 }
 
-async function callGeminiOnce(apiKey, model, systemPrompt, userPrompt, signal) {
+async function callGeminiOnce(apiKey, model, systemPrompt, userPrompt, signal, reviewing = false) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const res = await fetch(url, {
     method: "POST",
@@ -141,9 +108,11 @@ async function callGeminiOnce(apiKey, model, systemPrompt, userPrompt, signal) {
         // MCQs with options and explanations can be long; explicitly budget output tokens.
         maxOutputTokens: 8192,
         responseMimeType: "application/json",
+        ...((/^gemini-3\./.test(model) && reviewing)
+          ? { thinkingConfig: { thinkingLevel: "MEDIUM" } } : {}),
         // Flash 2.5 otherwise spends extra tokens/time thinking on every small batch.
         ...(/^gemini-2\.5-flash(?:-|$)/.test(model)
-          ? { thinkingConfig: { thinkingBudget: 0 } }
+          ? { thinkingConfig: { thinkingBudget: reviewing ? 1024 : 0 } }
           : {}),
       },
     }),
@@ -172,15 +141,18 @@ function isRetryableModelError(error) {
     /high demand|overload|overloaded|temporarily unavailable|resource_exhausted|unavailable|rate.?limit|too many requests|no longer available|not found|is not found|NOT_FOUND/i.test(msg);
 }
 
-async function callGemini(apiKey, systemPrompt, userPrompt) {
-  const signal = AbortSignal.timeout(GENERATION_TIMEOUT_MS);
+async function callGemini(apiKey, systemPrompt, userPrompt, signal, reviewing = false) {
+  signal ||= AbortSignal.timeout(GENERATION_TIMEOUT_MS);
+  const models = reviewing && process.env.GEMINI_REVIEW_MODEL
+    ? [...new Set([process.env.GEMINI_REVIEW_MODEL.trim(), ...GEMINI_MODELS])].filter(Boolean)
+    : GEMINI_MODELS;
   let lastErr;
   let quotaErr;
-  for (const model of GEMINI_MODELS) {
+  for (const model of models) {
     // Give a temporarily busy model one brief retry, then move to a fallback.
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        return await callGeminiOnce(apiKey, model, systemPrompt, userPrompt, signal);
+        return await callGeminiOnce(apiKey, model, systemPrompt, userPrompt, signal, reviewing);
       } catch (e) {
         lastErr = e;
         if (Number(e?.status) === 429) quotaErr = e;
@@ -218,7 +190,9 @@ const SYSTEM_PROMPT = `You are an expert exam writer and exam-document parser. P
 Rules:
 - Exactly 4 options per question unless the source truly has fewer (minimum 2).
 - correct_answer MUST be the full option text (not just "A" or "1").
-- explanations should be 1-3 sentences, educational.
+- Solve each item carefully: check all options, units/calculations, and NOT/EXCEPT wording.
+- Use clear educational explanations; never invent citations or present a guess as established.
+- Write exactly one defensible correct answer. Avoid questions requiring missing context or unknown current facts.
 - Avoid repeating or paraphrasing questions listed in the avoid list.
 - Output valid JSON matching the schema.
 
@@ -231,7 +205,7 @@ When the document already contains MCQs (e.g. "Question 12", options a/b/c/d fro
 const ANSWER_PROMPT = `Answer the supplied multiple-choice exam questions accurately.
 Return JSON only: { "questions": [{ "question_number": integer, "correct_option": integer, "explanation": string }] }.
 Use the original question_number. correct_option is a zero-based index into that question's options.
-Give one short sentence of explanation. Do not repeat stems or options. Answer every supplied question.`;
+Check all choices, calculations, units and negative wording before answering. Do not repeat stems/options. Give a clear educational explanation.`;
 
 function validateSourceQuestions(value) {
   const invalid = () => {
@@ -245,9 +219,12 @@ function validateSourceQuestions(value) {
     if (!q || !Number.isInteger(q.question_number) || q.question_number < 1 ||
         ids.has(q.question_number) || typeof q.question !== "string" || !q.question.trim() ||
         q.question.length > 10000 || !Array.isArray(q.options) || q.options.length < 2 ||
-        q.options.length > 6 || q.options.some((o) => typeof o !== "string" || !o.trim() || o.length > 5000)) invalid();
+        q.options.length > 6 || q.options.some((o) => typeof o !== "string" || !o.trim() || o.length > 5000) ||
+        new Set(q.options.map((o) => o.trim().toLowerCase())).size !== q.options.length) invalid();
     ids.add(q.question_number);
-    return { question_number: q.question_number, question: q.question, options: q.options };
+    if (q.correct_answer !== undefined && !q.options.includes(q.correct_answer)) invalid();
+    return { question_number: q.question_number, question: q.question, options: q.options,
+      ...(q.correct_answer !== undefined ? { correct_answer: q.correct_answer } : {}) };
   });
 }
 
@@ -335,7 +312,7 @@ export default async function handler(req, res) {
         documentName ? `Document: ${documentName}` : "",
         `Difficulty target: ${difficulty}`,
         avoid.length ? `Avoid similar questions:\n- ${avoid.join("\n- ")}` : "",
-        "Keep each explanation to one short sentence (or empty if not needed) to fit the response limit.",
+        "Solve carefully. Write an educational explanation of the key principle and why the selected answer follows.",
         "Return only valid JSON, with no markdown fences. Keep every question and all options complete.",
         "Return JSON: { \"questions\": [ { \"question\": string, \"options\": string[4], \"correct_answer\": string, \"explanation\": string } ] }",
         "DOCUMENT SECTION:",
@@ -355,20 +332,57 @@ export default async function handler(req, res) {
         .join("\n\n");
     }
 
-    const raw = await callGemini(apiKey, sourceQuestions ? ANSWER_PROMPT : SYSTEM_PROMPT, userPrompt);
-    const questions = sourceQuestions
-      ? mergeSourceAnswers(parseModelJson(raw), sourceQuestions)
-      : normalizeQuestions(parseModelJson(raw), need);
-    if (!questions.length) {
-      throw new Error("Model returned no valid questions");
+    // A single deadline includes drafting, independent checking and fallbacks.
+    const signal = AbortSignal.timeout(GENERATION_TIMEOUT_MS);
+    let questions;
+    if (sourceQuestions) {
+      const missing = sourceQuestions.filter((q) => q.correct_answer === undefined);
+      let answered = [];
+      if (missing.length) {
+        const raw = await callGemini(apiKey, ANSWER_PROMPT, JSON.stringify(missing), signal);
+        answered = mergeSourceAnswers(parseModelJson(raw), missing);
+      }
+      const byId = new Map(answered.map((q) => [q.question_number, q]));
+      questions = sourceQuestions.map((q) => byId.get(q.question_number) || q);
+    } else {
+      const raw = await callGemini(apiKey, SYSTEM_PROMPT, userPrompt, signal);
+      questions = normalizeCandidates(parseModelJson(raw), need);
     }
+
+    // The checking pass receives stems/options, never the draft answers or
+    // draft explanations. Disagreement blocks publication rather than guessing.
+    const groups = [];
+    for (let i = 0; i < questions.length; i += 8) groups.push(questions.slice(i, i + 8));
+    const checked = new Array(groups.length);
+    let next = 0;
+    let failure;
+    const checkWorker = async () => {
+      while (next < groups.length && !failure) {
+        const i = next++;
+        const group = groups[i];
+        try {
+          const input = {
+            questions: group.map(({ question_number, question, options }) => ({ question_number, question, options })),
+            ...(sourceQuestions || !documentText ? {} : { context: documentText }),
+          };
+          const raw = await callGemini(apiKey, REVIEW_PROMPT, JSON.stringify(input), signal, true);
+          let reviews;
+          try { reviews = parseModelJson(raw); }
+          catch { throw reviewRequired("The independent answer check was unreadable. No unchecked questions were saved."); }
+          checked[i] = applyIndependentReview(group, reviews);
+        } catch (error) { failure ||= error; }
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(3, groups.length) }, checkWorker));
+    if (failure) throw failure;
+    questions = checked.flat();
 
     res.statusCode = 200;
     res.setHeader("Content-Type", "application/json");
-    return res.end(JSON.stringify({ ok: true, questions }));
+    return res.end(JSON.stringify({ ok: true, questions, quality_check: "ai_cross_checked" }));
   } catch (e) {
     const status = Number(e?.status);
-    res.statusCode = [400, 401, 403, 429, 503].includes(status) ? status : 500;
+    res.statusCode = [400, 401, 403, 422, 429, 503].includes(status) ? status : 500;
     res.setHeader("Content-Type", "application/json");
     if ([429, 503].includes(res.statusCode)) {
       res.setHeader("Retry-After", String(e?.retryAfterSeconds || 5));

@@ -49,6 +49,7 @@ function normalizeQuestions(raw: unknown): StoredQuestion[] | undefined {
       options,
       correct_answer: correct,
       explanation: q.explanation == null ? "" : String(q.explanation),
+      ...(q.answer_check === "ai_cross_checked" ? { answer_check: "ai_cross_checked" as const } : {}),
     });
   }
   return out.length ? out : undefined;

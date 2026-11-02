@@ -199,7 +199,7 @@ export function AdminExamManagement({ catalog, saving, persist }: Props) {
         <div>
           <h1 className="font-display text-2xl font-semibold tracking-tight">Exam management</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Create and edit exams, attach PDF/DOCX, generate questions for users.
+            Create exams, attach PDF/DOCX, and generate questions with an AI answer cross-check.
           </p>
         </div>
         <Button type="button" disabled={saving || !depts.length} onClick={openCreate} className="shrink-0">
