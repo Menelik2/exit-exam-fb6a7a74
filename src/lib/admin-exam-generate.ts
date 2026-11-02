@@ -9,6 +9,18 @@ const PER_CHUNK_MIN = 6;
 const PER_CHUNK_MAX = 30;
 // Keep each AI response small enough to avoid JSON/output-token truncation.
 const AI_BATCH_SIZE = 8;
+// Parallelize independent sections without flooding the model/quota.
+const MAX_CONCURRENT_CHUNKS = 3;
+const GENERATION_TIMEOUT_MS = 60_000;
+
+class GenerationError extends Error {
+  readonly retryable: boolean;
+
+  constructor(message: string, retryable: boolean) {
+    super(message);
+    this.retryable = retryable;
+  }
+}
 
 function chunkText(text: string): string[] {
   const t = text.trim();
@@ -124,6 +136,7 @@ async function generateBatch(
   const genRes = await fetch("/api/generate-exam", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    signal: AbortSignal.timeout(GENERATION_TIMEOUT_MS),
     body: JSON.stringify({
       documentName: `${documentName} (${partLabel})`,
       documentText: chunkTextContent,
@@ -131,13 +144,20 @@ async function generateBatch(
       avoid,
     }),
   });
-  const genData = (await genRes.json()) as {
+  const genData = (await genRes.json().catch(() => ({}))) as {
     ok?: boolean;
     questions?: StoredQuestion[];
     error?: string;
   };
   if (!genRes.ok || genData.ok === false) {
-    throw new Error(genData.error || `Generation failed (${genRes.status})`);
+    // The API already retries busy models. Do not repeat that entire cycle,
+    // or retry invalid configuration / quota errors in the browser.
+    const retryable = genRes.status === 408 ||
+      (genRes.status >= 500 && genRes.status !== 503);
+    throw new GenerationError(
+      genData.error || `Generation failed (${genRes.status})`,
+      retryable,
+    );
   }
   return Array.isArray(genData.questions) ? genData.questions : [];
 }
@@ -171,42 +191,60 @@ export async function generateAndStoreExamQuestions(
   const wantAll = !numQuestions || numQuestions <= 0;
   const sourceQuestionCount = wantAll ? detectSourceQuestionCount(fullText) : 0;
   const estimatedCount = chunks.reduce((total, chunk) => total + questionsForChunk(chunk.length), 0);
-  let remaining = wantAll
+  const target = wantAll
     ? (sourceQuestionCount || estimatedCount)
-    : Math.min(MAX_REQUESTED_QUESTIONS, Math.max(5, numQuestions));
+    : Math.min(MAX_REQUESTED_QUESTIONS, Math.max(5, Math.round(numQuestions)));
 
-  const collected: StoredQuestion[] = [];
-  const seen = new Set<string>();
   const totalChunkChars = chunks.reduce((total, chunk) => total + chunk.length, 0);
+  let charsAllocated = 0;
+  let budgetAllocated = 0;
+  const budgets = chunks.map((chunk) => {
+    charsAllocated += chunk.length;
+    const cumulativeBudget = Math.round(target * charsAllocated / totalChunkChars);
+    const budget = cumulativeBudget - budgetAllocated;
+    budgetAllocated = cumulativeBudget;
+    return budget;
+  });
 
-  for (let i = 0; i < chunks.length && remaining > 0; i++) {
+  // Each worker owns a section and its avoid list. Keep results indexed by
+  // section so a faster response cannot reorder questions from the document.
+  const results: StoredQuestion[][] = chunks.map(() => []);
+  let nextChunk = 0;
+  let generatedCount = 0;
+  let failure: Error | undefined;
+
+  const generateChunk = async (i: number) => {
     const chunk = chunks[i];
+    const chunkBudget = budgets[i];
     const partLabel = chunks.length === 1 ? "full document" : `part ${i + 1}/${chunks.length}`;
-    const chunkBudget = wantAll
-      ? Math.min(remaining, Math.max(1, Math.round((sourceQuestionCount || estimatedCount) * chunk.length / totalChunkChars)))
-      : Math.min(remaining, questionsForChunk(chunk.length));
-
-    let chunkAdded = 0;
+    const collected = results[i];
+    const seen = new Set<string>();
     let stalledBatches = 0;
-    while (chunkAdded < chunkBudget && remaining > 0 && stalledBatches < 2) {
-      const requested = Math.min(AI_BATCH_SIZE, chunkBudget - chunkAdded, remaining);
-      const avoid = collected.map((q) => q.question).slice(-25);
+
+    while (collected.length < chunkBudget && stalledBatches < 2 && !failure) {
+      const requested = Math.min(AI_BATCH_SIZE, chunkBudget - collected.length);
+      // Include this section's questions first, including ones from earlier
+      // batches, to avoid paying for repeated questions as the section fills.
+      const avoid = [
+        ...collected.map((q) => q.question),
+        ...results.flatMap((qs, index) => index === i ? [] : qs.map((q) => q.question)).slice(-25),
+      ].slice(0, 80);
       onProgress?.({
         phase: "done",
         chunk: i + 1,
         totalChunks: chunks.length,
-        questionsSoFar: collected.length,
-        message: `Generating ${partLabel}: ${collected.length}/${sourceQuestionCount || estimatedCount} questions stored…`,
+        questionsSoFar: generatedCount,
+        message: `Generating ${partLabel}: ${generatedCount}/${target} questions ready…`,
       });
 
       let batch: StoredQuestion[] = [];
       let lastError: unknown;
-      for (let attempt = 1; attempt <= 3; attempt++) {
+      for (let attempt = 1; attempt <= 2 && !failure; attempt++) {
         try {
           batch = await generateBatch(
             exam.title,
             chunk,
-            attempt === 1 ? requested : Math.max(5, Math.floor(requested / 2)),
+            attempt === 1 ? requested : Math.max(1, Math.floor(requested / 2)),
             avoid,
             partLabel,
           );
@@ -214,25 +252,24 @@ export async function generateAndStoreExamQuestions(
           lastError = new Error(`No questions returned for ${partLabel}`);
         } catch (error) {
           lastError = error;
+          if (error instanceof GenerationError && !error.retryable) break;
+          if (error instanceof Error && /TimeoutError|AbortError/.test(error.name)) break;
         }
-        if (attempt < 3) {
+        if (attempt < 2) {
           onProgress?.({
             phase: "done",
             chunk: i + 1,
             totalChunks: chunks.length,
-            questionsSoFar: collected.length,
-            message: `${partLabel} failed; retrying (${attempt}/2)…`,
+            questionsSoFar: generatedCount,
+            message: `${partLabel} failed; retrying once…`,
           });
-          await new Promise((resolve) => setTimeout(resolve, 800 * attempt));
+          await new Promise((resolve) => setTimeout(resolve, 800));
         }
       }
+      if (failure) return;
       if (batch.length === 0) {
         const detail = lastError instanceof Error ? lastError.message : "";
-        if (collected.length === 0) {
-          throw new Error(`Could not generate questions for ${partLabel}. Nothing was saved; retry generation. ${detail}`.trim());
-        }
-        stalledBatches = 2;
-        break;
+        throw new Error(`Could not generate questions for ${partLabel}. Nothing was saved; retry generation. ${detail}`.trim());
       }
 
       let addedThisBatch = 0;
@@ -240,22 +277,45 @@ export async function generateAndStoreExamQuestions(
         const key = normKey(q.question || "");
         if (!key || seen.has(key)) continue;
         seen.add(key);
-        collected.push({
-          question_number: collected.length + 1,
-          question: q.question,
-          options: q.options,
-          correct_answer: q.correct_answer,
-          explanation: q.explanation,
-        });
+        collected.push(q);
         addedThisBatch += 1;
-        chunkAdded += 1;
-        remaining -= 1;
-        if (chunkAdded >= chunkBudget || remaining <= 0) break;
+        generatedCount += 1;
+        if (collected.length >= chunkBudget) break;
       }
       stalledBatches = addedThisBatch === 0 ? stalledBatches + 1 : 0;
+      onProgress?.({
+        phase: "done",
+        chunk: i + 1,
+        totalChunks: chunks.length,
+        questionsSoFar: generatedCount,
+        message: `Generated ${generatedCount}/${target} questions…`,
+      });
     }
-  }
+  };
 
+  const worker = async () => {
+    while (nextChunk < chunks.length && !failure) {
+      const i = nextChunk++;
+      if (budgets[i] === 0) continue;
+      try {
+        await generateChunk(i);
+      } catch (error) {
+        failure ??= error instanceof Error ? error : new Error(String(error));
+      }
+    }
+  };
+  // Drain active workers before rejecting so no old generation continues after
+  // the UI re-enables its button. A failed section must not overwrite a quiz.
+  await Promise.all(Array.from({ length: Math.min(MAX_CONCURRENT_CHUNKS, chunks.length) }, worker));
+  if (failure) throw failure;
+
+  const seen = new Set<string>();
+  const collected = results.flat().filter((q) => {
+    const key = normKey(q.question || "");
+    if (!key || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
   if (collected.length === 0) {
     throw new Error(
       "No questions generated. For scanned PDFs: keep the tab open during OCR, then try Gen all Qs again. Or import questions via JSON.",
