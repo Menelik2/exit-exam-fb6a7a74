@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 process.env.GEMINI_MODEL = "gemini-2.5-flash";
+process.env.GEMINI_FALLBACK_MODELS = "gemini-3.5-flash-lite";
 const { default: handler } = await import("../api/generate-exam.js");
 const request = { method: "POST", body: { apiKey: "test-key", documentText: "Source document", numQuestions: 1 } };
 const response = () => ({
@@ -153,4 +154,123 @@ test("rejects invalid source batches before contacting the AI provider", async (
     assert.equal(res.statusCode, 400);
   }
   assert.equal(calls, 0);
+});
+
+const quotaResponse = (quotaId, { quotaValue = "20", model = "gemini-2.5-flash" } = {}) => Response.json({
+  error: {
+    code: 429,
+    message: "You exceeded your current quota, please check your plan and billing details.",
+    details: [
+      { "@type": "type.googleapis.com/google.rpc.QuotaFailure", violations: [{
+        quotaId, quotaValue, quotaDimensions: { model, location: "global" },
+      }] },
+      { "@type": "type.googleapis.com/google.rpc.RetryInfo", retryDelay: "10s" },
+    ],
+  },
+}, { status: 429 });
+
+test("does not mistake Google's billing boilerplate for exhausted daily quota", async (t) => {
+  let calls = 0;
+  t.mock.method(globalThis, "fetch", async () => {
+    calls++;
+    return quotaResponse("GenerateRequestsPerMinutePerProjectPerModel-FreeTier");
+  });
+  const res = response();
+  await handler(request, res);
+  assert.equal(res.statusCode, 429);
+  assert.equal(res.body.code, "RATE_LIMITED");
+  assert.equal(res.body.retryable, true);
+  assert.equal(calls, 2, "each model is tried once without repeatedly retrying quota errors");
+});
+
+for (const [label, quotaValue] of [["daily limit", "20"], ["zero allowance", "0"]]) {
+  test(`uses a healthy fallback after a model-specific ${label}`, async (t) => {
+    const models = [];
+    t.mock.method(globalThis, "fetch", async (url) => {
+      assert.equal(new URL(url).searchParams.get("key"), "test-key");
+      const model = /models\/([^:]+):/.exec(url)[1];
+      models.push(model);
+      if (model === "gemini-2.5-flash") {
+        return quotaResponse("GenerateRequestsPerDayPerProjectPerModel-FreeTier", { quotaValue });
+      }
+      return modelResponse([{ question: "Fallback question", options: ["A", "B", "C", "D"], correct_answer: "C" }]);
+    });
+    const res = response();
+    await handler(request, res);
+    assert.equal(res.statusCode, 200);
+    assert.deepEqual(models, ["gemini-2.5-flash", "gemini-3.5-flash-lite"]);
+    assert.equal(res.body.questions[0].correct_answer, "C");
+  });
+}
+
+for (const quotaId of ["GenerateRequestsPerDayPerProject", "GenerateRequestsPerMinutePerProject"]) {
+  test(`does not rotate models for shared project limits: ${quotaId}`, async (t) => {
+    let calls = 0;
+    t.mock.method(globalThis, "fetch", async () => {
+      calls++;
+      return quotaResponse(quotaId);
+    });
+    const res = response();
+    await handler(request, res);
+    assert.equal(calls, 1);
+    assert.equal(res.statusCode, 429);
+    assert.equal(res.body.retryable, quotaId.includes("Minute"));
+  });
+}
+
+test("stops with actionable quota error if all allowed model quotas are exhausted", async (t) => {
+  let calls = 0;
+  t.mock.method(globalThis, "fetch", async () => {
+    calls++;
+    return quotaResponse("GenerateRequestsPerDayPerProjectPerModel-FreeTier");
+  });
+  const res = response();
+  await handler(request, res);
+  assert.equal(calls, 2);
+  assert.equal(res.statusCode, 429);
+  assert.equal(res.body.code, "QUOTA_EXHAUSTED");
+  assert.equal(res.body.retryable, false);
+});
+
+test("defaults to the currently supported Flash-Lite model with compatible settings", async (t) => {
+  const previousModel = process.env.GEMINI_MODEL;
+  delete process.env.GEMINI_MODEL;
+  const { default: defaultHandler } = await import("../api/generate-exam.js?default-model");
+  process.env.GEMINI_MODEL = previousModel;
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    assert.match(url, /models\/gemini-3\.5-flash-lite:/);
+    const config = JSON.parse(options.body).generationConfig;
+    assert.equal(config.temperature, undefined);
+    assert.equal(config.thinkingConfig, undefined);
+    assert.equal(config.responseMimeType, "application/json");
+    return modelResponse([{ question: "Current model", options: ["A", "B", "C", "D"], correct_answer: "A" }]);
+  });
+  const res = response();
+  await defaultHandler(request, res);
+  assert.equal(res.statusCode, 200);
+});
+
+test("billing boilerplate without quota details remains a temporary limit", async (t) => {
+  let calls = 0;
+  t.mock.method(globalThis, "fetch", async () => {
+    calls++;
+    return Response.json({ error: { message: "You exceeded your current quota, please check your plan and billing details." } }, { status: 429 });
+  });
+  const res = response();
+  await handler(request, res);
+  assert.equal(calls, 1, "unknown quota scope must not trigger model rotation");
+  assert.equal(res.body.code, "RATE_LIMITED");
+  assert.equal(res.body.retryable, true);
+});
+
+test("does not rotate models when quota dimensions cover every model", async (t) => {
+  let calls = 0;
+  t.mock.method(globalThis, "fetch", async () => {
+    calls++;
+    return quotaResponse("GenerateRequestsPerDayPerProjectPerModel", { model: "*" });
+  });
+  const res = response();
+  await handler(request, res);
+  assert.equal(calls, 1);
+  assert.equal(res.body.code, "QUOTA_EXHAUSTED");
 });
