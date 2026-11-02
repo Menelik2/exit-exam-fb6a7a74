@@ -21,6 +21,8 @@ const GEMINI_MODELS = [
   "gemini-2.0-flash",
 ].filter((v, i, a) => v && a.indexOf(v) === i);
 const HARD_MAX = 50;
+// One deadline covers all model attempts, including response-body reads.
+const GENERATION_TIMEOUT_MS = 50_000;
 
 function getEnvApiKey() {
   return (
@@ -95,11 +97,12 @@ function parseModelJson(text) {
   return [];
 }
 
-async function callGeminiOnce(apiKey, model, systemPrompt, userPrompt) {
+async function callGeminiOnce(apiKey, model, systemPrompt, userPrompt, signal) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    signal,
     body: JSON.stringify({
       system_instruction: { parts: [{ text: systemPrompt }] },
       contents: [{ role: "user", parts: [{ text: userPrompt }] }],
@@ -108,6 +111,10 @@ async function callGeminiOnce(apiKey, model, systemPrompt, userPrompt) {
         // MCQs with options and explanations can be long; explicitly budget output tokens.
         maxOutputTokens: 8192,
         responseMimeType: "application/json",
+        // Flash 2.5 otherwise spends extra tokens/time thinking on every small batch.
+        ...(/^gemini-2\.5-flash(?:-|$)/.test(model)
+          ? { thinkingConfig: { thinkingBudget: 0 } }
+          : {}),
       },
     }),
   });
@@ -135,19 +142,24 @@ function isRetryableModelError(error) {
 }
 
 async function callGemini(apiKey, systemPrompt, userPrompt) {
+  const signal = AbortSignal.timeout(GENERATION_TIMEOUT_MS);
   let lastErr;
   for (const model of GEMINI_MODELS) {
     // Give a temporarily busy model one brief retry, then move to a fallback.
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        return await callGeminiOnce(apiKey, model, systemPrompt, userPrompt);
+        return await callGeminiOnce(apiKey, model, systemPrompt, userPrompt, signal);
       } catch (e) {
         lastErr = e;
+        if (signal.aborted) break;
+        // Quota limits need time to recover; repeated model calls add latency.
+        if (Number(e?.status) === 429) break;
         if (!isRetryableModelError(e)) throw e;
         if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 700));
         else break;
       }
     }
+    if (signal.aborted || Number(lastErr?.status) === 429) break;
   }
   const finalError = new Error(
     "The AI service is temporarily busy or has reached its usage limit. Please try again in 1–2 minutes. If this keeps happening, check your Gemini API quota or use a different API key."
@@ -260,7 +272,7 @@ export default async function handler(req, res) {
     return res.end(JSON.stringify({ ok: true, questions }));
   } catch (e) {
     const status = Number(e?.status);
-    res.statusCode = status === 429 ? 429 : status === 503 ? 503 : 500;
+    res.statusCode = [400, 401, 403, 429, 503].includes(status) ? status : 500;
     res.setHeader("Content-Type", "application/json");
     if (res.statusCode === 503) res.setHeader("Retry-After", "60");
     return res.end(
@@ -271,3 +283,4 @@ export default async function handler(req, res) {
     );
   }
 }
+
