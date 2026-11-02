@@ -1,6 +1,7 @@
 import { extractDocumentText, type ExtractProgress } from "@/lib/extract-document";
 import type { ExamEntry, StoredQuestion } from "@/components/admin-types";
 import { parseSourceMcqs, type SourceMcq } from "./source-mcqs.ts";
+import { readKey } from "./gemini-key.ts";
 
 const CHUNK_SIZE = 5000;
 const CHUNK_OVERLAP = 500;
@@ -204,6 +205,7 @@ async function generateBatch(
       numQuestions,
       avoid: sourceQuestions ? undefined : avoid,
       sourceQuestions,
+      apiKey: readKey() || undefined,
     }),
   });
   const genData = (await genRes.json().catch(() => ({}))) as {

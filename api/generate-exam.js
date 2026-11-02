@@ -16,9 +16,9 @@
 // Prefer the configured model, then try known fallback models when Google is
 // temporarily overloaded or a model is unavailable.
 const GEMINI_MODELS = [
-  process.env.GEMINI_MODEL || "gemini-2.5-flash",
-  "gemini-2.5-flash",
-  "gemini-2.0-flash",
+  process.env.GEMINI_MODEL || "gemini-3.5-flash-lite",
+  "gemini-3.5-flash-lite",
+  ...(process.env.GEMINI_FALLBACK_MODELS || "gemini-3.1-flash-lite").split(",").map((v) => v.trim()),
 ].filter((v, i, a) => v && a.indexOf(v) === i);
 const HARD_MAX = 50;
 // One deadline covers all model attempts, including response-body reads.
@@ -101,15 +101,27 @@ function serviceFailureDetails(data, status, retryAfterHeader) {
   const details = Array.isArray(data?.error?.details) ? data.error.details : [];
   const retryInfo = details.find((item) => String(item?.["@type"] || "").endsWith("RetryInfo"));
   const retrySeconds = Number.parseFloat(retryInfo?.retryDelay || retryAfterHeader || "");
-  const quotaText = JSON.stringify(data?.error || {});
+  const quotaFailures = details.filter((item) => String(item?.["@type"] || "").endsWith("QuotaFailure"));
+  const violations = quotaFailures.flatMap((item) => Array.isArray(item.violations) ? item.violations : []);
+  // Google's generic 429 message mentions billing even for per-minute limits.
+  // Use violated quota IDs/values; never infer exhaustion from that boilerplate.
+  const quotaText = violations.length
+    ? violations.map((v) => `${v.quotaId || ""} ${v.quotaMetric || ""}`).join(" ")
+    : String(data?.error?.message || "");
+  const zeroQuota = violations.some((v) => v.quotaValue != null && Number(v.quotaValue) === 0);
   const quotaExhausted = status === 429 &&
-    /per.?day|daily|billing|insufficient.?quota|limit:\s*0\b/i.test(quotaText);
+    (zeroQuota || /per.?day|daily|insufficient.?quota|limit:\s*0\b/i.test(quotaText));
+  const modelScopedQuota = status === 429 && violations.length > 0 &&
+    violations.every((v) => v.quotaDimensions?.model !== "*" && (v.quotaId
+      ? /per.?model/i.test(String(v.quotaId))
+      : typeof v.quotaDimensions?.model === "string" && !!v.quotaDimensions.model));
   return {
     retryable: !quotaExhausted && (status === 408 || status === 429 || status >= 500),
     retryAfterSeconds: Number.isFinite(retrySeconds)
       ? Math.max(1, Math.ceil(retrySeconds))
       : status === 429 ? 30 : 5,
     code: quotaExhausted ? "QUOTA_EXHAUSTED" : status === 429 ? "RATE_LIMITED" : "SERVICE_BUSY",
+    modelScopedQuota,
   };
 }
 
@@ -123,7 +135,9 @@ async function callGeminiOnce(apiKey, model, systemPrompt, userPrompt, signal) {
       system_instruction: { parts: [{ text: systemPrompt }] },
       contents: [{ role: "user", parts: [{ text: userPrompt }] }],
       generationConfig: {
-        temperature: 0.2,
+        // Newer Gemini models reject legacy sampling/thinking-budget settings.
+        // Flash-Lite 3.5 defaults to minimal thinking for low-latency extraction.
+        ...(/^gemini-2\./.test(model) ? { temperature: 0.2 } : {}),
         // MCQs with options and explanations can be long; explicitly budget output tokens.
         maxOutputTokens: 8192,
         responseMimeType: "application/json",
@@ -161,6 +175,7 @@ function isRetryableModelError(error) {
 async function callGemini(apiKey, systemPrompt, userPrompt) {
   const signal = AbortSignal.timeout(GENERATION_TIMEOUT_MS);
   let lastErr;
+  let quotaErr;
   for (const model of GEMINI_MODELS) {
     // Give a temporarily busy model one brief retry, then move to a fallback.
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -168,6 +183,7 @@ async function callGemini(apiKey, systemPrompt, userPrompt) {
         return await callGeminiOnce(apiKey, model, systemPrompt, userPrompt, signal);
       } catch (e) {
         lastErr = e;
+        if (Number(e?.status) === 429) quotaErr = e;
         if (signal.aborted) break;
         // Quota limits need time to recover; repeated model calls add latency.
         if (Number(e?.status) === 429) break;
@@ -176,12 +192,16 @@ async function callGemini(apiKey, systemPrompt, userPrompt) {
         else break;
       }
     }
-    if (signal.aborted || Number(lastErr?.status) === 429) break;
+    // Model-specific quota pools can differ. Try each permitted fallback once,
+    // but never rotate models for an unscoped/project-wide quota rejection.
+    if (signal.aborted || (Number(lastErr?.status) === 429 && !lastErr.modelScopedQuota)) break;
   }
+  // A retired/unavailable fallback must not hide the original quota failure.
+  if (quotaErr && Number(lastErr?.status) === 404) lastErr = quotaErr;
   const quota = Number(lastErr?.status) === 429;
   const exhausted = lastErr?.code === "QUOTA_EXHAUSTED";
   const finalError = new Error(exhausted
-    ? "Gemini quota is exhausted. Check your API plan and quota, or use another configured API key."
+    ? "Gemini quota is exhausted for the available models. Check your API plan and quota in Google AI Studio. In Admin Settings, use a key from a project with available quota, or wait for the quota reset."
     : quota
       ? "Gemini is rate limiting requests. Generation will pause before retrying."
       : signal.aborted

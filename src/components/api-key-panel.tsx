@@ -3,19 +3,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { KeyRound, CheckCircle2, ExternalLink, Loader2 } from "lucide-react";
+import { GEMINI_LS_KEY, PROVIDER_LS_KEY, readKey } from "@/lib/gemini-key";
+export { GEMINI_LS_KEY, PROVIDER_LS_KEY, readKey } from "@/lib/gemini-key";
 
 export type AiProvider = "gemini";
-
-export const GEMINI_LS_KEY = "exam-gen-gemini-key-v1";
-export const PROVIDER_LS_KEY = "exam-gen-provider-v1";
-
-export function readKey(): string {
-  try {
-    return localStorage.getItem(GEMINI_LS_KEY) ?? "";
-  } catch {
-    return "";
-  }
-}
 
 async function validateKey(key: string) {
   const res = await fetch(
@@ -102,7 +93,7 @@ export function ApiKeyPanel({
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-sm">
             <CheckCircle2 className="h-4 w-4 text-primary" />
-            <span className="font-semibold text-foreground">Gemini connected</span>
+            <span className="font-semibold text-foreground">API key saved</span>
             <span className="ml-auto rounded-md bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
               ••••{saved.slice(-4)}
             </span>
@@ -154,7 +145,7 @@ export function ApiKeyPanel({
             rel="noreferrer"
             className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline"
           >
-            Get a free key from Google AI Studio <ExternalLink className="h-3 w-3" />
+            Manage keys in Google AI Studio <ExternalLink className="h-3 w-3" />
           </a>
           {err && <p className="text-xs text-destructive">{err}</p>}
           <div className="flex gap-2 pt-1">

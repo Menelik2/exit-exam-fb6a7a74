@@ -364,3 +364,28 @@ test("resumes compact answering without repeating completed sections or marked a
   assert.equal(questions[24].correct_answer, "Second choice 25");
   assert.equal(questions[25].correct_answer, "First choice 26");
 });
+
+for (const structured of [false, true]) {
+  test(`admin ${structured ? "compact answering" : "generation"} uses the saved browser key without checkpointing it`, async (t) => {
+    const originalStorage = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+    Object.defineProperty(globalThis, "localStorage", { configurable: true, value: {
+      getItem: (key) => key === "exam-gen-gemini-key-v1" ? "  example-browser-key  " : null,
+    } });
+    t.after(() => {
+      if (originalStorage) Object.defineProperty(globalThis, "localStorage", originalStorage);
+      else delete globalThis.localStorage;
+    });
+    t.mock.method(globalThis, "fetch", async (url, options) => {
+      if (url === "/api/exam-document") return json({ ok: true, text: structured ? sourcePaper(5) : text.slice(0, 4000) });
+      const body = JSON.parse(options.body);
+      assert.equal(body.apiKey, "example-browser-key");
+      const questions = body.sourceQuestions
+        ? body.sourceQuestions.map((q) => ({ ...q, correct_answer: q.options[0] }))
+        : Array.from({ length: body.numQuestions }, (_, i) => question("Stem " + i));
+      return json({ ok: true, questions });
+    });
+    const questions = await generateAndStoreExamQuestions(exam, 5);
+    assert.equal(questions.length, 5);
+    assert.ok([...storage.values()].every((value) => !value.includes("example-browser-key")));
+  });
+}

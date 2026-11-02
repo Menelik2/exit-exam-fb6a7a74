@@ -11,6 +11,7 @@ import { uniqueDeptId } from "@/components/admin-catalog";
 import { AdminCatalogActions } from "@/components/AdminCatalogActions";
 import { apiAdminLogin, apiGetCatalog, apiSaveCatalog } from "@/lib/admin-api";
 import { AdminExamManagement } from "@/components/AdminExamManagement";
+import { ApiKeyPanel } from "@/components/api-key-panel";
 
 const EMPTY: Catalog = { departments: [], updatedAt: new Date(0).toISOString() };
 const TOKEN_KEY = "exit-exam-admin-token-v2";
@@ -263,8 +264,16 @@ export function AdminDashboard() {
             <div className="space-y-6">
               <div>
                 <h1 className="font-display text-2xl font-semibold tracking-tight">Settings</h1>
-                <p className="mt-1 text-sm text-muted-foreground">App links and catalog backup / import.</p>
+                <p className="mt-1 text-sm text-muted-foreground">AI setup, app links and catalog backup / import.</p>
               </div>
+              <ApiKeyPanel />
+              <p className="text-xs text-muted-foreground">
+                Your saved key applies to admin exam generation and the Generate page.
+                Google quota is shared by keys in the same project. Use a project with
+                available quota, or check usage and billing in{" "}
+                <a href="https://aistudio.google.com/usage" target="_blank" rel="noreferrer"
+                  className="text-primary underline">Google AI Studio</a>.
+              </p>
               <div className="space-y-3 rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
                 <p className="text-sm font-semibold">App links</p>
                 <div className="space-y-2">
