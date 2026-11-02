@@ -16,7 +16,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Catalog, Department, ExamEntry } from "@/components/admin-types";
-import { generateAndStoreExamQuestions } from "@/lib/admin-exam-generate";
+import {
+  discardExamGenerationProgress,
+  generateAndStoreExamQuestions,
+  hasPendingExamGeneration,
+} from "@/lib/admin-exam-generate";
 import type { StoredQuestion } from "@/components/admin-types";
 
 type Props = {
@@ -34,6 +38,7 @@ export function AdminExamManagement({ catalog, saving, persist }: Props) {
   const [filterDept, setFilterDept] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [genId, setGenId] = useState<string | null>(null);
+  const [, refreshProgress] = useState(0);
   const [editing, setEditing] = useState<{ deptId: string; exam: ExamEntry; isNew: boolean } | null>(
     null,
   );
@@ -155,7 +160,9 @@ export function AdminExamManagement({ catalog, saving, persist }: Props) {
       return;
     }
     setGenId(exam.id);
-    const toastId = toast.loading("Starting… keep this tab open for scanned PDFs");
+    const toastId = toast.loading(hasPendingExamGeneration(exam)
+      ? "Reading document to resume saved progress…"
+      : "Starting… keep this tab open for scanned PDFs");
     try {
       const questions = await generateAndStoreExamQuestions(exam, 0, (p) => {
         toast.loading(p.message || "Working…", { id: toastId });
@@ -170,6 +177,7 @@ export function AdminExamManagement({ catalog, saving, persist }: Props) {
         ),
       });
       if (ok) {
+        discardExamGenerationProgress(exam);
         toast.success(`Stored ${questions.length} questions`, { id: toastId });
         if (editing?.exam.id === exam.id) {
           setEditing({ ...editing, exam: nextExam });
@@ -238,6 +246,7 @@ export function AdminExamManagement({ catalog, saving, persist }: Props) {
             <ul className="space-y-2">
               {rows.map(({ dept, exam }) => {
                 const qn = exam.questions?.length || 0;
+                const resumable = hasPendingExamGeneration(exam);
                 return (
                   <li
                     key={exam.id}
@@ -284,10 +293,20 @@ export function AdminExamManagement({ catalog, saving, persist }: Props) {
                           ) : (
                             <>
                               <Sparkles className="mr-1 h-3.5 w-3.5" />
-                              {qn ? "Re-gen all" : "Gen all Qs"}
+                              {resumable ? "Resume generation" : qn ? "Re-gen all" : "Gen all Qs"}
                             </>
                           )}
                         </Button>
+                        {resumable && (
+                          <Button size="sm" variant="outline" disabled={!!genId || saving}
+                            onClick={() => {
+                              if (!confirm("Discard unfinished generation progress? Stored exam questions will be kept.")) return;
+                              discardExamGenerationProgress(exam);
+                              refreshProgress((value) => value + 1);
+                            }}>
+                            Start over
+                          </Button>
+                        )}
                         <Button size="sm" variant="outline" onClick={() => openEdit(dept.id, exam)}>
                           <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
                         </Button>
@@ -457,7 +476,8 @@ export function AdminExamManagement({ catalog, saving, persist }: Props) {
                         </>
                       ) : (
                         <>
-                          <Sparkles className="mr-1 h-3.5 w-3.5" /> Gen all Qs
+                          <Sparkles className="mr-1 h-3.5 w-3.5" />
+                          {hasPendingExamGeneration(editing.exam) ? "Resume generation" : "Gen all Qs"}
                         </>
                       )}
                     </Button>

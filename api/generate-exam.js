@@ -97,6 +97,22 @@ function parseModelJson(text) {
   return [];
 }
 
+function serviceFailureDetails(data, status, retryAfterHeader) {
+  const details = Array.isArray(data?.error?.details) ? data.error.details : [];
+  const retryInfo = details.find((item) => String(item?.["@type"] || "").endsWith("RetryInfo"));
+  const retrySeconds = Number.parseFloat(retryInfo?.retryDelay || retryAfterHeader || "");
+  const quotaText = JSON.stringify(data?.error || {});
+  const quotaExhausted = status === 429 &&
+    /per.?day|daily|billing|insufficient.?quota|limit:\s*0\b/i.test(quotaText);
+  return {
+    retryable: !quotaExhausted && (status === 408 || status === 429 || status >= 500),
+    retryAfterSeconds: Number.isFinite(retrySeconds)
+      ? Math.max(1, Math.ceil(retrySeconds))
+      : status === 429 ? 30 : 5,
+    code: quotaExhausted ? "QUOTA_EXHAUSTED" : status === 429 ? "RATE_LIMITED" : "SERVICE_BUSY",
+  };
+}
+
 async function callGeminiOnce(apiKey, model, systemPrompt, userPrompt, signal) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
   const res = await fetch(url, {
@@ -126,6 +142,7 @@ async function callGeminiOnce(apiKey, model, systemPrompt, userPrompt, signal) {
       `Gemini error (${res.status})`;
     const err = new Error(msg);
     err.status = res.status;
+    Object.assign(err, serviceFailureDetails(data, res.status, res.headers.get("Retry-After")));
     throw err;
   }
   const text =
@@ -161,10 +178,19 @@ async function callGemini(apiKey, systemPrompt, userPrompt) {
     }
     if (signal.aborted || Number(lastErr?.status) === 429) break;
   }
-  const finalError = new Error(
-    "The AI service is temporarily busy or has reached its usage limit. Please try again in 1–2 minutes. If this keeps happening, check your Gemini API quota or use a different API key."
-  );
+  const quota = Number(lastErr?.status) === 429;
+  const exhausted = lastErr?.code === "QUOTA_EXHAUSTED";
+  const finalError = new Error(exhausted
+    ? "Gemini quota is exhausted. Check your API plan and quota, or use another configured API key."
+    : quota
+      ? "Gemini is rate limiting requests. Generation will pause before retrying."
+      : signal.aborted
+        ? "Gemini took too long to respond. Please resume generation to retry this section."
+        : "Gemini is temporarily busy. Generation will pause before retrying.");
   finalError.status = Number(lastErr?.status) === 429 ? 429 : 503;
+  finalError.retryable = !exhausted;
+  finalError.retryAfterSeconds = lastErr?.retryAfterSeconds || (quota ? 30 : 5);
+  finalError.code = signal.aborted ? "SERVICE_TIMEOUT" : lastErr?.code || "SERVICE_BUSY";
   throw finalError;
 }
 
@@ -181,6 +207,50 @@ When the document already contains MCQs (e.g. "Question 12", options a/b/c/d fro
 - Do NOT invent new topics when the document is already an exam paper.
 - If a correct answer is marked in the text, use it. If not marked, pick the most accurate option as correct_answer and briefly justify in explanation.
 - Prefer extracting every distinct question in the provided section over inventing fillers.`;
+
+const ANSWER_PROMPT = `Answer the supplied multiple-choice exam questions accurately.
+Return JSON only: { "questions": [{ "question_number": integer, "correct_option": integer, "explanation": string }] }.
+Use the original question_number. correct_option is a zero-based index into that question's options.
+Give one short sentence of explanation. Do not repeat stems or options. Answer every supplied question.`;
+
+function validateSourceQuestions(value) {
+  const invalid = () => {
+    const error = new Error("Supply 1–24 source questions with unique integer IDs, complete stems and 2–6 options.");
+    error.status = 400;
+    throw error;
+  };
+  if (!Array.isArray(value) || value.length < 1 || value.length > 24) invalid();
+  const ids = new Set();
+  return value.map((q) => {
+    if (!q || !Number.isInteger(q.question_number) || q.question_number < 1 ||
+        ids.has(q.question_number) || typeof q.question !== "string" || !q.question.trim() ||
+        q.question.length > 10000 || !Array.isArray(q.options) || q.options.length < 2 ||
+        q.options.length > 6 || q.options.some((o) => typeof o !== "string" || !o.trim() || o.length > 5000)) invalid();
+    ids.add(q.question_number);
+    return { question_number: q.question_number, question: q.question, options: q.options };
+  });
+}
+
+function mergeSourceAnswers(raw, source) {
+  const answers = new Map();
+  for (const answer of raw) {
+    if (answers.has(answer?.question_number)) throw new Error("Model returned duplicate answer IDs");
+    answers.set(answer?.question_number, answer);
+  }
+  if (answers.size !== source.length) throw new Error("Model did not answer every source question");
+  return source.map((q) => {
+    const answer = answers.get(q.question_number);
+    const index = answer?.correct_option;
+    if (!Number.isInteger(index) || index < 0 || index >= q.options.length) {
+      throw new Error("Model returned an invalid source answer");
+    }
+    return {
+      ...q,
+      correct_answer: q.options[index],
+      explanation: typeof answer.explanation === "string" ? answer.explanation.slice(0, 2000) : "",
+    };
+  });
+}
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -227,15 +297,19 @@ export default async function handler(req, res) {
       ? body.avoid.map((x) => String(x || "").trim()).filter(Boolean).slice(0, 80)
       : [];
     const need = clampNum(body.numQuestions, 1, HARD_MAX, 10);
+    const sourceQuestions = body.sourceQuestions === undefined
+      ? null : validateSourceQuestions(body.sourceQuestions);
 
-    if (!documentText && !topic) {
+    if (!documentText && !topic && !sourceQuestions) {
       res.statusCode = 400;
       res.setHeader("Content-Type", "application/json");
       return res.end(JSON.stringify({ ok: false, error: "Enter a topic or upload a document first." }));
     }
 
     let userPrompt;
-    if (documentText) {
+    if (sourceQuestions) {
+      userPrompt = JSON.stringify(sourceQuestions);
+    } else if (documentText) {
       userPrompt = [
         `Task: From this document section, produce EXACTLY ${need} MCQs. If the section already has exam questions with options, EXTRACT them (stems + a/b/c/d). Only invent new items when the section is prose without MCQs. Use the document only.`,
         documentName ? `Document: ${documentName}` : "",
@@ -261,8 +335,10 @@ export default async function handler(req, res) {
         .join("\n\n");
     }
 
-    const raw = await callGemini(apiKey, SYSTEM_PROMPT, userPrompt);
-    const questions = normalizeQuestions(parseModelJson(raw), need);
+    const raw = await callGemini(apiKey, sourceQuestions ? ANSWER_PROMPT : SYSTEM_PROMPT, userPrompt);
+    const questions = sourceQuestions
+      ? mergeSourceAnswers(parseModelJson(raw), sourceQuestions)
+      : normalizeQuestions(parseModelJson(raw), need);
     if (!questions.length) {
       throw new Error("Model returned no valid questions");
     }
@@ -274,11 +350,16 @@ export default async function handler(req, res) {
     const status = Number(e?.status);
     res.statusCode = [400, 401, 403, 429, 503].includes(status) ? status : 500;
     res.setHeader("Content-Type", "application/json");
-    if (res.statusCode === 503) res.setHeader("Retry-After", "60");
+    if ([429, 503].includes(res.statusCode)) {
+      res.setHeader("Retry-After", String(e?.retryAfterSeconds || 5));
+    }
     return res.end(
       JSON.stringify({
         ok: false,
         error: (e && e.message) || "Generation failed",
+        retryable: e?.retryable ?? res.statusCode >= 500,
+        retryAfterSeconds: e?.retryAfterSeconds,
+        code: e?.code,
       }),
     );
   }
