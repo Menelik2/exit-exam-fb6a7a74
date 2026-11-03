@@ -2,7 +2,7 @@
   "appUrl": "https://exit.sites.bd",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-11-03T15:42:45.684Z",
+  "updatedAt": "2026-11-03T15:49:07.903Z",
   "departments": [
     {
       "id": "computer-science",
@@ -6489,8 +6489,378 @@
     {
       "id": "food-engineering",
       "name": "Food Engineering",
-      "emoji": "📘",
-      "exams": []
+      "emoji": "🥦",
+      "exams": [
+        {
+          "id": "food-engineering-2016",
+          "title": "Food processing Engineering 2016",
+          "year": 2016,
+          "pdfUrl": null,
+          "telegramFileId": null,
+          "questions": [
+            {
+              "question_number": 1,
+              "question": "Which of the following statements is TRUE about carbonation in beverage processing?",
+              "options": [
+                "It adds bubbles and fizziness to the beverage.",
+                "It decreases the shelf life of the beverage.",
+                "It increases the alcohol content of the beverage.",
+                "It removes impurities from the beverage."
+              ],
+              "correct_answer": "It adds bubbles and fizziness to the beverage.",
+              "explanation": "Carbonation dissolves carbon dioxide in beverages under pressure. Released CO2 forms bubbles and produces fizziness."
+            },
+            {
+              "question_number": 2,
+              "question": "What is the fundamental principle of Atomic Absorption Spectroscopy (AAS)?",
+              "options": [
+                "Color is simply observed",
+                "Color is measured",
+                "Radiation is absorbed by ground-state atoms in the vapor phase, exciting them to higher energy states",
+                "Medium absorbs radiation and transmitted radiation is measured"
+              ],
+              "correct_answer": "Radiation is absorbed by ground-state atoms in the vapor phase, exciting them to higher energy states",
+              "explanation": "AAS measures absorption of element-specific radiation by free ground-state atoms in the gas phase; absorbance relates to elemental concentration."
+            },
+            {
+              "question_number": 3,
+              "question": "Identify the true statement about cereals and pulses.",
+              "options": [
+                "Cereals are major staple foods worldwide compared with pulses.",
+                "Most bakery products are produced from pulses rather than cereals.",
+                "Cereals are generally richer in fat than pulses.",
+                "Pulses are generally richer in carbohydrates than cereals."
+              ],
+              "correct_answer": "Cereals are major staple foods worldwide compared with pulses.",
+              "explanation": "Cereals such as rice, wheat and maize are global staple foods and major carbohydrate sources; pulses are generally richer in protein."
+            },
+            {
+              "question_number": 4,
+              "question": "Which statement about oxidative rancidity is generally true?",
+              "options": [
+                "Plant fats do not undergo oxidative rancidity.",
+                "Oxidative rancidity occurs more frequently in animal fats than vegetable fats under comparable conditions.",
+                "Highly unsaturated vegetable oils are generally more susceptible to oxidative rancidity than more saturated animal fats.",
+                "Oxidative rancidity can be effectively prevented by dehydrogenation of fatty acids."
+              ],
+              "correct_answer": "Highly unsaturated vegetable oils are generally more susceptible to oxidative rancidity than more saturated animal fats.",
+              "explanation": "Oxidation is favored by unsaturated fatty acids, especially polyunsaturated ones; actual susceptibility depends on composition and storage conditions."
+            },
+            {
+              "question_number": 5,
+              "question": "Which method involves directly adding vitamins or minerals to food during processing?",
+              "options": [
+                "Biofortification",
+                "Direct fortification",
+                "Universal fortification",
+                "Indirect fortification"
+              ],
+              "correct_answer": "Direct fortification",
+              "explanation": "Direct fortification deliberately adds nutrients during food processing; biofortification raises nutrient content during crop growth or breeding."
+            },
+            {
+              "question_number": 6,
+              "question": "What is the primary food-safety purpose of chilling poultry carcasses after processing?",
+              "options": [
+                "Tenderize the meat",
+                "Improve color retention",
+                "Reduce microbial growth",
+                "Enhance flavor"
+              ],
+              "correct_answer": "Reduce microbial growth",
+              "explanation": "Rapid chilling slows microbial growth but does not reliably eliminate microorganisms."
+            },
+            {
+              "question_number": 7,
+              "question": "Which of the following methods is NOT primarily used to determine fat content in foods?",
+              "options": [
+                "Mojonnier method",
+                "Soxhlet method",
+                "Kjeldahl method",
+                "Goldfisch method"
+              ],
+              "correct_answer": "Kjeldahl method",
+              "explanation": "Kjeldahl measures nitrogen for estimating crude protein, whereas the other methods determine fat."
+            },
+            {
+              "question_number": 8,
+              "question": "Which parameter measures the degree of unsaturation of fats and oils?",
+              "options": [
+                "Reichert-Meissl number",
+                "Polenske number",
+                "Iodine number",
+                "Saponification number"
+              ],
+              "correct_answer": "Iodine number",
+              "explanation": "Iodine value indicates unsaturation and is expressed as grams of iodine absorbed per 100 grams of fat or oil."
+            },
+            {
+              "question_number": 9,
+              "question": "In a HACCP system, when must corrective action be taken?",
+              "options": [
+                "When sales figures are lower than expected",
+                "When monitoring indicates a deviation from an established critical limit",
+                "After every visit by an enforcement officer",
+                "Only after auditors have reviewed the documents"
+              ],
+              "correct_answer": "When monitoring indicates a deviation from an established critical limit",
+              "explanation": "Corrective action follows a deviation from a critical limit at a critical control point and includes addressing affected product."
+            },
+            {
+              "question_number": 10,
+              "question": "Which of the following dairy products can be manufactured using skim milk as a principal dairy ingredient?",
+              "options": [
+                "Full-fat cheese",
+                "Low-fat ice cream.",
+                "Heavy cream",
+                "Whole milk yogurt"
+              ],
+              "correct_answer": "Low-fat ice cream.",
+              "explanation": "Skim milk has little milk fat and is suitable for low-fat frozen dairy products."
+            },
+            {
+              "question_number": 11,
+              "question": "What relative humidity is commonly recommended for long-term refrigerated storage of properly cured potatoes?",
+              "options": [
+                "95- 98%",
+                "60- 70%",
+                "98- 100%",
+                "25- 50%"
+              ],
+              "correct_answer": "95- 98%",
+              "explanation": "Approximately 95–98% relative humidity is recommended in some postharvest guidance for stored potatoes; other root and tuber crops vary."
+            },
+            {
+              "question_number": 12,
+              "question": "Which of the following is NOT a primary function of conventional food packaging?",
+              "options": [
+                "Communication",
+                "Protection",
+                "Containment",
+                "To increase nutritional value"
+              ],
+              "correct_answer": "To increase nutritional value",
+              "explanation": "Packaging provides containment, protection, communication and convenience; it does not ordinarily increase nutritional value."
+            },
+            {
+              "question_number": 13,
+              "question": "Which of the following is NOT generally recognized as a principal transformation during conventional bread baking?",
+              "options": [
+                "Killing of yeast and other heat-sensitive microorganisms",
+                "Formation and expansion of gases",
+                "Gelatinization of starch",
+                "Liquefaction of the entire dough into a liquid"
+              ],
+              "correct_answer": "Liquefaction of the entire dough into a liquid",
+              "explanation": "Bread baking involves gas expansion, starch gelatinization and protein denaturation; the dough does not completely liquefy."
+            },
+            {
+              "question_number": 14,
+              "question": "Which of the following is NOT generally considered a primary purpose or benefit of consuming beverages?",
+              "options": [
+                "Saving money",
+                "Providing refreshment",
+                "Supporting digestion in certain circumstances",
+                "Facilitating social interaction"
+              ],
+              "correct_answer": "Saving money",
+              "explanation": "Hydration and refreshment are common purposes; saving money is not an inherent physiological benefit."
+            },
+            {
+              "question_number": 15,
+              "question": "A food-processing company requires a simple, low-cost and reversible method of enzyme immobilization. Which technique is most appropriate?",
+              "options": [
+                "Covalent linkage",
+                "Microencapsulation",
+                "Entrapment",
+                "Adsorption"
+              ],
+              "correct_answer": "Adsorption",
+              "explanation": "Adsorption is often inexpensive and reversible but may allow enzyme leaching. Immobilization is distinct from inactivation."
+            },
+            {
+              "question_number": 16,
+              "question": "Which statement correctly describes alcoholic spirits?",
+              "options": [
+                "Spirits are non-carbonated soft drinks.",
+                "Spirits are alcoholic beverages generally produced by distilling fermented materials.",
+                "Spirits are ready-to-drink fruit juices.",
+                "Spirits are carbonated soft drinks."
+              ],
+              "correct_answer": "Spirits are alcoholic beverages generally produced by distilling fermented materials.",
+              "explanation": "Spirits are generally produced by distilling fermented materials, concentrating ethanol."
+            },
+            {
+              "question_number": 17,
+              "question": "Which of the following is NOT inherently a bactericidal carcass-washing treatment?",
+              "options": [
+                "Lactic acid (1-2 %)",
+                "Hot water (80C)",
+                "Chlorinated water (50 mg/L)",
+                "Cold water"
+              ],
+              "correct_answer": "Cold water",
+              "explanation": "Cold potable water can rinse surfaces but is not inherently bactericidal. Approved antimicrobial treatments depend on appropriate conditions."
+            },
+            {
+              "question_number": 18,
+              "question": "Which of the following is NOT classified as a chemical food-safety hazard?",
+              "options": [
+                "Veterinary drug residues",
+                "Pathogenic microorganisms",
+                "Natural toxins",
+                "Unapproved food and color additives"
+              ],
+              "correct_answer": "Pathogenic microorganisms",
+              "explanation": "Pathogenic microorganisms are biological hazards; residues, natural toxins and unsafe additives are chemical hazards."
+            },
+            {
+              "question_number": 19,
+              "question": "Which of the following is an extrinsic factor affecting microbial growth in foods?",
+              "options": [
+                "pH",
+                "Water activity",
+                "Moisture content",
+                "Storage temperature"
+              ],
+              "correct_answer": "Storage temperature",
+              "explanation": "Storage temperature is extrinsic; pH, water activity and food moisture are intrinsic factors."
+            },
+            {
+              "question_number": 20,
+              "question": "Which process separates a suspension into a clarified supernatant and a concentrated sludge by allowing suspended particles to settle under gravity?",
+              "options": [
+                "Classification",
+                "Decantation",
+                "Sedimentation",
+                "Clarification"
+              ],
+              "correct_answer": "Sedimentation",
+              "explanation": "Sedimentation is gravity-driven settling; clarification is a broader removal objective and decantation removes supernatant."
+            },
+            {
+              "question_number": 21,
+              "question": "Which of the following microorganisms is a bacterium commonly used in the recombinant production of human insulin?",
+              "options": [
+                "Escherichia",
+                "Mycobacterium",
+                "Rhizobium",
+                "Saccharomyces"
+              ],
+              "correct_answer": "Escherichia",
+              "explanation": "Escherichia coli is a common bacterial recombinant insulin production host; Saccharomyces is a yeast."
+            },
+            {
+              "question_number": 22,
+              "question": "Which of the following is a recognized post-mortem meat-quality defect?",
+              "options": [
+                "Collagen conversion upon heating",
+                "Connective tissue collapse",
+                "Dark, firm and dry",
+                "Water-holding capacity"
+              ],
+              "correct_answer": "Dark, firm and dry",
+              "explanation": "DFD is associated with low pre-slaughter muscle glycogen and high ultimate pH; water-holding capacity is a meat quality property."
+            },
+            {
+              "question_number": 23,
+              "question": "Which group of microorganisms can grow at refrigeration temperatures and contribute to chilled-meat spoilage?",
+              "options": [
+                "Mesophilic",
+                "Haemophilic",
+                "Psychrotroph",
+                "Thermophilic"
+              ],
+              "correct_answer": "Psychrotroph",
+              "explanation": "Psychrotrophs can grow at refrigeration temperatures and spoil chilled meat."
+            },
+            {
+              "question_number": 24,
+              "question": "Among the following conventional food-packaging materials, which is particularly associated with concerns about migration of residual monomers, plasticizers and other additives into food?",
+              "options": [
+                "Metal",
+                "Gas",
+                "Paper",
+                "Plastic"
+              ],
+              "correct_answer": "Plastic",
+              "explanation": "Some plastics may release residual monomers or additives into foods; migration depends on material, temperature, food and contact time."
+            },
+            {
+              "question_number": 25,
+              "question": "What is the first milk produced by a cow after calving called?",
+              "options": [
+                "High-fat milk",
+                "Colostrum",
+                "Butter",
+                "Cream"
+              ],
+              "correct_answer": "Colostrum",
+              "explanation": "Colostrum is rich in immunoglobulins and supports passive immunity in newborn calves."
+            },
+            {
+              "question_number": 26,
+              "question": "Why is the Maillard reaction important in bread baking?",
+              "options": [
+                "It enhances the brown color and flavor of bread crust.",
+                "It only causes flavor changes during storage.",
+                "Its primary purpose is to reduce essential amino acids.",
+                "It only changes the color of stored commodities."
+              ],
+              "correct_answer": "It enhances the brown color and flavor of bread crust.",
+              "explanation": "Reactions of reducing sugars with amino groups create crust color and aroma, although excessive reactions may reduce amino-acid availability."
+            },
+            {
+              "question_number": 27,
+              "question": "What is a major desirable result of applying heat during green coffee bean roasting?",
+              "options": [
+                "The moisture content of coffee increases.",
+                "The solubility of all coffee polysaccharides decreases.",
+                "All original volatile components are retained.",
+                "The coffee develops a complex and desirable flavor and aroma."
+              ],
+              "correct_answer": "The coffee develops a complex and desirable flavor and aroma.",
+              "explanation": "Roasting drives moisture loss and Maillard and other reactions that produce characteristic coffee aroma and flavor."
+            },
+            {
+              "question_number": 28,
+              "question": "The deliberate removal and insertion of specific DNA sequences to modify an organism is an example of which process?",
+              "options": [
+                "Cytogenetics",
+                "Genetic engineering",
+                "Gene therapy",
+                "Biotechnology"
+              ],
+              "correct_answer": "Genetic engineering",
+              "explanation": "Genetic engineering deliberately modifies DNA; gene therapy is one medical application and biotechnology is broader."
+            },
+            {
+              "question_number": 29,
+              "question": "Which statement does NOT describe a primary public-health objective of food fortification?",
+              "options": [
+                "Providing direct medical treatment for an existing disease",
+                "Improving the nutritional quality of foods",
+                "Preventing or reducing the risk of micronutrient deficiencies",
+                "Supporting health and normal growth"
+              ],
+              "correct_answer": "Providing direct medical treatment for an existing disease",
+              "explanation": "Fortification improves nutrient intake and helps prevent deficiencies; it is not a replacement for individualized medical treatment."
+            },
+            {
+              "question_number": 30,
+              "question": "Which of the following is an example of using genetic engineering to improve the efficiency of food processing?",
+              "options": [
+                "Extended shelf life of milk products",
+                "Production of recombinant chymosin for cheese making",
+                "Golden rice",
+                "Long shelf life tomato"
+              ],
+              "correct_answer": "Production of recombinant chymosin for cheese making",
+              "explanation": "Engineered microorganisms produce recombinant chymosin for consistent cheese making as an alternative to animal-derived rennet."
+            }
+          ]
+        }
+      ]
     }
   ]
 }
