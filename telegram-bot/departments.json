@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-11-02T23:06:37.059Z",
+  "updatedAt": "2026-11-03T02:31:03.327Z",
   "departments": [
     {
       "id": "computer-science",
@@ -4263,7 +4263,15 @@
       "id": "accounting",
       "name": "Accounting",
       "emoji": "📊",
-      "exams": []
+      "exams": [
+        {
+          "id": "accounting-1793673003685",
+          "title": "Accounting and Financial 2016",
+          "year": 2026,
+          "pdfUrl": "https://drive.google.com/file/d/10P6ww3x83YnFJY4sCrK4o0peVGxFpryr/view?usp=drivesdk",
+          "telegramFileId": null
+        }
+      ]
     },
     {
       "id": "law",
