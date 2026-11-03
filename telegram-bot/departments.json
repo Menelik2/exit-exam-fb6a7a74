@@ -2,7 +2,7 @@
   "appUrl": "https://exit.sites.bd",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-11-03T15:58:24.514Z",
+  "updatedAt": "2026-11-03T16:05:19.226Z",
   "departments": [
     {
       "id": "computer-science",
@@ -6866,6 +6866,857 @@
           "year": 2026,
           "pdfUrl": "https://drive.google.com/file/d/1u7YhvC_cMqI50kHc3UmxRU7MoOQ_n2Ee/view?usp=drivesdk",
           "telegramFileId": null
+        },
+        {
+          "id": "food-engineering-dairy",
+          "title": "Dairy processing Technology Exit-exam",
+          "year": 2026,
+          "pdfUrl": null,
+          "telegramFileId": null,
+          "questions": [
+            {
+              "question_number": 1,
+              "question": "Which statement is NOT generally a purpose of milk heat treatment?",
+              "options": [
+                "Inactivation of microbial inhibitors",
+                "Reducing rennet coagulation time in every case",
+                "Careful optimization of processing conditions",
+                "Obtaining appropriate product consistency"
+              ],
+              "correct_answer": "Reducing rennet coagulation time in every case",
+              "explanation": "Heating may impair rennet coagulation by altering calcium balance and whey-protein interactions; effects depend on severity. Heating also improves yogurt gel consistency."
+            },
+            {
+              "question_number": 2,
+              "question": "Which statement about enzymes in dairy processing is correct?",
+              "options": [
+                "Lipases hydrolyze milk fat",
+                "Some antimicrobial enzymes inhibit microorganisms",
+                "Alkaline phosphatase is used as an indicator of pasteurization adequacy",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Lipases catalyze lipolysis; lysozyme and lactoperoxidase systems can inhibit microbes; alkaline phosphatase testing is a conventional pasteurization check."
+            },
+            {
+              "question_number": 3,
+              "question": "Which is NOT a possible challenge during refrigerated milk storage?",
+              "options": [
+                "Growth of psychrotrophs",
+                "Lipase activity",
+                "Development of off-flavors",
+                "None"
+              ],
+              "correct_answer": "None",
+              "explanation": "Psychrotrophic bacteria and heat-stable enzymes can cause lipolysis, proteolysis and off-flavors."
+            },
+            {
+              "question_number": 4,
+              "question": "Which statement about the physical properties of milk is false?",
+              "options": [
+                "Refractive index depends partly on dissolved components",
+                "Increased ionic content can increase conductivity",
+                "Specific heat is independent of milk composition",
+                "Fat affects milk surface tension"
+              ],
+              "correct_answer": "Specific heat is independent of milk composition",
+              "explanation": "Specific heat varies with water, fat and solids content; electrical conductivity depends on ions, temperature and composition."
+            },
+            {
+              "question_number": 5,
+              "question": "Which statement about variation in milk composition is false?",
+              "options": [
+                "It affects finished-product properties",
+                "Only protein, not fat, affects yogurt quality",
+                "Diet and breed can affect composition",
+                "Both fat and protein can affect texture"
+              ],
+              "correct_answer": "Only protein, not fat, affects yogurt quality",
+              "explanation": "Protein affects gel strength and viscosity, while fat affects texture, mouthfeel and flavor."
+            },
+            {
+              "question_number": 6,
+              "question": "Which statement is NOT a universal requirement for dairy starter cultures?",
+              "options": [
+                "They may suppress undesirable microorganisms",
+                "They must always be strongly proteolytic and lipolytic",
+                "Bacteriophages may disrupt fermentation",
+                "They should acidify at a rate suitable for the product"
+              ],
+              "correct_answer": "They must always be strongly proteolytic and lipolytic",
+              "explanation": "Proteolytic and lipolytic activities must suit the product; excessive activity can cause defects. Rapid acidification is not required for every product."
+            },
+            {
+              "question_number": 7,
+              "question": "Which factors affect dairy-product quality?",
+              "options": [
+                "Raw milk selection",
+                "Starter preparation",
+                "Homogenization",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Raw-material quality, cultures and processing conditions affect safety, flavor, stability and texture."
+            },
+            {
+              "question_number": 8,
+              "question": "Which statement about milk solids-not-fat (MSNF) in ice cream is correct?",
+              "options": [
+                "They can improve body and texture",
+                "Only whole-milk powder can supply MSNF",
+                "Appropriate MSNF levels can help support overrun",
+                "A & C"
+              ],
+              "correct_answer": "A & C",
+              "explanation": "MSNF supplies proteins, lactose and minerals, improving structure and supporting air-cell stability when correctly balanced."
+            },
+            {
+              "question_number": 9,
+              "question": "Which statement about yogurt manufacture is false?",
+              "options": [
+                "Homogenization can improve consistency",
+                "Total solids have no effect on yogurt consistency",
+                "Yogurt can be produced with different fat contents",
+                "Heat treatment affects yogurt gel formation"
+              ],
+              "correct_answer": "Total solids have no effect on yogurt consistency",
+              "explanation": "Total solids and protein content strongly influence viscosity, gel strength and syneresis."
+            },
+            {
+              "question_number": 10,
+              "question": "Which statement about dairy equipment disinfection is correct?",
+              "options": [
+                "It reduces viable microorganisms on cleaned surfaces",
+                "Effective cleaning should precede disinfection",
+                "Thermal disinfection can facilitate subsequent drying",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Cleaning removes soil and biofilms; disinfection reduces viable microorganisms, not necessarily all organisms."
+            },
+            {
+              "question_number": 11,
+              "question": "Which combination of statements about cheese production is correct?",
+              "options": [
+                "Curd knitting occurs in every cheese variety",
+                "Low somatic cell count is desirable in cheesemilk",
+                "Appropriate curd cooking promotes syneresis and can influence starter activity",
+                "B & C"
+              ],
+              "correct_answer": "B & C",
+              "explanation": "Low SCC supports cheesemaking quality. Cooking encourages whey expulsion; its effect on starter growth depends on culture and temperature."
+            },
+            {
+              "question_number": 12,
+              "question": "Which statement about milk thermization is false?",
+              "options": [
+                "It reduces the initial microbial load",
+                "Milk is normally cooled promptly after treatment",
+                "It normally leaves alkaline phosphatase activity detectable",
+                "It is equivalent to full pasteurization"
+              ],
+              "correct_answer": "It is equivalent to full pasteurization",
+              "explanation": "Thermization commonly uses about 63–65°C for 15 seconds, followed by rapid cooling. It is milder than pasteurization and does not reliably eliminate pathogens."
+            },
+            {
+              "question_number": 13,
+              "question": "Which statement about milk homogenization is false?",
+              "options": [
+                "It can improve emulsion stability",
+                "It reduces creaming/segregation",
+                "It can modify rheological properties",
+                "It always decreases water binding in cultured dairy gels"
+              ],
+              "correct_answer": "It always decreases water binding in cultured dairy gels",
+              "explanation": "Homogenization reduces fat globule size and modifies protein interactions; its effect on water holding depends on formulation and processing."
+            },
+            {
+              "question_number": 14,
+              "question": "Which statement about butter manufacture is NOT universally true?",
+              "options": [
+                "Sweet-cream butter may have a mild cooked note depending on heat treatment",
+                "Sour-cream butter always has a higher fat recovery than sweet-cream butter",
+                "Post-pasteurization contamination remains a risk",
+                "Butter yield depends strongly on fat recovery"
+              ],
+              "correct_answer": "Sour-cream butter always has a higher fat recovery than sweet-cream butter",
+              "explanation": "Butter yield depends on fat content, churning efficiency and losses; fermentation alone does not guarantee higher yield."
+            },
+            {
+              "question_number": 15,
+              "question": "Which statements about bovine colostrum are correct?",
+              "options": [
+                "It is often yellowish",
+                "It contains high concentrations of immunoglobulins and whey proteins",
+                "It is the early mammary secretion after calving",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Colostrum provides immunoglobulins, nutrients and other bioactive components to the newborn calf."
+            },
+            {
+              "question_number": 16,
+              "question": "What is the conventional sequence for propagated dairy starter preparation?",
+              "options": [
+                "Mother, commercial, intermediate, bulk",
+                "Bulk, intermediate, commercial, mother",
+                "Commercial, mother, intermediate, bulk",
+                "Bulk, mother, intermediate, commercial"
+              ],
+              "correct_answer": "Commercial, mother, intermediate, bulk",
+              "explanation": "Traditional propagation expands commercial culture through mother and intermediate cultures into a bulk starter. Direct-vat cultures can bypass these steps."
+            },
+            {
+              "question_number": 17,
+              "question": "Which processes can remove water from milk or dairy ingredients?",
+              "options": [
+                "Freeze-drying",
+                "Reverse osmosis",
+                "Vacuum evaporation",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Reverse osmosis concentrates liquid by membrane water removal; evaporation removes water by vaporization; freeze-drying removes frozen water by sublimation."
+            },
+            {
+              "question_number": 18,
+              "question": "Why is milk processed?",
+              "options": [
+                "To extend shelf life",
+                "To facilitate handling and transport",
+                "To make more stable products",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Processing can improve safety, shelf life, transportability and product diversity."
+            },
+            {
+              "question_number": 19,
+              "question": "Which statement about whey proteins is accurate?",
+              "options": [
+                "Many whey proteins denature substantially during heating above approximately 65°C",
+                "All whey proteins have disordered structures",
+                "Whey proteins have no nutritional value",
+                "All whey proteins are completely immune to acid and salt precipitation"
+              ],
+              "correct_answer": "Many whey proteins denature substantially during heating above approximately 65°C",
+              "explanation": "Many whey proteins are globular and heat-sensitive; denaturation depends on time, temperature, pH and composition."
+            },
+            {
+              "question_number": 20,
+              "question": "Which is a functional role of milk fat in dairy products?",
+              "options": [
+                "Its fatty acid composition influences melting behavior",
+                "It contributes to shortening and mouthfeel in some products",
+                "It carries fat-soluble flavor compounds",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Milk fat contributes flavor release, mouthfeel, melting characteristics and texture."
+            },
+            {
+              "question_number": 21,
+              "question": "Which item is an antimicrobial enzyme rather than a routine raw-milk quality test or measurement?",
+              "options": [
+                "Methylene blue reduction test",
+                "Titratable acidity",
+                "Antibiotic residue screening",
+                "Lysozyme"
+              ],
+              "correct_answer": "Lysozyme",
+              "explanation": "Lysozyme can damage susceptible bacterial cell walls; the others are milk quality tests or screening categories."
+            },
+            {
+              "question_number": 22,
+              "question": "Which statement about milk is false?",
+              "options": [
+                "It is a multiphase dispersed system",
+                "It provides important nutrients",
+                "It contributes flavor to foods",
+                "Its aqueous phase contains lactose, minerals and soluble proteins",
+                "None"
+              ],
+              "correct_answer": "None",
+              "explanation": "Milk is an emulsion and colloidal dispersion with dissolved lactose, salts and soluble proteins. All substantive statements are true."
+            },
+            {
+              "question_number": 23,
+              "question": "Which statement is incorrect for mastitis-affected milk?",
+              "options": [
+                "Somatic cell count typically decreases",
+                "Milk may taste saltier",
+                "Lactose content often decreases",
+                "Microbial counts may increase"
+              ],
+              "correct_answer": "Somatic cell count typically decreases",
+              "explanation": "Mastitis usually increases SCC and can alter ionic balance, lactose and microbial load."
+            },
+            {
+              "question_number": 24,
+              "question": "What are potential concerns associated with antibiotic residues in milk?",
+              "options": [
+                "Inhibition of dairy starter cultures",
+                "Allergic reactions in susceptible people",
+                "Contribution to antimicrobial-resistance selection",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Antibiotic residues can inhibit fermentation; exposure can cause reactions in sensitized people and may contribute to resistance selection."
+            },
+            {
+              "question_number": 25,
+              "question": "Which statement about raw-milk dye reduction tests is false?",
+              "options": [
+                "Methylene blue may become colorless as it is reduced",
+                "Resazurin normally changes from blue to pink, then back to violet before becoming colorless",
+                "Shorter reduction times generally suggest greater microbial activity",
+                "These tests are indirect and imperfect estimates"
+              ],
+              "correct_answer": "Resazurin normally changes from blue to pink, then back to violet before becoming colorless",
+              "explanation": "Resazurin generally progresses blue through violet/lilac and pink toward colorless as reduction proceeds. Dye tests are indirect and affected by test conditions."
+            },
+            {
+              "question_number": 26,
+              "question": "Which statement about the yogurt starter symbiosis is false?",
+              "options": [
+                "Streptococcus thermophilus can reduce dissolved oxygen",
+                "Lactobacillus delbrueckii subsp. bulgaricus releases peptides and amino acids",
+                "Only Lactobacillus bulgaricus can produce acetaldehyde",
+                "Both organisms can contribute to yogurt flavor"
+              ],
+              "correct_answer": "Only Lactobacillus bulgaricus can produce acetaldehyde",
+              "explanation": "Both yogurt starters can produce acetaldehyde; their contributions depend on strains and fermentation conditions."
+            },
+            {
+              "question_number": 27,
+              "question": "What functions can stabilizers perform in yogurt?",
+              "options": [
+                "Support viscosity",
+                "Reduce whey separation",
+                "Modify texture and structure",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Starch, pectin and selected hydrocolloids can improve stability and reduce syneresis."
+            },
+            {
+              "question_number": 28,
+              "question": "Which statement about casein micelles is correct?",
+              "options": [
+                "Kappa-casein helps stabilize micelle surfaces",
+                "All caseins have identical calcium sensitivity",
+                "Casein micelles contain no colloidal calcium phosphate",
+                "Casein micelles are pure fat droplets"
+              ],
+              "correct_answer": "Kappa-casein helps stabilize micelle surfaces",
+              "explanation": "Kappa-casein provides steric/electrostatic stabilization; micelles contain casein fractions and colloidal calcium phosphate. Calcium addition may destabilize casein systems under some conditions."
+            },
+            {
+              "question_number": 29,
+              "question": "Which can cause starter culture failure?",
+              "options": [
+                "Bacteriophages",
+                "Natural inhibitory components of milk",
+                "Detergent and sanitizer residues",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Phages and inhibitory compounds can prevent proper acid development."
+            },
+            {
+              "question_number": 30,
+              "question": "Which are recognized functional properties of milk proteins?",
+              "options": [
+                "Water binding",
+                "Viscosity modification",
+                "Flavor binding",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Milk proteins can bind water and flavor compounds and modify viscosity; the original negative question made All logically incorrect."
+            },
+            {
+              "question_number": 31,
+              "question": "Which materials may be used as yogurt stabilizers?",
+              "options": [
+                "Starch",
+                "Edible gums",
+                "Pectin",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Suitable hydrocolloids help improve texture and minimize syneresis."
+            },
+            {
+              "question_number": 32,
+              "question": "What is the primary purpose of milk thermization?",
+              "options": [
+                "To temporarily reduce microbial growth during subsequent chilled storage",
+                "To provide commercial sterilization",
+                "To destroy bacterial spores reliably",
+                "To replace legally required pasteurization"
+              ],
+              "correct_answer": "To temporarily reduce microbial growth during subsequent chilled storage",
+              "explanation": "Thermization reduces vegetative microbial load but does not sterilize milk or reliably destroy spores."
+            },
+            {
+              "question_number": 33,
+              "question": "Which statement about milk pasteurization is false?",
+              "options": [
+                "The selected time-temperature schedule depends on product and process requirements",
+                "HTST milk pasteurization commonly uses about 72–75°C for 15–20 seconds",
+                "The conventional phosphatase test is universally reliable without modification for every high-fat dairy product",
+                "Alkaline phosphatase inactivation is a conventional process indicator"
+              ],
+              "correct_answer": "The conventional phosphatase test is universally reliable without modification for every high-fat dairy product",
+              "explanation": "Alkaline phosphatase testing may require product-specific methods; conventional tests can be complicated by reactivation or fat-rich matrices."
+            },
+            {
+              "question_number": 34,
+              "question": "Why must milk heat-treatment time and temperature be optimized?",
+              "options": [
+                "Excess heating may change appearance",
+                "Heating can denature proteins",
+                "Intense heating can produce cooked flavor",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "The heat treatment must balance microbial safety with nutritional, sensory and functional quality."
+            },
+            {
+              "question_number": 35,
+              "question": "Which statement is false about intense milk heat treatment?",
+              "options": [
+                "Available lysine may decrease",
+                "Maillard reactions cannot occur",
+                "Browning may occur under sufficiently severe conditions",
+                "HMF can form during severe heating or storage"
+              ],
+              "correct_answer": "Maillard reactions cannot occur",
+              "explanation": "Maillard reactions can occur between lactose and amino groups, potentially lowering available lysine and producing browning products and HMF."
+            },
+            {
+              "question_number": 36,
+              "question": "Which is a possible benefit of controlled dairy fermentation?",
+              "options": [
+                "Modification of texture",
+                "Complete destruction of all spores",
+                "Guaranteed elimination of all allergens",
+                "Complete removal of lactose in every fermented dairy food"
+              ],
+              "correct_answer": "Modification of texture",
+              "explanation": "Fermentation can alter texture, flavor, acidity and shelf life, but does not necessarily remove all lactose or pathogens."
+            },
+            {
+              "question_number": 37,
+              "question": "Which is NOT used to assess raw-milk quality?",
+              "options": [
+                "Fat determination",
+                "Clot-on-boiling test",
+                "Dye reduction test",
+                "None"
+              ],
+              "correct_answer": "None",
+              "explanation": "All three tests can provide information about milk composition, stability or microbial quality."
+            },
+            {
+              "question_number": 38,
+              "question": "Which is a dairy application of centrifugal separation?",
+              "options": [
+                "Cream separation",
+                "Fat standardization",
+                "Clarification of sediment",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Centrifugation separates components based on density, enabling cream separation, standardization and clarification."
+            },
+            {
+              "question_number": 39,
+              "question": "What is the primary technological role of lemon juice in acid-set cheese manufacture?",
+              "options": [
+                "Lowering milk pH to promote casein coagulation",
+                "Sterilizing the milk",
+                "Increasing the milk lactose content",
+                "Increasing the pH of milk"
+              ],
+              "correct_answer": "Lowering milk pH to promote casein coagulation",
+              "explanation": "Citric acid lowers pH and destabilizes casein, allowing acid coagulation. Lemon juice does not guarantee microbial safety."
+            },
+            {
+              "question_number": 40,
+              "question": "What is the role of sulfuric acid in the Gerber milk-fat test?",
+              "options": [
+                "Digesting proteins and releasing fat",
+                "Helping form a distinct fat layer",
+                "Disrupting the milk emulsion",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Concentrated sulfuric acid digests nonfat components and liberates fat for centrifugation and volumetric measurement."
+            },
+            {
+              "question_number": 41,
+              "question": "Which processes can concentrate milk by removing water?",
+              "options": [
+                "Freeze-drying",
+                "Reverse osmosis",
+                "Vacuum evaporation",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "These methods remove water by sublimation, membrane separation or evaporation."
+            },
+            {
+              "question_number": 42,
+              "question": "Which statement about ice cream is false?",
+              "options": [
+                "All milk solids and salts exist only as a single colloidal solution",
+                "Ice cream contains a dispersed air phase",
+                "Sweeteners contribute to palatability",
+                "Emulsifiers promote controlled fat destabilization"
+              ],
+              "correct_answer": "All milk solids and salts exist only as a single colloidal solution",
+              "explanation": "Ice cream is a multiphase system: sugars and many salts dissolve, proteins form colloids, fat forms droplets/aggregates and air is dispersed as bubbles."
+            },
+            {
+              "question_number": 43,
+              "question": "Which is a desirable characteristic of a dairy starter culture?",
+              "options": [
+                "Always very slow acidification",
+                "Excessive gas and pigment production in every product",
+                "A clean, product-appropriate flavor",
+                "Resistance to all bacteriophages"
+              ],
+              "correct_answer": "A clean, product-appropriate flavor",
+              "explanation": "A starter should produce desired flavor and appropriate acidification without defects."
+            },
+            {
+              "question_number": 44,
+              "question": "Which factor is least directly associated with weak rennet coagulation in cheesemaking?",
+              "options": [
+                "Inappropriate calcium balance after heat treatment",
+                "Excessive dilution of milk proteins",
+                "High milk fat content alone",
+                "Poor rennet activity"
+              ],
+              "correct_answer": "High milk fat content alone",
+              "explanation": "Protein concentration, pH, calcium balance and rennet activity govern gel formation; fat content alone is not a typical primary cause."
+            },
+            {
+              "question_number": 45,
+              "question": "Why are sweeteners used in ice cream?",
+              "options": [
+                "They raise the freezing point",
+                "They guarantee higher fat content",
+                "They improve flavor, texture and palatability",
+                "They eliminate the need for refrigeration"
+              ],
+              "correct_answer": "They improve flavor, texture and palatability",
+              "explanation": "Sugars contribute sweetness, solids and freezing-point depression, affecting softness and scoopability."
+            },
+            {
+              "question_number": 46,
+              "question": "Which statement about propionic acid fermentation in Swiss-type cheese is false?",
+              "options": [
+                "It contributes characteristic nutty flavor",
+                "It contributes to eye formation in Swiss-type cheeses",
+                "Carbon dioxide is not produced",
+                "Propionibacteria produce propionate, acetate and carbon dioxide"
+              ],
+              "correct_answer": "Carbon dioxide is not produced",
+              "explanation": "Propionic acid bacteria metabolize lactate into propionate, acetate and CO2; CO2 contributes to eyes."
+            },
+            {
+              "question_number": 47,
+              "question": "Which forms can be used to preserve or distribute starter cultures?",
+              "options": [
+                "Liquid preparations",
+                "Dried preparations",
+                "Frozen preparations",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Commercial cultures are commonly freeze-dried or frozen; liquid cultures may be maintained for shorter periods."
+            },
+            {
+              "question_number": 48,
+              "question": "Which statement about dairy starter cultures is false?",
+              "options": [
+                "All dairy starters necessarily produce medically defined antibiotics",
+                "They help preserve fermented foods by acidification",
+                "They produce lactic acid and flavor compounds",
+                "Some strains produce antimicrobial bacteriocins"
+              ],
+              "correct_answer": "All dairy starters necessarily produce medically defined antibiotics",
+              "explanation": "Many cultures acidify foods; some produce bacteriocins, but not all make antibiotics."
+            },
+            {
+              "question_number": 49,
+              "question": "Which statements about incorporated air in ice cream are correct?",
+              "options": [
+                "It affects sensory properties",
+                "It can affect physical stability",
+                "Air may account for a substantial fraction of final volume",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Overrun changes ice cream density, texture and melting behavior; air fraction varies with product."
+            },
+            {
+              "question_number": 50,
+              "question": "Which is NOT a principal reason to heat-treat milk?",
+              "options": [
+                "To deliberately reduce product coagulation stability",
+                "To inactivate selected enzymes",
+                "To improve microbial safety",
+                "To extend shelf life"
+              ],
+              "correct_answer": "To deliberately reduce product coagulation stability",
+              "explanation": "Heat treatment targets microbial hazards and product stability; its effect on rennet coagulation depends on treatment intensity."
+            },
+            {
+              "question_number": 51,
+              "question": "Why is salt added in cheesemaking?",
+              "options": [
+                "To improve flavor",
+                "To regulate microbial activity and acidification",
+                "To influence moisture, texture and rind development",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Salt controls water activity, affects starter and nonstarter bacteria, and contributes to cheese flavor and texture."
+            },
+            {
+              "question_number": 52,
+              "question": "Which statement about milk fat globules is false?",
+              "options": [
+                "They are surrounded by a fat globule membrane",
+                "An intact membrane by itself causes globules to fuse into a continuous butterfat mass",
+                "They are among the largest dispersed particles in milk",
+                "Churning destabilizes globules and permits aggregation"
+              ],
+              "correct_answer": "An intact membrane by itself causes globules to fuse into a continuous butterfat mass",
+              "explanation": "The membrane stabilizes fat droplets. Churning causes partial coalescence and phase inversion in butter manufacture."
+            },
+            {
+              "question_number": 53,
+              "question": "Which statements describe homolactic fermentation?",
+              "options": [
+                "Lactate dehydrogenase participates",
+                "Lactate is the principal fermentation product",
+                "Glycolysis supplies pyruvate",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Homolactic bacteria convert glucose primarily to lactate via glycolysis and lactate dehydrogenase; minor byproducts may occur."
+            },
+            {
+              "question_number": 54,
+              "question": "Which factor can affect yogurt quality?",
+              "options": [
+                "Deaeration",
+                "Starter culture preparation",
+                "Milk ingredients and additives",
+                "Plant and equipment design",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Each influences hygiene, fermentation, viscosity, syneresis or consistency."
+            },
+            {
+              "question_number": 55,
+              "question": "Which statement about heterolactic fermentation is false?",
+              "options": [
+                "Certain Leuconostoc species perform it",
+                "The phosphoketolase pathway is involved",
+                "Lactic acid is the only end product",
+                "Carbon dioxide and ethanol or acetate can also form"
+              ],
+              "correct_answer": "Lactic acid is the only end product",
+              "explanation": "Heterolactic fermentation yields lactate plus CO2 and ethanol or acetate, depending on conditions."
+            },
+            {
+              "question_number": 56,
+              "question": "Which are desirable effects of emulsifiers in ice cream?",
+              "options": [
+                "Facilitation of air incorporation",
+                "Improved extrusion dryness and shape retention",
+                "Guaranteed complete resistance to melting",
+                "A & B"
+              ],
+              "correct_answer": "A & B",
+              "explanation": "Emulsifiers help controlled fat destabilization and air-cell stabilization; they do not prevent melting entirely."
+            },
+            {
+              "question_number": 57,
+              "question": "Which statement about casein fractions is false?",
+              "options": [
+                "Most alpha-s and beta caseins are calcium sensitive, unlike kappa-casein",
+                "Kappa-casein helps stabilize micelles",
+                "All casein fractions have identical chemical properties",
+                "Gamma-caseins arise from plasmin cleavage of beta-casein"
+              ],
+              "correct_answer": "All casein fractions have identical chemical properties",
+              "explanation": "Casein fractions differ in sequence, phosphorylation, calcium sensitivity and functions."
+            },
+            {
+              "question_number": 58,
+              "question": "Which factors can change milk composition?",
+              "options": [
+                "Season",
+                "Lactation stage",
+                "Diet",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Season, feed, lactation, breed and health affect milk components."
+            },
+            {
+              "question_number": 59,
+              "question": "Which is NOT relevant to butter-churning performance?",
+              "options": [
+                "Churning time",
+                "Cream temperature",
+                "Cream acidity",
+                "None"
+              ],
+              "correct_answer": "None",
+              "explanation": "Temperature, acidity and process time affect fat aggregation and churning efficiency; time can also be a performance outcome."
+            },
+            {
+              "question_number": 60,
+              "question": "Which statement about milk electrical conductivity is true?",
+              "options": [
+                "Milk conductivity is unrelated to chloride concentration",
+                "Lactic acid accumulation always lowers conductivity",
+                "Milk conductivity depends on dissolved ions and temperature",
+                "Conductivity is identical for all milk samples"
+              ],
+              "correct_answer": "Milk conductivity depends on dissolved ions and temperature",
+              "explanation": "Ions including sodium, potassium and chloride carry current; conductivity is temperature dependent and can increase in mastitis."
+            },
+            {
+              "question_number": 61,
+              "question": "Which statement about dairy-plant cleaning is correct?",
+              "options": [
+                "Cleaning removes residues that support microbial growth",
+                "Hygienic equipment design is irrelevant to cleaning",
+                "Cleaning can remove deposits that impair equipment performance",
+                "A & C"
+              ],
+              "correct_answer": "A & C",
+              "explanation": "Effective cleaning removes soils and deposits; equipment design is essential for cleanability."
+            },
+            {
+              "question_number": 62,
+              "question": "Which statement about milk microbiology is correct?",
+              "options": [
+                "Milk from healthy udders is guaranteed absolutely sterile",
+                "Psychrotrophs can cause spoilage during refrigerated storage",
+                "All yeasts are always spoilage organisms in every dairy food",
+                "All"
+              ],
+              "correct_answer": "Psychrotrophs can cause spoilage during refrigerated storage",
+              "explanation": "Raw milk can contain microorganisms even under hygienic conditions; some yeasts are useful in specific fermented dairy products."
+            },
+            {
+              "question_number": 63,
+              "question": "Which is a broadly accepted method of improving fluid-milk safety and shelf life?",
+              "options": [
+                "Uncontrolled natural souring",
+                "Validated pasteurization and refrigeration",
+                "Unrestricted addition of chemical preservatives",
+                "All"
+              ],
+              "correct_answer": "Validated pasteurization and refrigeration",
+              "explanation": "Validated heat treatment followed by hygienic cooling is a standard milk safety measure. Uncontrolled souring is not a reliable safety treatment and preservative use is regulated."
+            },
+            {
+              "question_number": 64,
+              "question": "Which statement about lactose is correct?",
+              "options": [
+                "Alpha-lactose is more soluble than beta-lactose at room temperature",
+                "Lactose crystallization is important in dairy ingredient manufacture",
+                "Alpha-lactose is sweeter than beta-lactose",
+                "B & C"
+              ],
+              "correct_answer": "Lactose crystallization is important in dairy ingredient manufacture",
+              "explanation": "Beta-lactose is more soluble than alpha-lactose at ordinary temperatures; crystallization affects condensed milk, powders and frozen desserts."
+            },
+            {
+              "question_number": 65,
+              "question": "Which statements about natural antimicrobial systems in milk are generally correct?",
+              "options": [
+                "Lactoferrin binds iron",
+                "Lysozyme can inhibit susceptible Gram-positive bacteria",
+                "The lactoperoxidase system can inhibit susceptible bacteria, including some Gram-negative species",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "These systems contribute to innate antimicrobial activity; efficacy varies by microorganism and conditions."
+            },
+            {
+              "question_number": 66,
+              "question": "Which statements are generally true in raw-milk quality assessment?",
+              "options": [
+                "Increased acidity may reduce heat stability",
+                "Adding water to normal milk generally lowers its density",
+                "Skimming milk fat generally increases density",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Water addition usually lowers density; removing low-density fat raises density. Acidification may destabilize casein during heating."
+            },
+            {
+              "question_number": 67,
+              "question": "Which statement about milk minerals is false?",
+              "options": [
+                "They contribute to buffering and acid-base balance",
+                "They help maintain osmotic balance",
+                "They affect processing and nutrition",
+                "None"
+              ],
+              "correct_answer": "None",
+              "explanation": "Milk minerals influence buffering, osmotic pressure, casein micelles, nutrition and processing properties."
+            },
+            {
+              "question_number": 68,
+              "question": "Which of the following is a valid milk-treatment operation used in some cheese plants?",
+              "options": [
+                "Filtration",
+                "Bactofugation",
+                "Centrifugal clarification",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "All three can be used in cheesemilk preparation. Bactofugation is centrifugal removal of bacterial cells and spores."
+            },
+            {
+              "question_number": 69,
+              "question": "Which statements about plasmin in milk are correct?",
+              "options": [
+                "It can hydrolyze beta-casein and alpha-s2-casein",
+                "Its proteolysis may contribute to bitterness under some conditions",
+                "It never contributes to cheese ripening",
+                "A & B"
+              ],
+              "correct_answer": "A & B",
+              "explanation": "Plasmin is an indigenous serine protease that cleaves caseins and can contribute to cheese ripening; excess proteolysis may cause defects."
+            },
+            {
+              "question_number": 70,
+              "question": "Which are potential problems during milk transportation?",
+              "options": [
+                "Air incorporation",
+                "Microbial contamination",
+                "Product losses",
+                "All"
+              ],
+              "correct_answer": "All",
+              "explanation": "Poor transport conditions can introduce air, microorganisms or losses; sanitary equipment and temperature control reduce risk."
+            }
+          ]
         }
       ]
     }
