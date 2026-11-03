@@ -2,7 +2,7 @@
   "appUrl": "https://exit.sites.bd",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-11-03T15:49:07.903Z",
+  "updatedAt": "2026-11-03T15:58:24.514Z",
   "departments": [
     {
       "id": "computer-science",
@@ -6859,6 +6859,13 @@
               "explanation": "Engineered microorganisms produce recombinant chymosin for consistent cheese making as an alternative to animal-derived rennet."
             }
           ]
+        },
+        {
+          "id": "food-engineering-1793721439438",
+          "title": "Food Engineering Exit Exam",
+          "year": 2026,
+          "pdfUrl": "https://drive.google.com/file/d/1u7YhvC_cMqI50kHc3UmxRU7MoOQ_n2Ee/view?usp=drivesdk",
+          "telegramFileId": null
         }
       ]
     }
