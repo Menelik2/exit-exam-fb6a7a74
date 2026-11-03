@@ -2,7 +2,7 @@
   "appUrl": "https://yeniexams.vercel.app",
   "channelUrl": "https://t.me/exitexamto",
   "channelUsername": "@exitexamto",
-  "updatedAt": "2026-11-03T02:31:03.327Z",
+  "updatedAt": "2026-11-03T04:52:19.875Z",
   "departments": [
     {
       "id": "computer-science",
@@ -4269,7 +4269,201 @@
           "title": "Accounting and Financial 2016",
           "year": 2026,
           "pdfUrl": "https://drive.google.com/file/d/10P6ww3x83YnFJY4sCrK4o0peVGxFpryr/view?usp=drivesdk",
-          "telegramFileId": null
+          "telegramFileId": null,
+          "questions": [
+            {
+              "question_number": 1,
+              "question": "All of the following methods of allocating joint costs to joint products indicates use of market based measures except",
+              "options": [
+                "Sales value at split off",
+                "Net realizable value method",
+                "Physical measure method",
+                "Constant gross margin percentage NRV method"
+              ],
+              "correct_answer": "Physical measure method",
+              "explanation": "The physical measure method allocates joint costs using physical quantities such as weight or volume, not market-based sales values."
+            },
+            {
+              "question_number": 2,
+              "question": "Which one of the following is not among the method/approach of deriving fair value?",
+              "options": [
+                "Income approach",
+                "Cost approach",
+                "Market approach",
+                "Entry price approach"
+              ],
+              "correct_answer": "Entry price approach",
+              "explanation": "Fair value is generally derived using the market approach, income approach, or cost approach. Entry price is not one of these standard fair value approaches."
+            },
+            {
+              "question_number": 3,
+              "question": "The primary function of commercial banks is to:",
+              "options": [
+                "Provide short-term loans to businesses",
+                "Offer investment products like stocks and bonds",
+                "facilitate international trade finance",
+                "accept deposits and offer checking and savings accounts"
+              ],
+              "correct_answer": "accept deposits and offer checking and savings accounts",
+              "explanation": "The core function of commercial banks is to accept deposits and provide checking and savings accounts, while also lending funds."
+            },
+            {
+              "question_number": 4,
+              "question": "All of the following are a source of fund for insurance companies. Except",
+              "options": [
+                "Premium",
+                "Contributed capital",
+                "Indemnity",
+                "Investment income"
+              ],
+              "correct_answer": "Indemnity",
+              "explanation": "Indemnity is the compensation paid by an insurer to a policyholder for a covered loss. It is an expense/claim payment, not a source of funds."
+            },
+            {
+              "question_number": 5,
+              "question": "Which one of the following terms is applied to the potential benefit of one alternative that is lost by choosing another?",
+              "options": [
+                "Opportunity cost",
+                "Differential cost.",
+                "Alternative cost.",
+                "Sunk cost."
+              ],
+              "correct_answer": "Opportunity cost",
+              "explanation": "Opportunity cost is the benefit forgone by choosing one alternative over another."
+            },
+            {
+              "question_number": 6,
+              "question": "Which one of the following is primarily interested in the liquidity of a company?",
+              "options": [
+                "Government agencies",
+                "Long-term creditors",
+                "Short-term creditors",
+                "Shareholders"
+              ],
+              "correct_answer": "Short-term creditors",
+              "explanation": "Short-term creditors are primarily concerned with a company’s liquidity because they need assurance that the company can meet its short-term obligations."
+            },
+            {
+              "question_number": 7,
+              "question": "The present value of $10,000 to be received five years from today, assuming a discount rate of 9% compounded monthly, is closest to",
+              "options": [
+                "$6,897.20",
+                "$6,499.31",
+                "$8416.34",
+                "$6,387.78"
+              ],
+              "correct_answer": "$6,387.78",
+              "explanation": "PV = 10,000 / (1 + 0.09/12)^(5×12) = 10,000 / (1.0075)^60 ≈ $6,387.78."
+            },
+            {
+              "question_number": 8,
+              "question": "What the bank statement will not shows?",
+              "options": [
+                "Checks paid and other debits (such as direct withdrawals) from depositor's account",
+                "Account balance after each transactions",
+                "Deposit in transit",
+                "Deposits and other credits that increase the balance in the depositor's account"
+              ],
+              "correct_answer": "Deposit in transit",
+              "explanation": "A deposit in transit has not yet been recorded by the bank, so it will not appear on the bank statement until it is processed."
+            },
+            {
+              "question_number": 9,
+              "question": "The area of finance that deals with long-term investment decisions is known as",
+              "options": [
+                "capital budgeting",
+                "capital structure",
+                "working capital management",
+                "financial strategy"
+              ],
+              "correct_answer": "capital budgeting",
+              "explanation": "Capital budgeting is the finance area concerned with long-term investment decisions, such as selecting major projects or assets."
+            },
+            {
+              "question_number": 10,
+              "question": "Which of the following is identified as the documents and records used for sales class of transaction in the Sales and collection cycle?",
+              "options": [
+                "Cash receipts journal",
+                "Sales journal",
+                "Remittance advice",
+                "General journal"
+              ],
+              "correct_answer": "Sales journal",
+              "explanation": "The sales journal is the book of original entry used to record sales transactions in the sales and collection cycle."
+            },
+            {
+              "question_number": 11,
+              "question": "If a corporation reacquires its own stock, the stock is listed on the balance sheet in the:",
+              "options": [
+                "Long-Term Liabilities section",
+                "Current Assets section",
+                "Investments section",
+                "Stockholders' Equity section"
+              ],
+              "correct_answer": "Stockholders' Equity section",
+              "explanation": "Reacquired stock is treasury stock and is reported as a contra-equity account within the stockholders’ equity section."
+            },
+            {
+              "question_number": 12,
+              "question": "If a principal auditor decides to refer in his or her report to the audit of another auditor, he or she is required to disclose which of the following?",
+              "options": [
+                "Portion of the financial statements audited by the other auditor.",
+                "Name of the other auditor.",
+                "Nature of the inquiry into the other auditor's professional standing.",
+                "Reasons for being unwilling to assume responsibility for the other auditor's words."
+              ],
+              "correct_answer": "Portion of the financial statements audited by the other auditor.",
+              "explanation": "When making reference to another auditor, the principal auditor should disclose the division of responsibility and the portion of the financial statements audited by the other auditor."
+            },
+            {
+              "question_number": 13,
+              "question": "If inventory is being valued at cost and the price level is steadily rising, the method of costing that will yield the lowest net income is:",
+              "options": [
+                "FIFO",
+                "LIFO",
+                "Average cost",
+                "Specific identification method"
+              ],
+              "correct_answer": "LIFO",
+              "explanation": "When prices are rising, LIFO assigns the most recent, higher costs to cost of goods sold, resulting in lower net income."
+            },
+            {
+              "question_number": 14,
+              "question": "Which of the following Proprietary fund is used to account for the production and distribution of centralized goods and services that are provided to agencies of the government.",
+              "options": [
+                "Internal service Fund",
+                "General Fund",
+                "Debt service Fund.",
+                "Enterprise Fund"
+              ],
+              "correct_answer": "Internal service Fund",
+              "explanation": "Internal service funds account for goods or services provided by one government department or agency to other departments or agencies on a cost-reimbursement basis."
+            },
+            {
+              "question_number": 15,
+              "question": "In business combination the company whose business is being sought is referred to as:",
+              "options": [
+                "Target company",
+                "Purchase company",
+                "Merger company",
+                "Acquiring Company"
+              ],
+              "correct_answer": "Target company",
+              "explanation": "In a business combination, the company that is being sought or acquired is called the target company."
+            },
+            {
+              "question_number": 16,
+              "question": "Deductible temporary difference can be created when:",
+              "options": [
+                "Tax base of the liability greater than carrying amount of the liability",
+                "Tax base of the liability greater than carrying amount of the asset",
+                "Tax base of the asset less than carrying amount of the asset",
+                "Tax base of the asset greater than carrying amount of the asset"
+              ],
+              "correct_answer": "Tax base of the asset greater than carrying amount of the asset",
+              "explanation": "A deductible temporary difference arises when the carrying amount of an asset is less than its tax base, or when the carrying amount of a liability is greater than its tax base."
+            }
+          ]
         }
       ]
     },
